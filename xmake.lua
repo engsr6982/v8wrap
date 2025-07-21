@@ -1,4 +1,10 @@
 add_rules("mode.debug", "mode.release")
+set_project("v8wrap")
+set_version("0.1.0")
+
+if has_config("test") then
+    add_requires("catch2 v3.8.1")
+end
 
 if is_plat("windows") then
     if not has_config("vs_runtime") then
@@ -8,16 +14,23 @@ elseif is_plat("linux") then
     set_toolchains("clang")
 end
 
+option("v8_include_dir")
+    set_default("")
+    set_showmenu(true)
+    set_description("Path to V8 include directory (e.g., /usr/local/include/v8)")
+option_end()
+
 option("test")
     set_default(false)
     set_showmenu(true)
 option_end()
 
 
-target("v8bind")
+target("v8wrap")
     set_kind("static")
-    add_includedirs("src")
     add_files("src/**.cc")
+    add_includedirs("src", "include")
+    add_headerfiles("include/(v8wrap/**.hpp)")
     set_languages("cxx20")
     set_symbols("debug")
 
@@ -47,10 +60,21 @@ target("v8bind")
         add_syslinks("dl", "pthread", "c++", "c++abi")
     end
 
+    if has_config("v8_include_dir") then
+        local v8_inc = get_config("v8_include_dir")
+        if v8_inc ~= "" and os.isdir(v8_inc) then
+            add_includedirs(v8_inc)
+            print("V8 include path added: " .. v8_inc)
+        else
+            print("Warning: v8_include_dir is invalid or not set! V8 headers will not be available.")
+        end
+    end
+
     if is_mode("debug") then
-        add_defines("V8BIND_DEBUG")
+        add_defines("v8wrap_DEBUG")
     end
 
     if has_config("test") then
         add_files("test/**.cc")
+        add_packages("catch2")
     end
