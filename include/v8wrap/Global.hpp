@@ -4,11 +4,23 @@
 namespace v8wrap {
 
 
-#define V8WRAP_DISALLOW_COPY_AND_MOVE(T)                                                                               \
+#define V8WRAP_DISALLOW_COPY(T)                                                                                        \
     T(const T&)            = delete;                                                                                   \
-    T& operator=(const T&) = delete;                                                                                   \
-    T(T&&)                 = delete;                                                                                   \
-    T& operator=(T&&)      = delete;
+    T& operator=(const T&) = delete;
+
+#define V8WRAP_DISALLOW_MOVE(T)                                                                                        \
+    T(T&&)            = delete;                                                                                        \
+    T& operator=(T&&) = delete;
+
+#define V8WRAP_DISALLOW_COPY_AND_MOVE(T)                                                                               \
+    V8WRAP_DISALLOW_COPY(T);                                                                                           \
+    V8WRAP_DISALLOW_MOVE(T);
+
+#define V8WRAP_DISALLOW_NEW()                                                                                          \
+    static void* operator new(std::size_t)                          = delete;                                          \
+    static void* operator new(std::size_t, const std::nothrow_t&)   = delete;                                          \
+    static void* operator new[](std::size_t)                        = delete;                                          \
+    static void* operator new[](std::size_t, const std::nothrow_t&) = delete;
 
 
 #define V8WRAP_SUPPORTED_MIN_V8_MAJOR_VERSION 12

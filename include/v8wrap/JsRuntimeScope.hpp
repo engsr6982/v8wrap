@@ -17,7 +17,7 @@ public:
     ~JsRuntimeScope();
 
     V8WRAP_DISALLOW_COPY_AND_MOVE(JsRuntimeScope);
-    V8WRAP_DISALLOW_NEW(JsRuntimeScope);
+    V8WRAP_DISALLOW_NEW();
 
     static JsRuntime* currentRuntime();
 
@@ -45,7 +45,7 @@ public:
     ~ExitJsRuntimeScope() = default;
 
     V8WRAP_DISALLOW_COPY_AND_MOVE(ExitJsRuntimeScope);
-    V8WRAP_DISALLOW_NEW(ExitJsRuntimeScope);
+    V8WRAP_DISALLOW_NEW();
 };
 
 
