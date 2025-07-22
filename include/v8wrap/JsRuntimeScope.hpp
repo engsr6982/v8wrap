@@ -1,5 +1,5 @@
 #pragma once
-#include "JsValue.hpp"
+#include "Global.hpp"
 #include <v8-context.h>
 #include <v8-isolate.h>
 #include <v8-locker.h>
@@ -11,14 +11,29 @@ namespace v8wrap {
 class JsRuntime;
 
 class JsRuntimeScope {
+public:
+    explicit JsRuntimeScope(JsRuntime const& runtime);
+    virtual ~JsRuntimeScope();
+
+    V8WRAP_DISALLOW_COPY_AND_MOVE(JsRuntimeScope);
+    V8WRAP_DISALLOW_NEW(JsRuntimeScope);
+
+    static JsRuntime* currentRuntime();
+
+    static JsRuntime& currentRuntimeChecked();
+
+private:
+    // 作用域链
+    JsRuntime const* mRuntime{nullptr};
+    JsRuntimeScope*  mPrev{nullptr};
+
+    // v8作用域
     v8::Locker         mLocker;
     v8::Isolate::Scope mIsolateScope;
     v8::HandleScope    mHandleScope;
     v8::Context::Scope mContextScope;
 
-public:
-    explicit JsRuntimeScope(JsRuntime const& runtime);
-    ~JsRuntimeScope() = default;
+    static thread_local JsRuntimeScope* gCurrentScope;
 };
 
 class ExitJsRuntimeScope {
@@ -26,7 +41,10 @@ class ExitJsRuntimeScope {
 
 public:
     explicit ExitJsRuntimeScope(JsRuntime const& runtime);
-    ~ExitJsRuntimeScope() = default;
+    virtual ~ExitJsRuntimeScope();
+
+    V8WRAP_DISALLOW_COPY_AND_MOVE(ExitJsRuntimeScope);
+    V8WRAP_DISALLOW_NEW(ExitJsRuntimeScope);
 };
 
 
