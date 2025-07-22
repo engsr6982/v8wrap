@@ -6,15 +6,17 @@ namespace v8wrap {
 
 thread_local JsRuntimeScope* JsRuntimeScope::gCurrentScope = nullptr;
 
-JsRuntimeScope::JsRuntimeScope(JsRuntime const& runtime)
-: mRuntime(&runtime),
+JsRuntimeScope::JsRuntimeScope(JsRuntime& runtime) : JsRuntimeScope(&runtime) {}
+JsRuntimeScope::JsRuntimeScope(JsRuntime* runtime)
+: mRuntime(runtime),
   mPrev(gCurrentScope),
-  mLocker(runtime.mIsolate),
-  mIsolateScope(runtime.mIsolate),
-  mHandleScope(runtime.mIsolate),
-  mContextScope(runtime.mContext.Get(runtime.mIsolate)) {
+  mLocker(runtime->mIsolate),
+  mIsolateScope(runtime->mIsolate),
+  mHandleScope(runtime->mIsolate),
+  mContextScope(runtime->mContext.Get(runtime->mIsolate)) {
     gCurrentScope = this;
 }
+
 JsRuntimeScope::~JsRuntimeScope() { gCurrentScope = mPrev; }
 
 JsRuntime* JsRuntimeScope::currentRuntime() {
@@ -33,12 +35,11 @@ JsRuntime& JsRuntimeScope::currentRuntimeChecked() {
 }
 
 
-ExitJsRuntimeScope::ExitJsRuntimeScope(JsRuntime const& runtime) : mUnlocker(runtime.mIsolate) {}
-ExitJsRuntimeScope::~ExitJsRuntimeScope() = default;
+ExitJsRuntimeScope::ExitJsRuntimeScope() : mUnlocker(JsRuntimeScope::currentRuntimeChecked().mIsolate) {}
 
 namespace internal {
 
-V8EscapeScope::V8EscapeScope(JsRuntime const& runtime) : mHandleScope(runtime.mIsolate) {}
+V8EscapeScope::V8EscapeScope() : mHandleScope(JsRuntimeScope::currentRuntimeChecked().mIsolate) {}
 
 } // namespace internal
 

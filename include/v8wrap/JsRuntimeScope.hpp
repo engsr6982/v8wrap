@@ -10,10 +10,11 @@ namespace v8wrap {
 
 class JsRuntime;
 
-class JsRuntimeScope {
+class JsRuntimeScope final {
 public:
-    explicit JsRuntimeScope(JsRuntime const& runtime);
-    virtual ~JsRuntimeScope();
+    explicit JsRuntimeScope(JsRuntime& runtime);
+    explicit JsRuntimeScope(JsRuntime* runtime);
+    ~JsRuntimeScope();
 
     V8WRAP_DISALLOW_COPY_AND_MOVE(JsRuntimeScope);
     V8WRAP_DISALLOW_NEW(JsRuntimeScope);
@@ -36,12 +37,12 @@ private:
     static thread_local JsRuntimeScope* gCurrentScope;
 };
 
-class ExitJsRuntimeScope {
+class ExitJsRuntimeScope final {
     v8::Unlocker mUnlocker;
 
 public:
-    explicit ExitJsRuntimeScope(JsRuntime const& runtime);
-    virtual ~ExitJsRuntimeScope();
+    explicit ExitJsRuntimeScope();
+    ~ExitJsRuntimeScope() = default;
 
     V8WRAP_DISALLOW_COPY_AND_MOVE(ExitJsRuntimeScope);
     V8WRAP_DISALLOW_NEW(ExitJsRuntimeScope);
@@ -50,11 +51,11 @@ public:
 
 namespace internal {
 
-class V8EscapeScope {
+class V8EscapeScope final {
     v8::EscapableHandleScope mHandleScope;
 
 public:
-    explicit V8EscapeScope(JsRuntime const& runtime);
+    explicit V8EscapeScope();
     ~V8EscapeScope() = default;
 };
 
