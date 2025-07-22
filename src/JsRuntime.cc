@@ -28,6 +28,15 @@ v8::Local<v8::Context> JsRuntime::context() const { return mContext.Get(mIsolate
 
 void JsRuntime::setData(std::shared_ptr<void> data) { mUserData = std::move(data); }
 
+void JsRuntime::destroy() {
+    if (isDestroying()) return;
+    mDestroying = true;
+
+    // TODO: implement
+}
+
+bool JsRuntime::isDestroying() const { return mDestroying; }
+
 
 // private
 void JsRuntime::initalizeContext() {

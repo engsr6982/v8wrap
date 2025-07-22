@@ -1,9 +1,7 @@
 #pragma once
 #include "Global.hpp"
-#include "v8-local-handle.h"
-#include "v8-persistent-handle.h"
-#include "v8-value.h"
-#include "v8wrap/JsValue.hpp"
+#include "Types.hpp"
+#include <filesystem>
 #include <memory>
 #include <v8-context.h>
 #include <v8-isolate.h>
@@ -35,13 +33,22 @@ public:
         return std::static_pointer_cast<T>(mUserData);
     }
 
-    // eval(Local<JsString> code);
-    // eval(Local<JsString> code, Local<JsString> source);
-    // loadFile(std::filesystem::path path);
+    /**
+     * 销毁JsRuntime，释放所有资源
+     */
+    void destroy();
 
-    // get(Local<JsString> key);
+    [[nodiscard]] bool isDestroying() const;
 
-    // set(Local<JsString> key, Local<JsValue> value, bool readOnly = false);
+    void eval(Local<JsString> code);
+
+    void eval(Local<JsString> code, Local<JsString> source);
+
+    void loadFile(std::filesystem::path path);
+
+    Local<JsValue> get(Local<JsString> key);
+
+    void set(Local<JsString> key, Local<JsValue> value, bool readOnly = false);
 
 private:
     void initalizeContext();
@@ -53,9 +60,14 @@ private:
     friend class ExitJsRuntimeScope;
     friend class internal::V8EscapeScope;
 
+    template <typename>
+    friend class internal::V8GlobalRef;
+
     v8::Isolate*            mIsolate{nullptr};
     v8::Global<v8::Context> mContext{};
     std::shared_ptr<void>   mUserData{nullptr};
+
+    bool mDestroying{false};
 };
 
 

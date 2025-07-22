@@ -38,4 +38,6 @@ TYPE_ALIAS(JsObject, v8::Object);
 TYPE_ALIAS(JsArray, v8::Array);
 
 
+#undef TYPE_ALIAS
+
 } // namespace v8wrap::internal

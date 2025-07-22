@@ -7,7 +7,6 @@ JsException::JsException(v8::TryCatch const& tryCatch)
 : mType(Type::Unknown),
 mMessage(tryCatch.Message()),
 mStackTrace(tryCatch.StackTrace())
-
 {}
 
 JsException::JsException(Type type, std::string const& message) {}

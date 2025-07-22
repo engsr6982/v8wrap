@@ -84,6 +84,14 @@ class ClassDefine;
 class EnumDefine;
 
 
+namespace internal {
+
+template <typename>
+class V8GlobalRef;
+
+}
+
+
 template <typename T>
 concept AnyString = std::is_same_v<T, std::string> || std::is_same_v<T, const char*> || std::is_same_v<T, const char[]>;
 

@@ -1,8 +1,8 @@
 #pragma once
 #include "Global.hpp"
-#include "v8wrap/JsValue.hpp"
 #include <stdexcept>
 #include <v8-exception.h>
+#include <v8-persistent-handle.h>
 
 
 namespace v8wrap {
@@ -37,9 +37,9 @@ public:
     static void rethrow(v8::TryCatch const& tryCatch);
 
 private:
-    Type                  mType;
-    v8::Local<v8::String> mMessage;
-    v8::Local<v8::String> mStackTrace;
+    Type                      mType;
+    std::string               mMessage;
+    v8::Global<v8::Exception> mException;
 };
 
 
