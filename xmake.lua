@@ -34,30 +34,11 @@ target("v8wrap")
     set_languages("cxx20")
     set_symbols("debug")
 
-    add_defines(
-        "NOMINMAX",
-        "UNICODE",
-        "_AMD64_"
-    )
-
     if is_plat("windows") then 
-        add_cxflags(
-            "/utf-8",
-            "/W4",
-            "/sdl"
-        )
+        add_cxflags("/utf-8", "/W4", "/sdl")
     elseif is_plat("linux") then
-        add_cxflags(
-            "-fPIC",
-            "-stdlib=libc++",
-            "-fdeclspec",
-            {force = true}
-        )
-        add_ldflags(
-            "-stdlib=libc++",
-            {force = true}
-        )
-        add_syslinks("dl", "pthread", "c++", "c++abi")
+        add_cxflags("-fPIC", "-stdlib=libc++", {force = true})
+        add_syslinks("dl", "pthread")
     end
 
     if has_config("v8_include_dir") then
@@ -71,10 +52,11 @@ target("v8wrap")
     end
 
     if is_mode("debug") then
-        add_defines("v8wrap_DEBUG")
+        add_defines("V8WRAP_DEBUG")
     end
 
     if has_config("test") then
+        add_defines("V8WRAP_TEST")
         add_files("test/**.cc")
         add_packages("catch2")
     end
