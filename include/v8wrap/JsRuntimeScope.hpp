@@ -23,7 +23,11 @@ public:
 
     static JsRuntime& currentRuntimeChecked();
 
-    static std::tuple<v8::Isolate*, v8::Local<v8::Context>> currentIsolateAndContext();
+    static std::tuple<v8::Isolate*, v8::Local<v8::Context>> currentIsolateAndContextChecked();
+
+    static v8::Isolate* currentRuntimeIsolateChecked();
+
+    static v8::Local<v8::Context> currentRuntimeContextChecked();
 
 private:
     // 作用域链

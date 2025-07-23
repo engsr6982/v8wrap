@@ -34,9 +34,15 @@ JsRuntime& JsRuntimeScope::currentRuntimeChecked() {
     return *current;
 }
 
-std::tuple<v8::Isolate*, v8::Local<v8::Context>> JsRuntimeScope::currentIsolateAndContext() {
+std::tuple<v8::Isolate*, v8::Local<v8::Context>> JsRuntimeScope::currentIsolateAndContextChecked() {
     auto& current = currentRuntimeChecked();
     return std::make_tuple(current.mIsolate, current.mContext.Get(current.mIsolate));
+}
+
+v8::Isolate*           JsRuntimeScope::currentRuntimeIsolateChecked() { return currentRuntimeChecked().mIsolate; }
+v8::Local<v8::Context> JsRuntimeScope::currentRuntimeContextChecked() {
+    auto& current = currentRuntimeChecked();
+    return current.mContext.Get(current.mIsolate);
 }
 
 
