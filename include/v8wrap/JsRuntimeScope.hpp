@@ -23,6 +23,8 @@ public:
 
     static JsRuntime& currentRuntimeChecked();
 
+    static std::tuple<v8::Isolate*, v8::Local<v8::Context>> currentIsolateAndContext();
+
 private:
     // 作用域链
     JsRuntime const* mRuntime{nullptr};

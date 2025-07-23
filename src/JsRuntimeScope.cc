@@ -34,6 +34,11 @@ JsRuntime& JsRuntimeScope::currentRuntimeChecked() {
     return *current;
 }
 
+std::tuple<v8::Isolate*, v8::Local<v8::Context>> JsRuntimeScope::currentIsolateAndContext() {
+    auto& current = currentRuntimeChecked();
+    return std::make_tuple(current.mIsolate, current.mContext.Get(current.mIsolate));
+}
+
 
 ExitJsRuntimeScope::ExitJsRuntimeScope() : mUnlocker(JsRuntimeScope::currentRuntimeChecked().mIsolate) {}
 
