@@ -5,6 +5,7 @@
 #include "v8-locker.h"
 #include "v8-persistent-handle.h"
 #include "v8wrap/JsException.hpp"
+#include "v8wrap/JsReference.hpp"
 #include "v8wrap/JsRuntime.hpp"
 
 
@@ -49,13 +50,8 @@ void JsRuntime::initalizeContext() {
     }
 }
 
-v8::Local<v8::Value> JsRuntime::unwrap(Local<JsValue> const& value) {
-    throw JsException("Not implemented"); // TODO
-}
-
-Local<JsValue> JsRuntime::wrap(v8::Local<v8::Value> const& value) {
-    throw JsException("Not implemented"); // TODO
-}
+v8::Local<v8::Value> JsRuntime::unwrap(Local<JsValue> const& value) { return value.val; }
+Local<JsValue>       JsRuntime::wrap(v8::Local<v8::Value> const& value) { return Local<JsValue>{value}; }
 
 
 } // namespace v8wrap

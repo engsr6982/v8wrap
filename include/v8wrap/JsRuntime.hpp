@@ -50,11 +50,12 @@ public:
 
     void set(Local<JsString> key, Local<JsValue> value, bool readOnly = false);
 
+    static v8::Local<v8::Value> unwrap(Local<JsValue> const& value);
+    static Local<JsValue>       wrap(v8::Local<v8::Value> const& value);
+
 private:
     void initalizeContext();
 
-    v8::Local<v8::Value> unwrap(Local<JsValue> const& value);
-    Local<JsValue>       wrap(v8::Local<v8::Value> const& value);
 
     friend class JsRuntimeScope;
     friend class ExitJsRuntimeScope;
