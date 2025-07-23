@@ -2,6 +2,7 @@
 #include "Types.hpp"
 #include <string>
 #include <string_view>
+#include <sys/stat.h>
 
 
 namespace v8wrap {
@@ -59,17 +60,17 @@ public:
 
 class JsSymbol : public JsValue {
 public:
-    static Local<JsSymbol> newSymbol(std::string_view str);
-    static Local<JsSymbol> newSymbol(const char* str);
-    static Local<JsSymbol> newSymbol(std::string const& str);
+    static Local<JsSymbol> newSymbol();
+    static Local<JsSymbol> newSymbol(std::string_view description);
+    static Local<JsSymbol> newSymbol(const char* description);
+    static Local<JsSymbol> newSymbol(std::string const& description);
 
     static Local<JsSymbol> forKey(Local<JsString> const& str); // JavaScript: Symbol.for
-    static Local<JsString> keyFor(Local<JsSymbol> const& sym); // JavaScript: Symbol.keyFor
 };
 
 class JsFunction : public JsValue {
 public:
-    static Local<JsFunction> newFunction(JsFunctionCallback cb, bool isAsync = false);
+    static Local<JsFunction> newFunction(JsFunctionCallback cb);
 
     template <typename Fn>
     static Local<JsFunction> newFunction(Fn&& func);
