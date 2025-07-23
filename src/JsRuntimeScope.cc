@@ -51,6 +51,7 @@ ExitJsRuntimeScope::ExitJsRuntimeScope() : mUnlocker(JsRuntimeScope::currentRunt
 namespace internal {
 
 V8EscapeScope::V8EscapeScope() : mHandleScope(JsRuntimeScope::currentRuntimeChecked().mIsolate) {}
+V8EscapeScope::V8EscapeScope(v8::Isolate* isolate) : mHandleScope(isolate) {}
 
 } // namespace internal
 

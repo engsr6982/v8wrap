@@ -62,6 +62,7 @@ class V8EscapeScope final {
 
 public:
     explicit V8EscapeScope();
+    explicit V8EscapeScope(v8::Isolate* isolate);
     ~V8EscapeScope() = default;
 };
 
