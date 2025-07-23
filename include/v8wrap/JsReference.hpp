@@ -1,10 +1,8 @@
 #pragma once
-#include "v8-value.h"
 #include "v8wrap/Global.hpp"
 #include "v8wrap/Types.hpp"
 #include "v8wrap/internal/V8TypeAlias.hpp"
 #include <cstdint>
-#include <initializer_list>
 #include <type_traits>
 #include <v8-function.h>
 #include <v8-local-handle.h>
@@ -29,6 +27,7 @@ public:                                                                         
 private:                                                                                                               \
     friend class JsRuntime;                                                                                            \
     friend class JsException;                                                                                          \
+    friend class VALUE;                                                                                                \
     template <typename>                                                                                                \
     friend class Local;                                                                                                \
     template <typename>                                                                                                \
