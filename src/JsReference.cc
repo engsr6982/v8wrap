@@ -249,7 +249,8 @@ bool Local<JsObject>::isInstanceOf(Local<JsValue> const& type) const {
     }
     auto&& [isolate, ctx] = JsRuntimeScope::currentIsolateAndContextChecked();
     v8::TryCatch vtry{isolate};
-    auto         maybe = val->InstanceOf(ctx, type.val);
+
+    auto maybe = val->InstanceOf(ctx, type.asObject().val);
     JsException::rethrow(vtry);
     return maybe.ToChecked();
 }
