@@ -1,8 +1,11 @@
 #pragma once
 #include "Types.hpp"
+#include "v8wrap/Global.hpp"
+#include <cstddef>
 #include <string>
 #include <string_view>
 #include <sys/stat.h>
+#include <v8-function-callback.h>
 
 
 namespace v8wrap {
@@ -88,7 +91,25 @@ public:
 
 
 class Arguments {
-    // TODO: implement
+    JsRuntime*                          mRuntime;
+    v8::FunctionCallbackInfo<v8::Value> mArgs;
+
+    explicit Arguments(JsRuntime* runtime, v8::FunctionCallbackInfo<v8::Value> const& args);
+
+    friend class JsRuntime;
+
+public:
+    V8WRAP_DISALLOW_COPY_AND_MOVE(Arguments);
+
+    [[nodiscard]] JsRuntime* runtime() const;
+
+    [[nodiscard]] bool hasThiz() const;
+
+    [[nodiscard]] Local<JsObject> thiz() const; // this
+
+    [[nodiscard]] size_t length() const;
+
+    Local<JsValue> operator[](size_t index) const;
 };
 
 

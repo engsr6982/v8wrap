@@ -55,6 +55,11 @@ class Local final {
 
 template <>
 class Local<JsValue> {
+    SPECIALIZATION_LOCAL(JsValue);
+    SPECALIZATION_V8_LOCAL_TYPE(JsValue);
+
+    friend class Arguments;
+
 public:
     // default v8::Undefined -> undefined
     Local() noexcept;
@@ -86,9 +91,6 @@ public:
     [[nodiscard]] Local<JsFunction>  asFunction() const;
 
     void clear();
-
-    SPECIALIZATION_LOCAL(JsValue);
-    SPECALIZATION_V8_LOCAL_TYPE(JsValue);
 };
 
 template <>
@@ -163,6 +165,8 @@ class Local<JsObject> {
     SPECIALIZATION_LOCAL(JsObject);
     SPECALIZATION_AS_VALUE(JsObject);
     SPECALIZATION_V8_LOCAL_TYPE(JsObject);
+
+    friend class Arguments;
 
 public:
     [[nodiscard]] bool has(Local<JsString> const& key) const;

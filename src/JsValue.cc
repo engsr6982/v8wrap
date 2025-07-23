@@ -101,4 +101,27 @@ Local<JsArray> JsArray::newArray(size_t length) {
 }
 
 
+Arguments::Arguments(JsRuntime* runtime, v8::FunctionCallbackInfo<v8::Value> const& args)
+: mRuntime(runtime),
+  mArgs(args) {}
+
+JsRuntime* Arguments::runtime() const { return mRuntime; }
+
+bool Arguments::hasThiz() const { return mArgs.This()->IsObject(); }
+
+Local<JsObject> Arguments::thiz() const {
+    if (!hasThiz()) {
+        throw JsException{"Arguments::thiz(): no thiz"};
+    }
+    return Local<JsObject>{mArgs.This()};
+}
+
+size_t Arguments::length() const { return static_cast<size_t>(mArgs.Length()); }
+
+Local<JsValue> Arguments::operator[](size_t index) const {
+    auto value = mArgs[static_cast<int>(index)];
+    return Local<JsValue>{value};
+}
+
+
 } // namespace v8wrap
