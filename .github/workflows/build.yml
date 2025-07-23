@@ -1,0 +1,56 @@
+on:
+  push:
+    paths:
+      - "xmake.lua"
+      - "src/*"
+      - "tests/*"
+      - "include/*"
+      - ".github/workflows/build.yml"
+  pull_request:
+    paths:
+      - "xmake.lua"
+      - "src/*"
+      - "tests/*"
+      - "include/*"
+      - ".github/workflows/build.yml"
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2022, ubuntu-22.04]
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: xmake-io/github-action-setup-xmake@v1
+        # with:
+        #   xmake-version: branch@master
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/AppData/Local/.xmake
+          key: xmake-${{ hashFiles('xmake.lua') }}
+          restore-keys: |
+            xmake-
+
+      - run: |
+          xmake repo -u
+
+      - run: |
+          xmake f -a x64 -m release -p windows -v -y
+
+      - run: |
+          xmake -v -y
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.event.repository.name }}-${{ matrix.os }}-x64-${{ github.sha }}
+          path: |
+            bin/

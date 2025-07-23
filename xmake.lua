@@ -60,3 +60,19 @@ target("v8wrap")
         add_files("test/**.cc")
         add_packages("catch2")
     end
+
+    after_build(function(target)
+        local binDir = os.projectdir() .. "/bin"
+        if not os.isdir(binDir) then
+            os.mkdir(binDir)
+        end
+        local targetBin = binDir .. "/" .. target:name()
+        if not os.exists(targetBin) then
+            os.mkdir(targetBin)
+        end
+
+        local lib = target:targetfile()
+        os.cp(lib, targetBin)
+        local pdb = lib:gsub(".lib", ".pdb")
+        os.trycp(pdb, targetBin)
+    end)
