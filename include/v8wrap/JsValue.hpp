@@ -18,7 +18,7 @@ enum class JsValueType {
     Object,
     Array,
     Function,
-    AsyncFunction,
+    // TODO: Promise、(ArrayBuffer/TypedArray)、(Map/Set)、Date、RegExp、Proxy
 };
 
 class JsValue {};

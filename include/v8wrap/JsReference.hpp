@@ -1,6 +1,8 @@
 #pragma once
+#include "v8-value.h"
 #include "v8wrap/Global.hpp"
 #include "v8wrap/Types.hpp"
+#include "v8wrap/internal/V8TypeAlias.hpp"
 #include <cstdint>
 #include <initializer_list>
 #include <type_traits>
@@ -14,7 +16,6 @@ namespace v8wrap {
 
 #define SPECIALIZATION_LOCAL(VALUE)                                                                                    \
 public:                                                                                                                \
-    Local<JsString> toString();                                                                                        \
     V8WRAP_DISALLOW_NEW();                                                                                             \
     ~Local();                                                                                                          \
     Local(Local<VALUE> const&);                                                                                        \
@@ -22,21 +23,30 @@ public:                                                                         
     Local<VALUE>& operator=(Local const&);                                                                             \
     Local<VALUE>& operator=(Local&&) noexcept;                                                                         \
                                                                                                                        \
-    bool operator==(Local<JsValue> const& other) const;                                                                \
+    Local<JsString> toString();                                                                                        \
+    bool            operator==(Local<JsValue> const& other) const;                                                     \
                                                                                                                        \
 private:                                                                                                               \
     friend class JsRuntime;                                                                                            \
     friend class JsException;                                                                                          \
     template <typename>                                                                                                \
+    friend class Local;                                                                                                \
+    template <typename>                                                                                                \
     friend class Global;                                                                                               \
     template <typename>                                                                                                \
     friend class Weak;
 
-#define SPECALIZATION_NON_VALUE(VALUE)                                                                                 \
+#define SPECALIZATION_AS_VALUE(VALUE)                                                                                  \
 public:                                                                                                                \
     Local<JsValue> asValue() const;                                                                                    \
     operator Local<JsValue>() const { return asValue(); }                                                              \
     bool operator==(Local<VALUE> const& other) const { return operator==(other.asValue()); }
+
+#define SPECALIZATION_V8_LOCAL_TYPE(VALUE)                                                                             \
+private:                                                                                                               \
+    using Type = internal::V8Type<VALUE>;                                                                              \
+    explicit Local(v8::Local<Type>);                                                                                   \
+    v8::Local<Type> val
 
 
 template <typename T>
@@ -50,10 +60,11 @@ public:
     // default v8::Undefined -> undefined
     Local() noexcept;
 
-    JsValueType getType();
+    [[nodiscard]] JsValueType getType() const;
 
     [[nodiscard]] bool isNull() const;
     [[nodiscard]] bool isUndefined() const;
+    [[nodiscard]] bool isNullOrUndefined() const; // null or undefined
     [[nodiscard]] bool isBoolean() const;
     [[nodiscard]] bool isNumber() const;
     [[nodiscard]] bool isBigInt() const;
@@ -75,95 +86,84 @@ public:
     [[nodiscard]] Local<JsArray>     asArray() const;
     [[nodiscard]] Local<JsFunction>  asFunction() const;
 
-    void reset();
+    void clear();
 
-    SPECIALIZATION_LOCAL(JsValue)
+    SPECIALIZATION_LOCAL(JsValue);
+    SPECALIZATION_V8_LOCAL_TYPE(JsValue);
 };
 
 template <>
 class Local<JsNull> {
     SPECIALIZATION_LOCAL(JsNull);
-    SPECALIZATION_NON_VALUE(JsNull);
-
-private:
-    v8::Local<v8::Primitive> val;
+    SPECALIZATION_AS_VALUE(JsNull);
+    SPECALIZATION_V8_LOCAL_TYPE(JsNull);
 };
 
 template <>
 class Local<JsUndefined> {
     SPECIALIZATION_LOCAL(JsUndefined);
-    SPECALIZATION_NON_VALUE(JsUndefined);
-
-private:
-    v8::Local<v8::Primitive> val;
+    SPECALIZATION_AS_VALUE(JsUndefined);
+    SPECALIZATION_V8_LOCAL_TYPE(JsUndefined);
 };
 
 template <>
 class Local<JsBoolean> {
     SPECIALIZATION_LOCAL(JsBoolean);
-    SPECALIZATION_NON_VALUE(JsBoolean);
+    SPECALIZATION_AS_VALUE(JsBoolean);
+    SPECALIZATION_V8_LOCAL_TYPE(JsBoolean);
 
 public:
     [[nodiscard]] bool getValue() const;
-
-private:
-    v8::Local<v8::Boolean> val;
 };
 
 template <>
 class Local<JsNumber> {
     SPECIALIZATION_LOCAL(JsNumber);
-    SPECALIZATION_NON_VALUE(JsNumber);
+    SPECALIZATION_AS_VALUE(JsNumber);
+    SPECALIZATION_V8_LOCAL_TYPE(JsNumber);
 
 public:
     [[nodiscard]] int    getInt32() const;
     [[nodiscard]] float  getFloat() const;
     [[nodiscard]] double getDouble() const;
-
-private:
-    v8::Local<v8::Number> val;
 };
 
 template <>
 class Local<JsBigInt> {
     SPECIALIZATION_LOCAL(JsBigInt);
-    SPECALIZATION_NON_VALUE(JsBigInt);
+    SPECALIZATION_AS_VALUE(JsBigInt);
+    SPECALIZATION_V8_LOCAL_TYPE(JsBigInt);
 
 public:
     [[nodiscard]] int64_t getValue() const;
-
-private:
-    v8::Local<v8::BigInt> val;
 };
 
 template <>
 class Local<JsString> {
     SPECIALIZATION_LOCAL(JsString);
-    SPECALIZATION_NON_VALUE(JsString);
+    SPECALIZATION_AS_VALUE(JsString);
+    SPECALIZATION_V8_LOCAL_TYPE(JsString);
 
 public:
+    [[nodiscard]] int         length() const;
     [[nodiscard]] std::string getValue() const;
-
-private:
-    v8::Local<v8::String> val;
 };
 
 template <>
 class Local<JsSymbol> {
     SPECIALIZATION_LOCAL(JsSymbol);
-    SPECALIZATION_NON_VALUE(JsSymbol);
+    SPECALIZATION_AS_VALUE(JsSymbol);
+    SPECALIZATION_V8_LOCAL_TYPE(JsSymbol);
 
 public:
     Local<JsValue> getDescription(); // maybe undefined
-
-private:
-    v8::Local<v8::Symbol> val;
 };
 
 template <>
 class Local<JsObject> {
     SPECIALIZATION_LOCAL(JsObject);
-    SPECALIZATION_NON_VALUE(JsObject);
+    SPECALIZATION_AS_VALUE(JsObject);
+    SPECALIZATION_V8_LOCAL_TYPE(JsObject);
 
 public:
     [[nodiscard]] bool has(Local<JsString> const& key) const;
@@ -179,15 +179,13 @@ public:
     [[nodiscard]] std::vector<std::string> getOwnPropertyNamesAsString() const;
 
     [[nodiscard]] bool isInstanceOf(Local<JsValue> const& type) const;
-
-private:
-    v8::Local<v8::Object> val;
 };
 
 template <>
 class Local<JsArray> {
     SPECIALIZATION_LOCAL(JsArray);
-    SPECALIZATION_NON_VALUE(JsArray);
+    SPECALIZATION_AS_VALUE(JsArray);
+    SPECALIZATION_V8_LOCAL_TYPE(JsArray);
 
 public:
     [[nodiscard]] size_t length() const;
@@ -199,31 +197,25 @@ public:
     void push(Local<JsValue> const& value);
 
     void clear();
-
-private:
-    v8::Local<v8::Array> val;
 };
 
 template <>
 class Local<JsFunction> {
     SPECIALIZATION_LOCAL(JsFunction);
-    SPECALIZATION_NON_VALUE(JsFunction);
+    SPECALIZATION_AS_VALUE(JsFunction);
+    SPECALIZATION_V8_LOCAL_TYPE(JsFunction);
 
 public:
+    [[nodiscard]] bool isAsyncFunction() const; // JavaScript: async function
+
     Local<JsValue> call() const;
 
     Local<JsValue> call(Local<JsValue> const& thiz, std::vector<Local<JsValue>> const& args) const;
-
-    Local<JsValue> call(Local<JsValue> const& thiz, std::initializer_list<Local<JsValue>> const& args) const;
-
-    [[nodiscard]] bool isAsyncFunction() const; // JavaScript: async function
-
-private:
-    v8::Local<v8::Function> val;
 };
 
 #undef SPECIALIZATION_LOCAL
-#undef SPECALIZATION_NON_VALUE
+#undef SPECALIZATION_AS_VALUE
+#undef SPECALIZATION_V8_LOCAL_TYPE
 
 
 template <typename T>
