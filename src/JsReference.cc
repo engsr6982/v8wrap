@@ -161,7 +161,7 @@ std::string Local<JsString>::getValue() const {
     if (*utf8 == nullptr) {
         throw JsException("Cannot convert v8::String to std::string");
     }
-    return {*utf8, utf8.length()};
+    return std::string{*utf8, static_cast<size_t>(utf8.length())};
 }
 
 
