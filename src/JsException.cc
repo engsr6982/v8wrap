@@ -2,6 +2,7 @@
 #include "v8wrap/JsReference.hpp"
 #include "v8wrap/JsRuntimeScope.hpp"
 #include "v8wrap/JsValue.hpp"
+#include <algorithm>
 #include <exception>
 #include <v8-exception.h>
 #include <v8-local-handle.h>
@@ -21,6 +22,20 @@ JsException::JsException(v8::TryCatch const& tryCatch) : std::exception() {
 
 JsException::JsException(std::string message, Type type) : std::exception(), mType(type), mMessage(std::move(message)) {
     makeException(); // null exception, make it
+}
+
+JsException::JsException(JsException&& other) noexcept
+: mType(other.mType),
+  mMessage(std::move(other.mMessage)),
+  mException(std::move(other.mException)) {}
+
+JsException& JsException::operator=(JsException&& other) noexcept {
+    if (&other != this) {
+        mType      = other.mType;
+        mMessage   = std::move(other.mMessage);
+        mException = std::move(other.mException);
+    }
+    return *this;
 }
 
 JsException::Type JsException::type() const noexcept { return mType; }

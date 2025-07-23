@@ -20,10 +20,13 @@ public:
         TypeError
     };
 
-    V8WRAP_DISALLOW_COPY_AND_MOVE(JsException)
+    V8WRAP_DISALLOW_COPY(JsException)
 
     explicit JsException(v8::TryCatch const& tryCatch);
     explicit JsException(std::string message, Type type = Type::Error);
+
+    JsException(JsException&&) noexcept;
+    JsException& operator=(JsException&&) noexcept;
 
     [[nodiscard]] Type type() const noexcept;
 
