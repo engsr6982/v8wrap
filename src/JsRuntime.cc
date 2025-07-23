@@ -4,6 +4,7 @@
 #include "v8-isolate.h"
 #include "v8-locker.h"
 #include "v8-persistent-handle.h"
+#include "v8-script.h"
 #include "v8wrap/JsException.hpp"
 #include "v8wrap/JsReference.hpp"
 #include "v8wrap/JsRuntime.hpp"
@@ -34,9 +35,33 @@ void JsRuntime::destroy() {
     mDestroying = true;
 
     // TODO: implement
+
+
+    delete this;
 }
 
 bool JsRuntime::isDestroying() const { return mDestroying; }
+
+void JsRuntime::eval(Local<JsString> code) {
+    // TODO: implement
+}
+
+void JsRuntime::eval(Local<JsString> code, Local<JsString> source) {
+    // TODO: implement
+}
+
+void JsRuntime::loadFile(std::filesystem::path path) {
+    // TODO: implement
+}
+
+Local<JsValue> JsRuntime::get(Local<JsString> key) {
+    // TODO: implement
+    return {};
+}
+
+void JsRuntime::set(Local<JsString> key, Local<JsValue> value, bool readOnly) {
+    // TODO: implement
+}
 
 
 // private
@@ -48,10 +73,9 @@ void JsRuntime::initalizeContext() {
     if (mContext.IsEmpty()) {
         mContext.Reset(mIsolate, v8::Context::New(mIsolate));
     }
-}
 
-v8::Local<v8::Value> JsRuntime::unwrap(Local<JsValue> const& value) { return value.val; }
-Local<JsValue>       JsRuntime::wrap(v8::Local<v8::Value> const& value) { return Local<JsValue>{value}; }
+    // TODO: implement
+}
 
 
 } // namespace v8wrap

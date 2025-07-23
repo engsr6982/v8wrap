@@ -1,6 +1,8 @@
 #pragma once
 #include "Global.hpp"
 #include "Types.hpp"
+#include "v8-local-handle.h"
+#include "v8wrap/internal/V8TypeAlias.hpp"
 #include <filesystem>
 #include <memory>
 #include <v8-context.h>
@@ -50,8 +52,16 @@ public:
 
     void set(Local<JsString> key, Local<JsValue> value, bool readOnly = false);
 
-    static v8::Local<v8::Value> unwrap(Local<JsValue> const& value);
-    static Local<JsValue>       wrap(v8::Local<v8::Value> const& value);
+
+    template <typename T>
+    [[nodiscard]] inline static v8::Local<internal::V8Type<T>> unwrap(Local<T> const& value) {
+        return value.val; // friend
+    }
+
+    template <typename T>
+    [[nodiscard]] inline static Local<T> wrap(v8::Local<internal::V8Type<T>> const& value) {
+        return Local<T>{value};
+    }
 
 private:
     void initalizeContext();
