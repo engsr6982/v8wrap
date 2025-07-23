@@ -36,7 +36,7 @@ Local<JsUndefined> Local<JsValue>::asUndefined() const {
     throw JsException("cannot convert to JsUndefined");
 }
 Local<JsBoolean> Local<JsValue>::asBoolean() const {
-    if (isBoolean()) return Local<JsBoolean>{val.As<v8::Primitive>()};
+    if (isBoolean()) return Local<JsBoolean>{val.As<v8::Boolean>()};
     throw JsException("cannot convert to JsBoolean");
 }
 Local<JsNumber> Local<JsValue>::asNumber() const {
@@ -226,7 +226,7 @@ std::vector<Local<JsString>> Local<JsObject>::getOwnPropertyNames() const {
         JsException::rethrow(vtry);
         auto value = maybeVal.ToLocalChecked();
         if (value->IsString()) {
-            result.push_back(Local<JsString>{value});
+            result.push_back(Local<JsString>{value.As<v8::String>()});
         }
     }
     return result;
