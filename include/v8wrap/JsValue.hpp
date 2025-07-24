@@ -29,64 +29,64 @@ class JsValue {};
 
 class JsNull : public JsValue {
 public:
-    static Local<JsNull> newNull();
+    [[nodiscard]] static Local<JsNull> newNull();
 };
 
 class JsUndefined : public JsValue {
 public:
-    static Local<JsUndefined> newUndefined();
+    [[nodiscard]] static Local<JsUndefined> newUndefined();
 };
 
 class JsBoolean : public JsValue {
 public:
-    static Local<JsBoolean> newBoolean(bool b);
+    [[nodiscard]] static Local<JsBoolean> newBoolean(bool b);
 };
 
 class JsNumber : public JsValue {
 public:
-    static Local<JsNumber> newNumber(double d);
-    static Local<JsNumber> newNumber(int i);
-    static Local<JsNumber> newNumber(float f);
+    [[nodiscard]] static Local<JsNumber> newNumber(double d);
+    [[nodiscard]] static Local<JsNumber> newNumber(int i);
+    [[nodiscard]] static Local<JsNumber> newNumber(float f);
 };
 
 class JsBigInt : public JsValue {
 public:
-    static Local<JsBigInt> newBigInt(int64_t i);
+    [[nodiscard]] static Local<JsBigInt> newBigInt(int64_t i);
 };
 
 class JsString : public JsValue {
 public:
-    static Local<JsString> newString(const char* str);
-    static Local<JsString> newString(std::string const& str);
-    static Local<JsString> newString(std::string_view str);
+    [[nodiscard]] static Local<JsString> newString(const char* str);
+    [[nodiscard]] static Local<JsString> newString(std::string const& str);
+    [[nodiscard]] static Local<JsString> newString(std::string_view str);
 };
 
 class JsSymbol : public JsValue {
 public:
-    static Local<JsSymbol> newSymbol();
-    static Local<JsSymbol> newSymbol(std::string_view description);
-    static Local<JsSymbol> newSymbol(const char* description);
-    static Local<JsSymbol> newSymbol(std::string const& description);
+    [[nodiscard]] static Local<JsSymbol> newSymbol();
+    [[nodiscard]] static Local<JsSymbol> newSymbol(std::string_view description);
+    [[nodiscard]] static Local<JsSymbol> newSymbol(const char* description);
+    [[nodiscard]] static Local<JsSymbol> newSymbol(std::string const& description);
 
-    static Local<JsSymbol> forKey(Local<JsString> const& str); // JavaScript: Symbol.for
+    [[nodiscard]] static Local<JsSymbol> forKey(Local<JsString> const& str); // JavaScript: Symbol.for
 };
 
 class JsFunction : public JsValue {
 public:
-    static Local<JsFunction> newFunction(JsFunctionCallback cb);
+    [[nodiscard]] static Local<JsFunction> newFunction(JsFunctionCallback cb);
 
     template <typename Fn>
-    static Local<JsFunction> newFunction(Fn&& func);
+    [[nodiscard]] static Local<JsFunction> newFunction(Fn&& func);
 };
 
 class JsObject : public JsValue {
 public:
-    static Local<JsObject> newObject();
+    [[nodiscard]] static Local<JsObject> newObject();
 };
 
 class JsArray : public JsValue {
 public:
-    static Local<JsArray> newArray(size_t length = 0);
+    [[nodiscard]] static Local<JsArray> newArray(size_t length = 0);
 };
 
 
