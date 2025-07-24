@@ -2,6 +2,8 @@
 #include "Global.hpp"
 #include "Types.hpp"
 #include "v8-local-handle.h"
+#include "v8wrap/JsReference.hpp"
+#include "v8wrap/JsValue.hpp"
 #include "v8wrap/internal/V8TypeAlias.hpp"
 #include <filesystem>
 #include <memory>
@@ -42,11 +44,11 @@ public:
 
     [[nodiscard]] bool isDestroying() const;
 
-    void eval(Local<JsString> code);
+    Local<JsValue> eval(Local<JsString> const& code);
 
-    void eval(Local<JsString> code, Local<JsString> source);
+    Local<JsValue> eval(Local<JsString> const& code, Local<JsString> const& source);
 
-    void loadFile(std::filesystem::path path);
+    void loadFile(std::filesystem::path const& path);
 
     Local<JsValue> get(Local<JsString> key);
 
@@ -64,9 +66,6 @@ public:
     }
 
 private:
-    void initalizeContext();
-
-
     friend class JsRuntimeScope;
     friend class ExitJsRuntimeScope;
     friend class internal::V8EscapeScope;

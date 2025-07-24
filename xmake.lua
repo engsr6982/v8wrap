@@ -71,9 +71,7 @@ target("v8wrap_test")
     add_includedirs("include") -- add v8wrap include dir
     add_files("test/**.cc")
 
-    -- 确保Catch2库正确链接
     if is_plat("linux") then
-        -- 在Linux上，需要明确指定链接顺序
         add_packages("catch2", {links = {"Catch2", "Catch2Main"}})
     else
         add_packages("catch2")
@@ -91,9 +89,8 @@ target("v8wrap_test")
     -- v8 headers and libs
     add_includedirs(get_config("v8_include_dir"))
 
-    -- 直接添加静态库文件而不是使用add_links
     if is_plat("linux") then
-        -- 在Linux上，链接顺序很重要，先链接应用程序，再链接库
+        -- TODO: fix linking issue on Linux
         add_ldflags("-Wl,--whole-archive", get_config("v8_static_lib"), "-Wl,--no-whole-archive", {force = true})
         add_cxflags(
             "-fPIC",
@@ -112,10 +109,5 @@ target("v8wrap_test")
     end
 
     after_build(function (target)
-        local binDir = os.projectdir() .. "/bin"
-        if not os.isdir(binDir) then
-            os.mkdir(binDir)
-        end
-        local test = target:targetfile()
-        os.cp(test, binDir)
+        os.exec(target:targetfile()) -- 运行测试程序
     end)
