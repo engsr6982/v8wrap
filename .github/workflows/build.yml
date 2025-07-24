@@ -88,3 +88,6 @@ jobs:
         run: |
           xmake build -v -y v8wrap_test
 
+      - name: Run tests
+        run: |
+          cd bin && ./v8wrap_test

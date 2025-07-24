@@ -70,6 +70,7 @@ target("v8wrap_test")
     set_languages("cxx20")
     add_includedirs("include") -- add v8wrap include dir
     add_files("test/**.cc")
+    set_symbols("debug")
 
     if is_plat("linux") then
         add_packages("catch2", {links = {"Catch2", "Catch2Main"}})
@@ -109,7 +110,10 @@ target("v8wrap_test")
     end
 
     after_build(function (target)
-        cprint("${green} Building successful! ${clear}")
-        cprint("${cyan} Running tests... ${clear}")
-        os.exec(target:targetfile()) -- 运行测试程序
+        local binDir = os.projectdir() .. "/bin"
+        if not os.isdir(binDir) then
+            os.mkdir(binDir)
+        end
+        local test = target:targetfile()
+        os.cp(test, binDir)
     end)
