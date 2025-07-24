@@ -82,7 +82,14 @@ target("v8wrap_test")
 
     -- v8 headers and libs
     add_includedirs(get_config("v8_include_dir"))
-    add_links(get_config("v8_static_lib"))
+    
+    -- 直接添加静态库文件而不是使用add_links
+    if is_plat("linux") then
+        add_linkgroups(get_config("v8_static_lib"))
+        add_syslinks("dl", "pthread")
+    else
+        add_links(get_config("v8_static_lib"))
+    end
 
     after_build(function (target)
         local binDir = os.projectdir() .. "/bin"

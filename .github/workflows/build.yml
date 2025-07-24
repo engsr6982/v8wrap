@@ -51,8 +51,24 @@ jobs:
             curl -L -o v8_linux.tar.xz https://github.com/engsr6982/libv8/releases/download/v12.4.254.21/v8_Linux_x64.tar.xz
             mkdir -p v8_lib
             tar -xJf v8_linux.tar.xz -C v8_lib
-            echo "V8_INCLUDE_DIR=${{ github.workspace }}/v8_lib/include" >> $GITHUB_ENV
-            echo "V8_STATIC_LIB=${{ github.workspace }}/v8_lib/libv8_monolith.a" >> $GITHUB_ENV
+            # 列出文件结构以便调试
+            find v8_lib -type f | sort
+            # 确保使用正确的路径
+            if [ -f "v8_lib/libv8_monolith.a" ]; then
+              echo "V8_INCLUDE_DIR=${{ github.workspace }}/v8_lib/include" >> $GITHUB_ENV
+              echo "V8_STATIC_LIB=${{ github.workspace }}/v8_lib/libv8_monolith.a" >> $GITHUB_ENV
+            else
+              # 尝试查找实际位置
+              V8_LIB_PATH=$(find v8_lib -name "libv8_monolith.a" | head -n 1)
+              V8_INCLUDE_PATH=$(find v8_lib -name "v8.h" | head -n 1 | xargs dirname)
+              if [ -n "$V8_LIB_PATH" ] && [ -n "$V8_INCLUDE_PATH" ]; then
+                echo "V8_INCLUDE_DIR=${{ github.workspace }}/$V8_INCLUDE_PATH" >> $GITHUB_ENV
+                echo "V8_STATIC_LIB=${{ github.workspace }}/$V8_LIB_PATH" >> $GITHUB_ENV
+              else
+                echo "Error: Could not find V8 library files"
+                exit 1
+              fi
+            fi
           fi
         shell: bash
 
