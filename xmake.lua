@@ -95,7 +95,18 @@ target("v8wrap_test")
     if is_plat("linux") then
         -- 在Linux上，链接顺序很重要，先链接应用程序，再链接库
         add_ldflags("-Wl,--whole-archive", get_config("v8_static_lib"), "-Wl,--no-whole-archive", {force = true})
-        add_syslinks("dl", "pthread", "c++", "m")
+        add_cxflags(
+            "-fPIC",
+            "-stdlib=libc++",
+            "-fdeclspec",
+            {force = true}
+        )
+        add_ldflags(
+            "-stdlib=libc++",
+            {force = true}
+        )
+        add_packages("libelf")
+        add_syslinks("dl", "pthread", "c++", "c++abi")
     else
         add_links(get_config("v8_static_lib"))
     end
