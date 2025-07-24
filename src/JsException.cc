@@ -114,7 +114,7 @@ void JsException::makeException() const {
     mException = v8::Global<v8::Value>(isolate, exception);
 }
 
-void rethrow(v8::TryCatch const& tryCatch) {
+void JsException::rethrow(v8::TryCatch const& tryCatch) {
     if (tryCatch.HasCaught()) {
         throw JsException(tryCatch);
     }
