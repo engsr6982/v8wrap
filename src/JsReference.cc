@@ -226,7 +226,7 @@ std::vector<Local<JsString>> Local<JsObject>::getOwnPropertyNames() const {
         JsException::rethrow(vtry);
         auto value = maybeVal.ToLocalChecked();
         if (value->IsString()) {
-            result.push_back(Local<JsString>{value.As<v8::String>()});
+            result.push_back(Local<JsString>{scope.escape(value.As<v8::String>())});
         }
     }
     return result;

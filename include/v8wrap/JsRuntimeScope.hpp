@@ -64,6 +64,11 @@ public:
     explicit V8EscapeScope();
     explicit V8EscapeScope(v8::Isolate* isolate);
     ~V8EscapeScope() = default;
+
+    template <typename T>
+    v8::Local<T> escape(v8::Local<T> value) {
+        return mHandleScope.Escape(value);
+    }
 };
 
 } // namespace internal
