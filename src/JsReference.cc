@@ -243,7 +243,7 @@ std::vector<std::string> Local<JsObject>::getOwnPropertyNamesAsString() const {
     return result;
 }
 
-bool Local<JsObject>::isInstanceOf(Local<JsValue> const& type) const {
+bool Local<JsObject>::instanceof(Local<JsValue> const& type) const {
     if (!type.isObject()) {
         return false;
     }

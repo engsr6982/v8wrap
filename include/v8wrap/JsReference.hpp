@@ -181,7 +181,7 @@ public:
 
     [[nodiscard]] std::vector<std::string> getOwnPropertyNamesAsString() const;
 
-    [[nodiscard]] bool isInstanceOf(Local<JsValue> const& type) const;
+    [[nodiscard]] bool instanceof(Local<JsValue> const& type) const;
 };
 
 template <>
