@@ -24,10 +24,7 @@ void JsPlatform::initJsPlatform() {
 }
 JsPlatform* JsPlatform::getPlatform() { return sInstance.get(); }
 
-void JsPlatform::shutdownJsPlatform() {
-    std::lock_guard<std::mutex> lock(mMutex);
-    sInstance.reset();
-}
+void JsPlatform::shutdownJsPlatform() { sInstance.reset(); }
 
 JsPlatform::JsPlatform() : mPlatform(v8::platform::NewDefaultPlatform()) {
     v8::V8::InitializePlatform(mPlatform.get());
@@ -35,10 +32,10 @@ JsPlatform::JsPlatform() : mPlatform(v8::platform::NewDefaultPlatform()) {
 }
 
 JsPlatform::~JsPlatform() {
-    std::lock_guard<std::mutex> lock(mMutex);
     for (auto runtime : mRuntimes) {
         runtime->destroy();
     }
+    std::lock_guard<std::mutex> lock(mMutex);
     v8::V8::Dispose();
     v8::V8::DisposePlatform();
 }
@@ -50,7 +47,7 @@ JsRuntime* JsPlatform::newRuntime() {
 void JsPlatform::addRuntime(JsRuntime* runtime) {
     std::lock_guard<std::mutex> lock(mMutex);
     if (std::find(mRuntimes.begin(), mRuntimes.end(), runtime) == mRuntimes.end()) {
-        mRuntimes.emplace_back(runtime);
+        mRuntimes.push_back(runtime);
     }
 }
 

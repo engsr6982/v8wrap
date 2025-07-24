@@ -10,9 +10,9 @@ namespace v8wrap {
 
 
 class JsPlatform {
-    std::unique_ptr<v8::Platform> mPlatform;
-    std::vector<JsRuntime*>       mRuntimes;
-    mutable std::mutex            mMutex;
+    std::unique_ptr<v8::Platform> mPlatform{nullptr};
+    std::vector<JsRuntime*>       mRuntimes{};
+    mutable std::mutex            mMutex{};
 
     static std::unique_ptr<JsPlatform> sInstance;
     JsPlatform();
