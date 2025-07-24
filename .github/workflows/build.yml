@@ -45,13 +45,13 @@ jobs:
           if [[ "${{ matrix.os }}" == "windows-2022" ]]; then
             curl -L -o v8_windows.7z https://github.com/engsr6982/libv8/releases/download/v12.4.254.21/v8_Windows_x64.7z
             7z x v8_windows.7z -ov8_lib
-            echo "V8_INCLUDE_DIR=${{ github.workspace }}\v8_lib" >> $GITHUB_ENV
-            echo "V8_STATIC_LIB=${{ github.workspace }}\v8_lib\v8_monolith.lib" >> $GITHUB_ENV
+            echo "V8_INCLUDE_DIR=${{ github.workspace }}\\v8_lib" >> $GITHUB_ENV
+            echo "V8_STATIC_LIB=${{ github.workspace }}\\v8_lib\\v8_monolith.lib" >> $GITHUB_ENV
           else
             curl -L -o v8_linux.tar.xz https://github.com/engsr6982/libv8/releases/download/v12.4.254.21/v8_Linux_x64.tar.xz
             mkdir -p v8_lib
-            tar -xf v8_linux.tar.xz -C v8_lib
-            tar -xf v8_lib/v8_Linux_x64.tar -C v8_lib
+            tar -xf v8_linux.tar.xz
+            tar -xf v8_Linux_x64.tar -C v8_lib
             echo "V8_INCLUDE_DIR=${{ github.workspace }}/v8_lib/include" >> $GITHUB_ENV
             echo "V8_STATIC_LIB=${{ github.workspace }}/v8_lib/libv8_monolith.a" >> $GITHUB_ENV
           fi
