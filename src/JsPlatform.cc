@@ -52,11 +52,11 @@ void JsPlatform::addRuntime(JsRuntime* runtime) {
 }
 
 void JsPlatform::removeRuntime(JsRuntime* runtime, bool destroyRuntime) {
-    std::lock_guard<std::mutex> lock(mMutex);
-    std::erase_if(mRuntimes, [runtime](JsRuntime* r) { return r == runtime; });
-    if (destroyRuntime) {
-        runtime->destroy();
+    {
+        std::lock_guard<std::mutex> lock(mMutex);
+        std::erase_if(mRuntimes, [runtime](JsRuntime* r) { return r == runtime; });
     }
+    if (destroyRuntime) runtime->destroy();
 }
 
 std::vector<JsRuntime*> JsPlatform::getRuntimes() const { return mRuntimes; }
