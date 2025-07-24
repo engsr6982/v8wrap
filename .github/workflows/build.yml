@@ -20,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ windows-2022, ubuntu-22.04 ]
+        os: [windows-2022, ubuntu-22.04]
     name: ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     steps:
@@ -50,8 +50,7 @@ jobs:
           else
             curl -L -o v8_linux.tar.xz https://github.com/engsr6982/libv8/releases/download/v12.4.254.21/v8_Linux_x64.tar.xz
             mkdir -p v8_lib
-            tar -xf v8_linux.tar.xz
-            tar -xf v8_Linux_x64.tar -C v8_lib
+            tar -xJf v8_linux.tar.xz -C v8_lib
             echo "V8_INCLUDE_DIR=${{ github.workspace }}/v8_lib/include" >> $GITHUB_ENV
             echo "V8_STATIC_LIB=${{ github.workspace }}/v8_lib/libv8_monolith.a" >> $GITHUB_ENV
           fi
@@ -71,7 +70,7 @@ jobs:
 
       - name: Build
         run: |
-          xmake build -v -y v8wrap_test 
+          xmake build -v -y v8wrap_test
 
       - name: Run tests
         run: |
