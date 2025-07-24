@@ -11,6 +11,8 @@ namespace v8wrap {
  */
 
 // 运行时
+class JsPlatform;
+
 class JsRuntime;
 
 class JsException;

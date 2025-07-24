@@ -14,44 +14,54 @@
 namespace v8wrap {
 
 
-JsPlatform::JsPlatform() : mPlatform(v8::platform::NewDefaultPlatform()) { initPlatform(); }
-JsPlatform::JsPlatform(std::unique_ptr<v8::Platform> platform) : mPlatform(std::move(platform)) { initPlatform(); }
+std::unique_ptr<JsPlatform> JsPlatform::sInstance{nullptr};
 
-void JsPlatform ::initPlatform() {
+void JsPlatform::initJsPlatform() {
+    if (sInstance) {
+        return;
+    }
+    sInstance = std::unique_ptr<JsPlatform>(new JsPlatform());
+}
+JsPlatform* JsPlatform::getPlatform() { return sInstance.get(); }
+
+void JsPlatform::shutdownJsPlatform() {
+    std::lock_guard<std::mutex> lock(mMutex);
+    sInstance.reset();
+}
+
+JsPlatform::JsPlatform() : mPlatform(v8::platform::NewDefaultPlatform()) {
     v8::V8::InitializePlatform(mPlatform.get());
     v8::V8::Initialize();
 }
 
 JsPlatform::~JsPlatform() {
     std::lock_guard<std::mutex> lock(mMutex);
+    for (auto runtime : mRuntimes) {
+        runtime->destroy();
+    }
     v8::V8::Dispose();
     v8::V8::DisposePlatform();
 }
 
 JsRuntime* JsPlatform::newRuntime() {
+    return new JsRuntime(); // The constructor internally adds a runtime to the JsPlatform
+}
+
+void JsPlatform::addRuntime(JsRuntime* runtime) {
     std::lock_guard<std::mutex> lock(mMutex);
-    v8::Isolate::CreateParams   params;
-    params.array_buffer_allocator = v8::ArrayBuffer::Allocator::NewDefaultAllocator();
-
-    v8::Isolate* isolate = v8::Isolate::New(params);
-
-    JsRuntime* runtime;
-    {
-        v8::Isolate::Scope isolate_scope(isolate);
-        v8::HandleScope    handle_scope(isolate);
-        runtime = new JsRuntime(isolate);
+    if (std::find(mRuntimes.begin(), mRuntimes.end(), runtime) == mRuntimes.end()) {
+        mRuntimes.emplace_back(runtime);
     }
-    mRuntimes.emplace_back(runtime);
-    return runtime;
 }
 
 void JsPlatform::removeRuntime(JsRuntime* runtime, bool destroyRuntime) {
     std::lock_guard<std::mutex> lock(mMutex);
     std::erase_if(mRuntimes, [runtime](JsRuntime* r) { return r == runtime; });
-
     if (destroyRuntime) {
         runtime->destroy();
     }
 }
+
+std::vector<JsRuntime*> JsPlatform::getRuntimes() const { return mRuntimes; }
 
 } // namespace v8wrap

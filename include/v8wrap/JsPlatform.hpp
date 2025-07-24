@@ -4,6 +4,7 @@
 #include <memory>
 #include <mutex>
 #include <v8-platform.h>
+#include <vector>
 
 namespace v8wrap {
 
@@ -13,18 +14,26 @@ class JsPlatform {
     std::vector<JsRuntime*>       mRuntimes;
     mutable std::mutex            mMutex;
 
-    void initPlatform();
+    static std::unique_ptr<JsPlatform> sInstance;
+    JsPlatform();
 
 public:
     V8WRAP_DISALLOW_COPY(JsPlatform);
+    ~JsPlatform();
 
-    JsPlatform();                                                // default, create default platform
-    explicit JsPlatform(std::unique_ptr<v8::Platform> platform); // use existing platform
-    virtual ~JsPlatform();
+    static void initJsPlatform();
+
+    static JsPlatform* getPlatform();
+
+    void shutdownJsPlatform();
 
     [[nodiscard]] JsRuntime* newRuntime();
 
+    void addRuntime(JsRuntime* runtime);
+
     void removeRuntime(JsRuntime* runtime, bool destroyRuntime = true);
+
+    std::vector<JsRuntime*> getRuntimes() const;
 };
 
 

@@ -79,7 +79,7 @@ target("v8wrap_test")
 
     if is_plat("windows") then 
         add_cxflags("/utf-8", "/W4", "/sdl")
-        add_syslinks("winmm", "advapi32") -- add required system libraries
+        add_syslinks("winmm", "advapi32", "dbghelp") -- add required system libraries
     elseif is_plat("linux") then
         add_cxflags("-fPIC", "-stdlib=libc++", {force = true})
         add_ldflags("-stdlib=libc++", {force = true})
@@ -109,5 +109,7 @@ target("v8wrap_test")
     end
 
     after_build(function (target)
+        cprint("${green} Building successful! ${clear}")
+        cprint("${cyan} Running tests... ${clear}")
         os.exec(target:targetfile()) -- 运行测试程序
     end)

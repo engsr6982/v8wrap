@@ -22,8 +22,19 @@ class JsRuntime {
 public:
     V8WRAP_DISALLOW_COPY_AND_MOVE(JsRuntime);
 
-    explicit JsRuntime(v8::Isolate* isolate);
+    /**
+     * Create a Js runtime from the JsPlatform.
+     * Make sure that the Js platform is initialized before calling.
+     */
+    explicit JsRuntime();
+
+    /**
+     * To create a Js runtime, using sources from outside is isolate and context.
+     * This overload is commonly used in NodeJs Addons.
+     * When using isolate and contexts from outside (e.g. NodeJs), the JsPlatform is not required.
+     */
     explicit JsRuntime(v8::Isolate* isolate, v8::Local<v8::Context> context);
+
     virtual ~JsRuntime();
 
     [[nodiscard]] v8::Isolate* isolate() const;
@@ -38,7 +49,12 @@ public:
     }
 
     /**
-     * 销毁JsRuntime，释放所有资源
+     * Stop and destroy the current Js runtime.
+     * The call frees up all resources and destroys the isolate and context.
+     * After you destroy this runtime, you can no longer access any methods for this runtime because delete this is done
+     * internally.
+     *
+     * If this runtime is the default construct, it removes itself from JsPlatform internally
      */
     void destroy();
 
@@ -76,8 +92,10 @@ private:
     v8::Isolate*            mIsolate{nullptr};
     v8::Global<v8::Context> mContext{};
     std::shared_ptr<void>   mUserData{nullptr};
+    JsPlatform*             mPlatform{nullptr};
 
     bool mDestroying{false};
+    bool mIsExternalIsolate{false};
 };
 
 

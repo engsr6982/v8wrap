@@ -11,22 +11,32 @@
 #include <v8-script.h>
 
 #include "v8wrap/JsException.hpp"
+#include "v8wrap/JsPlatform.hpp"
 #include "v8wrap/JsReference.hpp"
 #include "v8wrap/JsRuntime.hpp"
+#include "v8wrap/JsRuntimeScope.hpp"
 #include "v8wrap/JsValue.hpp"
 
 namespace v8wrap {
 
 
-JsRuntime::JsRuntime(v8::Isolate* isolate) : mIsolate(isolate) {
+JsRuntime::JsRuntime() : mPlatform(JsPlatform::getPlatform()) {
+    v8::Isolate::CreateParams params;
+    params.array_buffer_allocator = v8::ArrayBuffer::Allocator::NewDefaultAllocator();
+
+    mIsolate = v8::Isolate::New(params);
+
     v8::Locker         locker(mIsolate);
     v8::Isolate::Scope isolate_scope(mIsolate);
     v8::HandleScope    handle_scope(mIsolate);
     mContext.Reset(mIsolate, v8::Context::New(mIsolate));
+    mPlatform->addRuntime(this);
 }
+
 JsRuntime::JsRuntime(v8::Isolate* isolate, v8::Local<v8::Context> context)
 : mIsolate(isolate),
-  mContext(v8::Global<v8::Context>{isolate, context}) {}
+  mContext(v8::Global<v8::Context>{isolate, context}),
+  mIsExternalIsolate(true) {}
 
 JsRuntime::~JsRuntime() = default;
 
@@ -40,8 +50,15 @@ void JsRuntime::destroy() {
     if (isDestroying()) return;
     mDestroying = true;
 
-    // TODO: implement
+    {
+        JsRuntimeScope scope(this);
+        // TODO: implement
 
+        mContext.Reset();
+    }
+
+    if (!mIsExternalIsolate) mIsolate->Dispose();
+    if (mPlatform) mPlatform->removeRuntime(this, false);
 
     delete this;
 }
