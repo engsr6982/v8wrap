@@ -8,7 +8,7 @@ end
 
 if is_plat("windows") then
     if not has_config("vs_runtime") then
-        set_runtimes("MD")
+        set_runtimes("MT")
     end
 elseif is_plat("linux") then 
     set_toolchains("clang")
@@ -23,6 +23,12 @@ option_end()
 option("test")
     set_default(false)
     set_showmenu(true)
+option_end()
+
+option("v8_static_lib")
+    set_default("")
+    set_showmenu(true)
+    set_description("Path to V8 static library (e.g., /usr/local/lib/libv8_base.a)")
 option_end()
 
 
@@ -54,25 +60,35 @@ target("v8wrap")
     if is_mode("debug") then
         add_defines("V8WRAP_DEBUG")
     end
+target_end()
 
-    if has_config("test") then
-        add_defines("V8WRAP_TEST")
-        add_files("test/**.cc")
-        add_packages("catch2")
+
+target("v8wrap_test")
+    add_deps("v8wrap")
+    set_kind("binary")
+    set_symbols("debug")
+    set_languages("cxx20")
+    add_includedirs("include") -- add v8wrap include dir
+    add_files("test/**.cc")
+    add_packages("catch2")
+
+    if is_plat("windows") then 
+        add_cxflags("/utf-8", "/W4", "/sdl")
+        add_syslinks("winmm", "advapi32") -- add required system libraries
+    elseif is_plat("linux") then
+        add_cxflags("-fPIC", "-stdlib=libc++", {force = true})
+        add_syslinks("dl", "pthread")
     end
 
-    after_build(function(target)
+    -- v8 headers and libs
+    add_includedirs(get_config("v8_include_dir"))
+    add_links(get_config("v8_static_lib"))
+
+    after_build(function (target)
         local binDir = os.projectdir() .. "/bin"
         if not os.isdir(binDir) then
             os.mkdir(binDir)
         end
-        local targetBin = binDir .. "/" .. target:name()
-        if not os.exists(targetBin) then
-            os.mkdir(targetBin)
-        end
-
-        local lib = target:targetfile()
-        os.cp(lib, targetBin)
-        local pdb = lib:gsub(".lib", ".pdb")
-        os.trycp(pdb, targetBin)
+        local test = target:targetfile()
+        os.cp(test, binDir)
     end)

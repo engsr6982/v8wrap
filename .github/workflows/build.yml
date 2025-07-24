@@ -20,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-2022, ubuntu-22.04]
+        os: [ windows-2022, ubuntu-22.04 ]
     name: ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     steps:
@@ -40,17 +40,39 @@ jobs:
           restore-keys: |
             xmake-
 
+      - name: Download v8_monolith
+        run: |
+          if [[ "${{ matrix.os }}" == "windows-2022" ]]; then
+            curl -L -o v8_windows.7z https://github.com/engsr6982/libv8/releases/download/v12.4.254.21/v8_Windows_x64.7z
+            7z x v8_windows.7z -ov8_lib
+            echo "V8_INCLUDE_DIR=${{ github.workspace }}\v8_lib" >> $GITHUB_ENV
+            echo "V8_STATIC_LIB=${{ github.workspace }}\v8_lib\v8_monolith.lib" >> $GITHUB_ENV
+          else
+            curl -L -o v8_linux.tar.xz https://github.com/engsr6982/libv8/releases/download/v12.4.254.21/v8_Linux_x64.tar.xz
+            mkdir -p v8_lib
+            tar -xf v8_linux.tar.xz -C v8_lib
+            tar -xf v8_lib/v8_Linux_x64.tar -C v8_lib
+            echo "V8_INCLUDE_DIR=${{ github.workspace }}/v8_lib/include" >> $GITHUB_ENV
+            echo "V8_STATIC_LIB=${{ github.workspace }}/v8_lib/libv8_monolith.a" >> $GITHUB_ENV
+          fi
+        shell: bash
+
       - run: |
           xmake repo -u
 
-      - run: |
-          xmake f -a x64 -m release -p windows -v -y
+      - name: Configure xmake
+        run: |
+          if [[ "${{ matrix.os }}" == "windows-2022" ]]; then
+            xmake f -a x64 -m release -p windows -v -y --test=y --v8_include_dir="$V8_INCLUDE_DIR" --v8_static_lib="$V8_STATIC_LIB"
+          else
+            xmake f -a x64 -m release -p linux -v -y --test=y --v8_include_dir="$V8_INCLUDE_DIR" --v8_static_lib="$V8_STATIC_LIB"
+          fi
+        shell: bash
 
-      - run: |
-          xmake -v -y
+      - name: Build
+        run: |
+          xmake build -v -y v8wrap_test 
 
-      - uses: actions/upload-artifact@v4
-        with:
-          name: ${{ github.event.repository.name }}-${{ matrix.os }}-x64-${{ github.sha }}
-          path: |
-            bin/
+      - name: Run tests
+        run: |
+          cd bin && ./v8wrap_test
