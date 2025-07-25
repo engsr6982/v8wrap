@@ -75,8 +75,9 @@ class JsFunction : public JsValue {
 public:
     [[nodiscard]] static Local<JsFunction> newFunction(JsFunctionCallback cb);
 
-    template <typename Fn>
-    [[nodiscard]] static Local<JsFunction> newFunction(Fn&& func);
+    // TODO: implement
+    // template <typename Fn>
+    // [[nodiscard]] static Local<JsFunction> newFunction(Fn&& func);
 };
 
 class JsObject : public JsValue {
