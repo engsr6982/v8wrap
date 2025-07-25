@@ -97,6 +97,7 @@ class Arguments {
     explicit Arguments(JsRuntime* runtime, v8::FunctionCallbackInfo<v8::Value> const& args);
 
     friend class JsRuntime;
+    friend class JsFunction;
 
 public:
     V8WRAP_DISALLOW_COPY_AND_MOVE(Arguments);
