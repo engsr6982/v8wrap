@@ -21,7 +21,9 @@ concept IsJsNumberLike = std::is_arithmetic_v<T> && !IsI64OrU64<T>;
 
 
 template <typename T>
-concept AnyString = std::is_same_v<T, std::string> || std::is_same_v<T, const char*> || std::is_same_v<T, const char[]>;
+concept StringLike = requires(const T& s) {
+    { std::basic_string_view(s) } -> std::convertible_to<std::string_view>;
+} || std::is_same_v<std::remove_cvref_t<T>, std::string>;
 
 
 } // namespace v8wrap
