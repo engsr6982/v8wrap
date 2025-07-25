@@ -2,7 +2,7 @@
 #include <functional>
 #include <string>
 #include <type_traits>
-
+#include <v8-function.h>
 
 namespace v8wrap {
 
@@ -96,5 +96,11 @@ class V8GlobalRef;
 
 template <typename T>
 concept AnyString = std::is_same_v<T, std::string> || std::is_same_v<T, const char*> || std::is_same_v<T, const char[]>;
+
+
+// 类型别名
+using PropertyAttribute  = v8::PropertyAttribute;
+using PropertyDescriptor = v8::PropertyDescriptor;
+
 
 } // namespace v8wrap
