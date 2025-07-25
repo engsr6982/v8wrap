@@ -182,6 +182,16 @@ public:
     [[nodiscard]] std::vector<std::string> getOwnPropertyNamesAsString() const;
 
     [[nodiscard]] bool instanceof(Local<JsValue> const& type) const;
+
+    using PropertyAttribute = v8::PropertyAttribute;
+    [[nodiscard]] bool defineOwnProperty(
+        Local<JsString> const& key,
+        Local<JsValue> const&  value,
+        PropertyAttribute      attrs = PropertyAttribute::None
+    ) const;
+
+    using PropertyDescriptor = v8::PropertyDescriptor;
+    [[nodiscard]] bool defineProperty(Local<JsString> const& key, PropertyDescriptor& desc) const;
 };
 
 template <>

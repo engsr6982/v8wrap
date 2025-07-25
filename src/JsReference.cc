@@ -255,6 +255,28 @@ bool Local<JsObject>::instanceof(Local<JsValue> const& type) const {
     return maybe.ToChecked();
 }
 
+bool Local<JsObject>::defineOwnProperty(
+    Local<JsString> const& key,
+    Local<JsValue> const&  value,
+    PropertyAttribute      attrs
+) const {
+    auto&& [isolate, ctx] = JsRuntimeScope::currentIsolateAndContextChecked();
+    v8::TryCatch vtry{isolate};
+
+    auto maybe = val->DefineOwnProperty(ctx, key.val, value.val, attrs);
+    JsException::rethrow(vtry);
+    return maybe.ToChecked();
+}
+
+bool Local<JsObject>::defineProperty(Local<JsString> const& key, PropertyDescriptor& desc) const {
+    auto&& [isolate, ctx] = JsRuntimeScope::currentIsolateAndContextChecked();
+    v8::TryCatch vtry{isolate};
+
+    auto maybe = val->DefineProperty(ctx, key.val, desc);
+    JsException::rethrow(vtry);
+    return maybe.ToChecked();
+}
+
 
 IMPL_SPECIALIZATION_LOCAL(JsArray);
 IMPL_SPECALIZATION_AS_VALUE(JsArray);
