@@ -5,6 +5,8 @@
 #include "v8wrap/JsRuntime.hpp"
 #include "v8wrap/JsRuntimeScope.hpp"
 #include "v8wrap/Types.hpp"
+#include <iostream>
+
 
 struct JsValueTestFixture {
     JsValueTestFixture() { rt = new v8wrap::JsRuntime(); }
@@ -76,6 +78,67 @@ TEST_CASE_METHOD(JsValueTestFixture, "JsSymbol") {
     auto symbol = v8wrap::JsSymbol::newSymbol("Hello, World!");
     CHECK(symbol.getDescription().isString());
     CHECK(symbol.getDescription().asString().getValue() == "Hello, World!");
+}
+
+TEST_CASE_METHOD(JsValueTestFixture, "JsFunction") {
+    v8wrap::JsRuntimeScope enter(rt);
+
+    SECTION("Basic Function") {
+        auto func = v8wrap::JsFunction::newFunction([](v8wrap::Arguments const& args) {
+            CHECK(args.length() == 1);
+            CHECK(args[0].isString());
+            CHECK(args[0].asString().getValue() == "Hello, World!");
+            return v8wrap::JsBoolean::newBoolean(true);
+        });
+        rt->getGlobalThis().set(v8wrap::JsString::newString("testFunc"), func);
+
+        auto value = rt->eval(v8wrap::JsString::newString("testFunc('Hello, World!');"));
+        REQUIRE(value.isBoolean());
+        CHECK(value.asBoolean().getValue() == true);
+    }
+
+    SECTION("Function with callback") {
+        auto func = v8wrap::JsFunction::newFunction([](v8wrap::Arguments const& args) {
+            REQUIRE(args.length() == 1);
+            REQUIRE(args[0].isFunction());
+            auto result = args[0].asFunction().call(
+                {},
+                {v8wrap::JsString::newString("Hello, World!"), v8wrap::JsNumber::newNumber(114514)}
+            );
+            return result;
+        });
+        rt->getGlobalThis().set(v8wrap::JsString::newString("testFunc2"), func);
+
+        try {
+            auto value = rt->eval(v8wrap::JsString::newString("testFunc2((str, num) => { return num; });"));
+            REQUIRE(value.isNumber());
+            CHECK(value.asNumber().getInt32() == 114514);
+        } catch (v8wrap::JsException const& e) {
+            std::cout << e.what() << std::endl;
+        }
+    }
+
+    SECTION("Function with exception") {
+        auto func = v8wrap::JsFunction::newFunction([](v8wrap::Arguments const&) -> v8wrap::Local<v8wrap::JsValue> {
+            throw v8wrap::JsException("Test Exception"); // native => js
+        });
+        rt->getGlobalThis().set(v8wrap::JsString::newString("testFunc3"), func);
+
+        CHECK_THROWS_AS(rt->eval(v8wrap::JsString::newString("testFunc3();")), v8wrap::JsException);
+
+
+        // js => native
+        auto func2 = v8wrap::JsFunction::newFunction([](v8wrap::Arguments const& args) {
+            REQUIRE(args.length() == 1);
+            REQUIRE(args[0].isFunction());
+            CHECK_THROWS_AS(args[0].asFunction().call({}, {}), v8wrap::JsException);
+            return v8wrap::JsBoolean::newBoolean(true);
+        });
+        rt->getGlobalThis().set(v8wrap::JsString::newString("testFunc4"), func2);
+
+        auto res = rt->eval(v8wrap::JsString::newString("testFunc4(() => { throw new Error('test'); });"));
+        REQUIRE(res.isBoolean());
+    }
 }
 
 TEST_CASE_METHOD(JsValueTestFixture, "JsObject") {
