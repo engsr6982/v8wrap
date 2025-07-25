@@ -1,5 +1,6 @@
 #include "v8wrap/JsReference.hpp"
 #include "v8-exception.h"
+#include "v8-local-handle.h"
 #include "v8-primitive.h"
 #include "v8-value.h"
 #include "v8wrap/JsException.hpp"
@@ -7,13 +8,14 @@
 #include "v8wrap/JsValue.hpp"
 #include "v8wrap/internal/ArgsHelper.hpp"
 #include <algorithm>
+#include <cassert>
 
 
 namespace v8wrap {
 
 
 // Local<JsValue>
-Local<JsValue>::Local() noexcept : val(){};
+Local<JsValue>::Local() noexcept : val(JsUndefined::newUndefined().val){}; // default constructor
 bool Local<JsValue>::isNull() const { return val->IsNull(); }
 bool Local<JsValue>::isUndefined() const { return val->IsUndefined(); }
 bool Local<JsValue>::isNullOrUndefined() const { return val->IsNullOrUndefined(); }
