@@ -150,7 +150,8 @@ double Local<JsNumber>::getDouble() const { return val->Value(); }
 IMPL_SPECIALIZATION_LOCAL(JsBigInt);
 IMPL_SPECALIZATION_AS_VALUE(JsBigInt);
 IMPL_SPECALIZATION_V8_LOCAL_TYPE(JsBigInt);
-int64_t Local<JsBigInt>::getValue() const { return val->Int64Value(/* lossless? */); }
+int64_t  Local<JsBigInt>::getInt64() const { return val->Int64Value(/* lossless? */); }
+uint64_t Local<JsBigInt>::getUint64() const { return val->Uint64Value(/* lossless? */); }
 
 
 IMPL_SPECIALIZATION_LOCAL(JsString);

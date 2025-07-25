@@ -52,6 +52,7 @@ public:
 class JsBigInt : public JsValue {
 public:
     [[nodiscard]] static Local<JsBigInt> newBigInt(int64_t i);
+    [[nodiscard]] static Local<JsBigInt> newBigInt(uint64_t i);
 };
 
 class JsString : public JsValue {

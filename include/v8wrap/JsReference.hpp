@@ -3,6 +3,7 @@
 #include "v8wrap/Types.hpp"
 #include "v8wrap/internal/V8TypeAlias.hpp"
 #include <cstdint>
+#include <string>
 #include <type_traits>
 #include <v8-function.h>
 #include <v8-local-handle.h>
@@ -142,7 +143,8 @@ class Local<JsBigInt> {
     SPECALIZATION_V8_LOCAL_TYPE(JsBigInt);
 
 public:
-    [[nodiscard]] int64_t getValue() const;
+    [[nodiscard]] int64_t  getInt64() const;
+    [[nodiscard]] uint64_t getUint64() const;
 };
 
 template <>
