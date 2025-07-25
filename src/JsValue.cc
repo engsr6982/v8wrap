@@ -1,4 +1,7 @@
 #include "v8wrap/JsValue.hpp"
+#include "v8-external.h"
+#include "v8-function-callback.h"
+#include "v8-value.h"
 #include "v8wrap/JsException.hpp"
 #include "v8wrap/JsReference.hpp"
 #include "v8wrap/JsRuntime.hpp"
@@ -83,9 +86,41 @@ Local<JsSymbol> JsSymbol::forKey(Local<JsString> const& str) {
 
 
 Local<JsFunction> JsFunction::newFunction(JsFunctionCallback cb) {
-    // auto isolate = JsRuntimeScope::currentRuntimeIsolateChecked();
-    // TODO: implement this
-    throw std::runtime_error{"JsFunction::newFunction not implemented"};
+    struct AssociateResources {
+        JsRuntime*         runtime{nullptr};
+        JsFunctionCallback cb;
+    };
+
+    auto&& [isolate, ctx] = JsRuntimeScope::currentIsolateAndContextChecked();
+
+    auto vtry = v8::TryCatch{isolate};
+    auto data = std::make_unique<AssociateResources>(JsRuntimeScope::currentRuntime(), std::move(cb));
+
+    auto external = v8::External::New(isolate, static_cast<void*>(data.get())).As<v8::Value>();
+    auto temp     = v8::FunctionTemplate::New(
+        isolate,
+        [](v8::FunctionCallbackInfo<v8::Value> const& info) {
+            auto data = reinterpret_cast<AssociateResources*>(info.Data().As<v8::External>()->Value());
+            auto args = Arguments{data->runtime, info};
+            try {
+                auto returnValue = data->cb(args); // call native
+                info.GetReturnValue().Set(JsRuntime::unwrap(returnValue));
+            } catch (JsException const& e) {
+                e.rethrowToRuntime(); // throw to v8 (js)
+            }
+        },
+        external
+    );
+    temp->RemovePrototype();
+
+    auto v8Func = temp->GetFunction(ctx);
+    JsException::rethrow(vtry);
+
+    JsRuntimeScope::currentRuntimeChecked().addManagedResource(data.release(), v8Func.ToLocalChecked(), [](void* data) {
+        delete reinterpret_cast<AssociateResources*>(data);
+    });
+
+    return Local<JsFunction>{v8Func.ToLocalChecked()};
 }
 
 

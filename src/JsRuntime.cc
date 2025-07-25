@@ -1,3 +1,5 @@
+#include <algorithm>
+#include <cassert>
 #include <fstream>
 #include <stdexcept>
 #include <utility>
@@ -10,6 +12,7 @@
 #include <v8-persistent-handle.h>
 #include <v8-script.h>
 
+#include "v8-value.h"
 #include "v8wrap/JsException.hpp"
 #include "v8wrap/JsPlatform.hpp"
 #include "v8wrap/JsReference.hpp"
@@ -50,10 +53,20 @@ void JsRuntime::destroy() {
     if (isDestroying()) return;
     mDestroying = true;
 
+    if (mUserData) mUserData.reset();
+
     {
         JsRuntimeScope scope(this);
+
+        for (auto& [key, value] : mManagedResources) {
+            value.Reset();
+            key->deleter(key->resource);
+            delete key;
+        }
+
         // TODO: implement
 
+        mManagedResources.clear();
         mContext.Reset();
     }
 
@@ -103,6 +116,34 @@ Local<JsValue> JsRuntime::get(Local<JsString> key) {
 
 void JsRuntime::set(Local<JsString> key, Local<JsValue> value, bool readOnly) {
     // TODO: implement
+}
+
+void JsRuntime::addManagedResource(void* resource, v8::Local<v8::Value> value, std::function<void(void*)>&& deleter) {
+    auto managed = std::make_unique<ManagedResource>(this, resource, std::move(deleter));
+
+    v8::Global<v8::Value> weak{mIsolate, value};
+    weak.SetWeak(
+        static_cast<void*>(managed.get()),
+        [](v8::WeakCallbackInfo<void> const& data) {
+            auto managed = static_cast<ManagedResource*>(data.GetParameter());
+            auto runtime = managed->runtime;
+            {
+                v8::Locker locker(runtime->mIsolate); // Since the v8 GC is not on the same thread, locking is required
+                auto       iter = runtime->mManagedResources.find(managed);
+                assert(iter != runtime->mManagedResources.end()); // ManagedResource should be in the map
+                runtime->mManagedResources.erase(iter);
+
+                data.SetSecondPassCallback([](v8::WeakCallbackInfo<void> const& data) {
+                    auto       managed = static_cast<ManagedResource*>(data.GetParameter());
+                    v8::Locker locker(managed->runtime->mIsolate);
+                    managed->deleter(managed->resource);
+                    delete managed;
+                });
+            }
+        },
+        v8::WeakCallbackType::kParameter
+    );
+    mManagedResources.emplace(managed.release(), std::move(weak));
 }
 
 

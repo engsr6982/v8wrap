@@ -2,11 +2,15 @@
 #include "Global.hpp"
 #include "Types.hpp"
 #include "v8-local-handle.h"
+#include "v8-persistent-handle.h"
+#include "v8-value.h"
 #include "v8wrap/JsReference.hpp"
 #include "v8wrap/JsValue.hpp"
 #include "v8wrap/internal/V8TypeAlias.hpp"
 #include <filesystem>
+#include <functional>
 #include <memory>
+#include <unordered_map>
 #include <v8-context.h>
 #include <v8-isolate.h>
 
@@ -70,6 +74,14 @@ public:
 
     void set(Local<JsString> key, Local<JsValue> value, bool readOnly = false);
 
+    /**
+     * Add a managed resource to the runtime.
+     * The managed resource will be destroyed when the runtime is destroyed.
+     * @param resource Resources that need to be managed
+     * @param value The v8 object associated with this resource.
+     * @param deleter The deleter function to be called when the resource is destroyed.
+     */
+    void addManagedResource(void* resource, v8::Local<v8::Value> value, std::function<void(void*)>&& deleter);
 
     template <typename T>
     [[nodiscard]] inline static v8::Local<internal::V8Type<T>> unwrap(Local<T> const& value) {
@@ -89,13 +101,21 @@ private:
     template <typename>
     friend class internal::V8GlobalRef;
 
+    struct ManagedResource {
+        JsRuntime*                 runtime;
+        void*                      resource;
+        std::function<void(void*)> deleter;
+    };
+
     v8::Isolate*            mIsolate{nullptr};
     v8::Global<v8::Context> mContext{};
     std::shared_ptr<void>   mUserData{nullptr};
-    JsPlatform*             mPlatform{nullptr};
+    JsPlatform*             mPlatform{nullptr}; // nullptr if this runtime is created from outside isolate and context
 
     bool mDestroying{false};
     bool mIsExternalIsolate{false};
+
+    std::unordered_map<ManagedResource*, v8::Global<v8::Value>> mManagedResources;
 };
 
 
