@@ -4,6 +4,7 @@
 #include "v8wrap/JsPlatform.hpp"
 #include "v8wrap/JsRuntime.hpp"
 #include "v8wrap/JsRuntimeScope.hpp"
+#include "v8wrap/Types.hpp"
 
 struct JsValueTestFixture {
     JsValueTestFixture() { rt = new v8wrap::JsRuntime(); }
@@ -113,6 +114,21 @@ TEST_CASE_METHOD(JsValueTestFixture, "JsObject") {
         auto obj         = v8wrap::JsObject::newObject();
         auto constructor = v8wrap::JsObject::newObject();
         CHECK_THROWS_AS(obj.instanceof(constructor) == false, v8wrap::JsException);
+    }
+
+    SECTION("Object Prototype") {
+        auto obj = v8wrap::JsObject::newObject();
+        auto res = obj.defineOwnProperty(
+            v8wrap::JsString::newString("test"),
+            v8wrap::JsNumber::newNumber(114),
+            static_cast<v8::PropertyAttribute>(v8::PropertyAttribute::ReadOnly | v8::PropertyAttribute::DontDelete)
+        );
+        CHECK(res == true);
+
+        obj.set(v8wrap::JsString::newString("test"), v8wrap::JsNumber::newNumber(514));
+
+        CHECK_FALSE(obj.get(v8wrap::JsString::newString("test")).asNumber().getInt32() == 514);
+        CHECK(obj.get(v8wrap::JsString::newString("test")).asNumber().getInt32() == 114);
     }
 }
 
