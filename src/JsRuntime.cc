@@ -109,13 +109,17 @@ void JsRuntime::loadFile(std::filesystem::path const& path) {
     eval(JsString::newString(code), JsString::newString(path.string()));
 }
 
-Local<JsValue> JsRuntime::get(Local<JsString> key) {
-    // TODO: implement
-    return {};
+Local<JsObject> JsRuntime::getGlobalThis() const { return Local<JsObject>(mContext.Get(mIsolate)->Global()); }
+
+Local<JsValue> JsRuntime::getVauleFromGlobalThis(Local<JsString> const& key) const {
+    auto globalThis = getGlobalThis();
+    if (!globalThis.has(key)) return {};
+    return globalThis.get(key);
 }
 
-void JsRuntime::set(Local<JsString> key, Local<JsValue> value, bool readOnly) {
-    // TODO: implement
+void JsRuntime::setVauleToGlobalThis(Local<JsString> const& key, Local<JsValue> const& value) const {
+    auto globalThis = getGlobalThis();
+    globalThis.set(key, value);
 }
 
 void JsRuntime::addManagedResource(void* resource, v8::Local<v8::Value> value, std::function<void(void*)>&& deleter) {

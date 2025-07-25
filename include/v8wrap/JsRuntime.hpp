@@ -70,9 +70,11 @@ public:
 
     void loadFile(std::filesystem::path const& path);
 
-    Local<JsValue> get(Local<JsString> key);
+    [[nodiscard]] Local<JsObject> getGlobalThis() const;
 
-    void set(Local<JsString> key, Local<JsValue> value, bool readOnly = false);
+    [[nodiscard]] Local<JsValue> getVauleFromGlobalThis(Local<JsString> const& key) const;
+
+    void setVauleToGlobalThis(Local<JsString> const& key, Local<JsValue> const& value) const;
 
     /**
      * Add a managed resource to the runtime.
