@@ -1,6 +1,7 @@
 #pragma once
 #include "v8wrap/JsReference.hpp"
 #include "v8wrap/JsRuntimeScope.hpp"
+#include <cassert>
 
 namespace v8wrap {
 

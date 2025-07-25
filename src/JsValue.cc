@@ -48,16 +48,6 @@ Local<JsNumber> JsNumber::newNumber(float f) {
 }
 
 
-Local<JsBigInt> JsBigInt::newBigInt(int64_t i) {
-    auto isolate = JsRuntimeScope::currentRuntimeIsolateChecked();
-    return Local<JsBigInt>{v8::BigInt::New(isolate, i)};
-}
-Local<JsBigInt> JsBigInt::newBigInt(uint64_t i) {
-    auto isolate = JsRuntimeScope::currentRuntimeIsolateChecked();
-    return Local<JsBigInt>{v8::BigInt::NewFromUnsigned(isolate, i)};
-}
-
-
 Local<JsString> JsString::newString(const char* str) { return newString(std::string_view{str}); }
 Local<JsString> JsString::newString(std::string const& str) { return newString(str.c_str()); }
 Local<JsString> JsString::newString(std::string_view str) {

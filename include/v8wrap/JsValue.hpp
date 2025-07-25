@@ -1,5 +1,6 @@
 #pragma once
 #include "Types.hpp"
+#include "v8wrap/Concepts.hpp"
 #include "v8wrap/Global.hpp"
 #include <cstddef>
 #include <string>
@@ -51,8 +52,13 @@ public:
 
 class JsBigInt : public JsValue {
 public:
-    [[nodiscard]] static Local<JsBigInt> newBigInt(int64_t i);
-    [[nodiscard]] static Local<JsBigInt> newBigInt(uint64_t i);
+    template <typename T>
+        requires IsI64<T>
+    [[nodiscard]] static Local<JsBigInt> newBigInt(T i);
+
+    template <typename T>
+        requires IsU64<T>
+    [[nodiscard]] static Local<JsBigInt> newBigInt(T u);
 };
 
 class JsString : public JsValue {
@@ -117,3 +123,5 @@ public:
 
 
 } // namespace v8wrap
+
+#include "v8wrap/JsValue.inl"

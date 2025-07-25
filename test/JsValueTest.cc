@@ -54,7 +54,7 @@ TEST_CASE_METHOD(JsValueTestFixture, "JsNumber") {
 TEST_CASE_METHOD(JsValueTestFixture, "JsBigInt") {
     v8wrap::JsRuntimeScope enter(rt);
 
-    auto bigInt = v8wrap::JsBigInt::newBigInt(114514);
+    auto bigInt = v8wrap::JsBigInt::newBigInt(int64_t{114514});
     CHECK(bigInt.getInt64() == 114514);
 }
 

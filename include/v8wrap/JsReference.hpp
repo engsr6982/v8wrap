@@ -311,3 +311,5 @@ private:
 
 
 } // namespace v8wrap
+
+#include "v8wrap/JsReference.inl"
