@@ -127,6 +127,12 @@ public:
     [[nodiscard]] int    getInt32() const;
     [[nodiscard]] float  getFloat() const;
     [[nodiscard]] double getDouble() const;
+
+    template <typename T>
+        requires std::is_integral_v<T> || std::is_floating_point_v<T>
+    [[nodiscard]] T getValueAs() const {
+        return static_cast<T>(getDouble());
+    }
 };
 
 template <>

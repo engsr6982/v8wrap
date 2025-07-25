@@ -144,7 +144,7 @@ IMPL_SPECALIZATION_AS_VALUE(JsNumber);
 IMPL_SPECALIZATION_V8_LOCAL_TYPE(JsNumber);
 int    Local<JsNumber>::getInt32() const { return static_cast<int>(val->Value()); }
 float  Local<JsNumber>::getFloat() const { return static_cast<float>(val->Value()); }
-double Local<JsNumber>::getDouble() const { return static_cast<double>(val->Value()); }
+double Local<JsNumber>::getDouble() const { return val->Value(); }
 
 
 IMPL_SPECIALIZATION_LOCAL(JsBigInt);
