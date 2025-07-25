@@ -37,13 +37,16 @@ public:
     [[nodiscard]] std::string stacktrace() const noexcept;
 
     /**
-     * @brief 将异常重新抛出到 JavaScript 侧
+     * Throw this exception to v8 (JavaScript).
+     * Normally we don't need to call this method, the package library handles exceptions internally.
+     * You just need to re-throw 'throw e;`
+     * Or throw JsException inside the JsFunction callback.
      */
     void rethrowToRuntime() const;
 
 public:
     /**
-     * @brief 将 v8::TryCatch 中的异常重新抛出为 JsException
+     * Re-throw the exception in v8::TryCatch as a JsException
      */
     static void rethrow(v8::TryCatch const& tryCatch);
 
