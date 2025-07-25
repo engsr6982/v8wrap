@@ -23,6 +23,8 @@ class V8EscapeScope;
 
 
 class JsRuntime {
+    ~JsRuntime();
+
 public:
     V8WRAP_DISALLOW_COPY_AND_MOVE(JsRuntime);
 
@@ -38,8 +40,6 @@ public:
      * When using isolate and contexts from outside (e.g. NodeJs), the JsPlatform is not required.
      */
     explicit JsRuntime(v8::Isolate* isolate, v8::Local<v8::Context> context);
-
-    virtual ~JsRuntime();
 
     [[nodiscard]] v8::Isolate* isolate() const;
 
