@@ -1,4 +1,4 @@
-# v8wrap - C++20 的 V8 Wrapper
+# v8wrap - v8 封装库
 
 - [x] JsPlatform.hpp - Js 平台,管理 `JsRuntime` (`v8::Platform`)
 - [x] JsRuntime.hpp - Js 运行时 (`v8::Isolate` + `v8::Global<v8::Context>`)
