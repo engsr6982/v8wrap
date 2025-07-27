@@ -5,6 +5,8 @@
 #include "v8wrap/JsValue.hpp"
 #include <utility>
 
+#include "v8wrap/Bindings.hpp"
+
 
 namespace v8wrap {
 
@@ -33,8 +35,7 @@ Local<JsFunction> JsFunction::newFunction(T cb) {
 template <typename Fn>
     requires(!IsJsFunctionCallback<Fn>)
 Local<JsFunction> JsFunction::newFunction(Fn&& func) {
-    // TODO: implement
-    throw JsException("not implemented");
+    return newFunctionImpl(internal::bindStaticFunction(std::forward<Fn>(func)));
 }
 
 } // namespace v8wrap

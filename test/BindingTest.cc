@@ -1,0 +1,102 @@
+#include "catch2/catch_test_macros.hpp"
+#include "catch2/matchers/catch_matchers.hpp"
+#include "catch2/matchers/catch_matchers_exception.hpp"
+#include "v8wrap/JsException.hpp"
+#include "v8wrap/JsPlatform.hpp"
+#include "v8wrap/JsReference.hpp"
+#include "v8wrap/JsRuntime.hpp"
+#include "v8wrap/JsRuntimeScope.hpp"
+#include "v8wrap/JsValue.hpp"
+#include "v8wrap/Types.hpp"
+#include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_string.hpp>
+#include <iostream>
+
+
+struct BindingTestFixture {
+    BindingTestFixture() { rt = new v8wrap::JsRuntime(); }
+    ~BindingTestFixture() { rt->destroy(); }
+    v8wrap::JsRuntime* rt;
+};
+
+
+void defaultFunc(int a, double b) { std::cout << "defaultFunc: " << a << ", " << b << std::endl; }
+
+void noArgsFunc() { std::cout << "noArgsFunc" << std::endl; }
+
+bool stdcout(std::string const& str) {
+    std::cout << str << std::endl;
+    return true;
+}
+
+int         overloadedFn(int a) { return a; }
+std::string overloadedFn(std::string const& str) { return str; }
+std::string overloadedFn(int a, std::string const& str) { return std::to_string(a) + str; }
+
+TEST_CASE_METHOD(BindingTestFixture, "Static Binding") {
+    v8wrap::JsRuntimeScope enter(rt);
+
+    SECTION("No return value function") {
+        auto fn = v8wrap::JsFunction::newFunction(&defaultFunc);
+        rt->getGlobalThis().set(v8wrap::JsString::newString("defaultFunc"), fn);
+
+        REQUIRE(rt->eval("defaultFunc(1, 2.0);").isUndefined()); // void -> undefined
+
+        auto fn2 = v8wrap::JsFunction::newFunction(&noArgsFunc);
+        rt->getGlobalThis().set(v8wrap::JsString::newString("noArgsFunc"), fn2);
+
+        REQUIRE(rt->eval("noArgsFunc();").isUndefined()); // void -> undefined
+    }
+
+    SECTION("Return value function") {
+        auto fn = v8wrap::JsFunction::newFunction(&stdcout);
+        rt->getGlobalThis().set(v8wrap::JsString::newString("stdcout"), fn);
+
+        REQUIRE(rt->eval("stdcout('hello');").isBoolean()); // bool -> true/false
+        REQUIRE(rt->eval("stdcout('鸡你太美');").isBoolean());
+    }
+
+    SECTION("Lambda function") {
+        auto add = v8wrap::JsFunction::newFunction([](int a, int b) -> v8wrap::Local<v8wrap::JsValue> {
+            return v8wrap::JsNumber::newNumber(a + b);
+        });
+        rt->getGlobalThis().set(v8wrap::JsString::newString("add"), add);
+
+        auto value = rt->eval("add(1, 2);");
+        REQUIRE(value.isNumber());
+        REQUIRE(value.asNumber().getInt32() == 3);
+    }
+
+    SECTION("Args not matched") {
+        auto fn = v8wrap::JsFunction::newFunction(&stdcout);
+        rt->getGlobalThis().set(v8wrap::JsString::newString("stdcout1"), fn);
+
+        REQUIRE_THROWS_MATCHES(
+            rt->eval("stdcout1();"),
+            v8wrap::JsException,
+            Catch::Matchers::ExceptionMessageMatcher("Uncaught Error: argument count mismatch")
+        );
+    }
+
+    SECTION("Args type not matched") {
+        auto fn = v8wrap::JsFunction::newFunction(&stdcout);
+        rt->getGlobalThis().set(v8wrap::JsString::newString("stdcout2"), fn);
+
+        REQUIRE_THROWS_MATCHES(
+            rt->eval("stdcout2(1);"),
+            v8wrap::JsException,
+            Catch::Matchers::ExceptionMessageMatcher("Uncaught Error: cannot convert to JsString")
+        );
+    }
+
+    // TODO: overload support
+    // SECTION("Overload") {
+    //     auto fn1 = v8wrap::JsFunction::newFunction(static_cast<int (*)(int)>(&overloadedFn));
+    //     auto fn2 = v8wrap::JsFunction::newFunction(static_cast<std::string (*)(std::string const&)>(&overloadedFn));
+    //     auto fn3 =
+    //         v8wrap::JsFunction::newFunction(static_cast<std::string (*)(int, std::string const&)>(&overloadedFn));
+    //     rt->getGlobalThis().set(v8wrap::JsString::newString("overloadedFn"), fn1);
+    //     rt->getGlobalThis().set(v8wrap::JsString::newString("overloadedFn"), fn2);
+    //     rt->getGlobalThis().set(v8wrap::JsString::newString("overloadedFn"), fn3);
+    // }
+}
