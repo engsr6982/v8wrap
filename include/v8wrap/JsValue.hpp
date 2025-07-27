@@ -86,7 +86,7 @@ public:
 
     template <typename Fn>
         requires(!IsJsFunctionCallback<Fn>)
-    [[nodiscard]] static Local<JsFunction> newFunction(Fn&& func); // impl in Bindings.hpp
+    [[nodiscard]] static Local<JsFunction> newFunction(Fn&& func);
 
     [[nodiscard]] static Local<JsFunction> newFunctionImpl(JsFunctionCallback cb);
 };

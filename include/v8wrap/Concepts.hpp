@@ -27,21 +27,8 @@ concept StringLike = requires(const T& s) {
 } || std::is_same_v<std::remove_cvref_t<T>, std::string>;
 
 
-namespace internal {
-
-
-template <typename>
-struct is_js_function_callback : std::false_type {};
-
-template <>
-struct is_js_function_callback<std::function<Local<JsValue>(Arguments const&)>> : std::true_type {};
-
-
-} // namespace internal
-
-
 template <typename T>
-concept IsJsFunctionCallback = internal::is_js_function_callback<T>::value;
+concept IsJsFunctionCallback = std::is_invocable_r_v<Local<JsValue>, T, Arguments const&>;
 
 
 } // namespace v8wrap

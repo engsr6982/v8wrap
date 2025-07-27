@@ -1,4 +1,5 @@
 #pragma once
+#include "v8wrap/JsException.hpp"
 #include "v8wrap/JsReference.hpp"
 #include "v8wrap/JsRuntimeScope.hpp"
 #include "v8wrap/JsValue.hpp"
@@ -29,5 +30,11 @@ Local<JsFunction> JsFunction::newFunction(T cb) {
     return newFunctionImpl(std::move(cb));
 }
 
+template <typename Fn>
+    requires(!IsJsFunctionCallback<Fn>)
+Local<JsFunction> JsFunction::newFunction(Fn&& func) {
+    // TODO: implement
+    throw JsException("not implemented");
+}
 
 } // namespace v8wrap
