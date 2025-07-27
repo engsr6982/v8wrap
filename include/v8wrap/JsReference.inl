@@ -1,9 +1,40 @@
 #pragma once
+#include "v8wrap/JsException.hpp"
 #include "v8wrap/JsReference.hpp"
 #include "v8wrap/JsRuntimeScope.hpp"
 #include <cassert>
 
 namespace v8wrap {
+
+
+template <typename T>
+    requires IsWrappedV8Type<T>
+Local<T> Local<JsValue>::as() const {
+    if constexpr (std::is_same_v<T, JsValue>) {
+        return asValue();
+    } else if constexpr (std::is_same_v<T, JsNull>) {
+        return asNull();
+    } else if constexpr (std::is_same_v<T, JsUndefined>) {
+        return asUndefined();
+    } else if constexpr (std::is_same_v<T, JsBoolean>) {
+        return asBoolean();
+    } else if constexpr (std::is_same_v<T, JsNumber>) {
+        return asNumber();
+    } else if constexpr (std::is_same_v<T, JsBigInt>) {
+        return asBigInt();
+    } else if constexpr (std::is_same_v<T, JsString>) {
+        return asString();
+    } else if constexpr (std::is_same_v<T, JsSymbol>) {
+        return asSymbol();
+    } else if constexpr (std::is_same_v<T, JsFunction>) {
+        return asFunction();
+    } else if constexpr (std::is_same_v<T, JsObject>) {
+        return asObject();
+    } else if constexpr (std::is_same_v<T, JsArray>) {
+        return asArray();
+    }
+    throw JsException("Unable to convert Local<JsValue> to T, forgot to add if branch?");
+}
 
 
 // Global<T>

@@ -66,10 +66,11 @@ struct TypeConverter<T> {
 
 
 // internal type
-template <>
-struct TypeConverter<Local<JsValue>> {
-    static Local<JsValue> toJs(Local<JsValue> const& value) { return value; }
-    static Local<JsValue> toCpp(Local<JsValue> const& value) { return value; }
+template <typename T>
+    requires IsWrappedV8Type<T>
+struct TypeConverter<Local<T>> {
+    static Local<JsValue> toJs(Local<T> const& value) { return value.asValue(); }
+    static Local<T>       toCpp(Local<JsValue> const& value) { return value.as<T>(); }
 };
 
 

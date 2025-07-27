@@ -31,4 +31,14 @@ template <typename T>
 concept IsJsFunctionCallback = std::is_invocable_r_v<Local<JsValue>, T, Arguments const&>;
 
 
+template <typename T>
+concept IsWrappedV8Type =
+    std::is_same_v<std::remove_cvref_t<T>, JsValue> || std::is_same_v<std::remove_cvref_t<T>, JsNull>
+    || std::is_same_v<std::remove_cvref_t<T>, JsUndefined> || std::is_same_v<std::remove_cvref_t<T>, JsBoolean>
+    || std::is_same_v<std::remove_cvref_t<T>, JsNumber> || std::is_same_v<std::remove_cvref_t<T>, JsBigInt>
+    || std::is_same_v<std::remove_cvref_t<T>, JsString> || std::is_same_v<std::remove_cvref_t<T>, JsSymbol>
+    || std::is_same_v<std::remove_cvref_t<T>, JsFunction> || std::is_same_v<std::remove_cvref_t<T>, JsObject>
+    || std::is_same_v<std::remove_cvref_t<T>, JsArray>;
+
+
 } // namespace v8wrap

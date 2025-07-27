@@ -1,4 +1,5 @@
 #pragma once
+#include "v8wrap/Concepts.hpp"
 #include "v8wrap/Global.hpp"
 #include "v8wrap/Types.hpp"
 #include "v8wrap/internal/V8TypeAlias.hpp"
@@ -90,6 +91,13 @@ public:
     [[nodiscard]] Local<JsObject>    asObject() const;
     [[nodiscard]] Local<JsArray>     asArray() const;
     [[nodiscard]] Local<JsFunction>  asFunction() const;
+
+    /**
+     * @tparam T must be the type of as described above
+     */
+    template <typename T>
+        requires IsWrappedV8Type<T>
+    [[nodiscard]] Local<T> as() const;
 
     void clear();
 };
