@@ -66,16 +66,16 @@ using JsGetterCallback   = std::function<Local<JsValue>()>;
 using JsSetterCallback   = std::function<void(Local<JsValue> const&)>;
 
 // template <typename T>
-using InstanceConstructor = std::function<void*(Arguments const& args)>;
+using JsInstanceConstructor = std::function<void*(Arguments const& args)>;
 
 // template <typename T>
-using InstanceFunctionCallback = std::function<Local<JsValue>(void*, Arguments const& args)>;
+using JsInstanceFunctionCallback = std::function<Local<JsValue>(void*, Arguments const& args)>;
 
 // template <typename T>
-using InstanceSetterCallback = std::function<void(void*, Local<JsValue> const& value)>;
+using JsInstanceSetterCallback = std::function<void(void*, Local<JsValue> const& value)>;
 
 // template <typename T>
-using InstanceGetterCallback = std::function<Local<JsValue>(void*)>;
+using JsInstanceGetterCallback = std::function<Local<JsValue>(void*)>;
 
 
 // 绑定相关
