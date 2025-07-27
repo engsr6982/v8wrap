@@ -4,6 +4,7 @@
 #include "v8-local-handle.h"
 #include "v8-persistent-handle.h"
 #include "v8-value.h"
+#include "v8wrap/Concepts.hpp"
 #include "v8wrap/JsReference.hpp"
 #include "v8wrap/JsValue.hpp"
 #include "v8wrap/internal/V8TypeAlias.hpp"
@@ -67,6 +68,12 @@ public:
     Local<JsValue> eval(Local<JsString> const& code);
 
     Local<JsValue> eval(Local<JsString> const& code, Local<JsString> const& source);
+
+    template <typename T>
+        requires StringLike<T>
+    Local<JsValue> eval(T const& str) {
+        return eval(JsString::newString(str));
+    }
 
     void loadFile(std::filesystem::path const& path);
 
