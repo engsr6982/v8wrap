@@ -80,11 +80,15 @@ public:
 
 class JsFunction : public JsValue {
 public:
-    [[nodiscard]] static Local<JsFunction> newFunction(JsFunctionCallback cb);
+    template <typename T = JsFunctionCallback>
+        requires IsJsFunctionCallback<T>
+    [[nodiscard]] static Local<JsFunction> newFunction(T cb);
 
-    // TODO: implement
-    // template <typename Fn>
-    // [[nodiscard]] static Local<JsFunction> newFunction(Fn&& func);
+    template <typename Fn>
+        requires(!IsJsFunctionCallback<Fn>)
+    [[nodiscard]] static Local<JsFunction> newFunction(Fn&& func); // impl in Bindings.hpp
+
+    [[nodiscard]] static Local<JsFunction> newFunctionImpl(JsFunctionCallback cb);
 };
 
 class JsObject : public JsValue {

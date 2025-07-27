@@ -79,7 +79,7 @@ Local<JsSymbol> JsSymbol::forKey(Local<JsString> const& str) {
 }
 
 
-Local<JsFunction> JsFunction::newFunction(JsFunctionCallback cb) {
+Local<JsFunction> JsFunction::newFunctionImpl(JsFunctionCallback cb) {
     struct AssociateResources {
         JsRuntime*         runtime{nullptr};
         JsFunctionCallback cb;
