@@ -65,13 +65,37 @@ struct TypeConverter<T> {
 };
 
 
+namespace internal {
+
+
+template <typename T>
+using TypedConverter = TypeConverter<typename std::decay<T>::type>;
+
+template <typename T, typename = void>
+struct IsTypeConverterAvailable : std::false_type {};
+
+template <typename T>
+struct IsTypeConverterAvailable<
+    T,
+    std::void_t<
+        decltype(TypedConverter<T>::toJs(std::declval<T>())),
+        decltype(TypedConverter<T>::toCpp(std::declval<Local<JsValue>>()))>> : std::true_type {};
+
+template <typename T>
+constexpr bool IsTypeConverterAvailable_v = IsTypeConverterAvailable<T>::value;
+
+} // namespace internal
+
+
 template <typename T>
 [[nodiscard]] inline Local<JsValue> ConvertToJs(T const& value) {
+    static_assert(internal::IsTypeConverterAvailable_v<T>, "No TypeConverter available for type T");
     return TypeConverter<T>::toJs(value).asValue();
 }
 
 template <typename T>
-[[nodiscard]] inline T ConvertToCpp(Local<JsValue> const& value) {
+[[nodiscard]] inline decltype(auto) ConvertToCpp(Local<JsValue> const& value) {
+    static_assert(internal::IsTypeConverterAvailable_v<T>, "No TypeConverter available for type T");
     return TypeConverter<T>::toCpp(value);
 }
 
