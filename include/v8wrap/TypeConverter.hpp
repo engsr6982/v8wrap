@@ -65,8 +65,15 @@ struct TypeConverter<T> {
 };
 
 
-namespace internal {
+// internal type
+template <>
+struct TypeConverter<Local<JsValue>> {
+    static Local<JsValue> toJs(Local<JsValue> const& value) { return value; }
+    static Local<JsValue> toCpp(Local<JsValue> const& value) { return value; }
+};
 
+
+namespace internal {
 
 template <typename T>
 using TypedConverter = TypeConverter<typename std::decay<T>::type>;
