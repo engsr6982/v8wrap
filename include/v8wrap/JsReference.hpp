@@ -45,7 +45,7 @@ public:                                                                         
 
 #define SPECALIZATION_V8_LOCAL_TYPE(VALUE)                                                                             \
 private:                                                                                                               \
-    using Type = internal::V8Type<VALUE>;                                                                              \
+    using Type = internal::V8Type_v<VALUE>;                                                                            \
     explicit Local(v8::Local<Type>);                                                                                   \
     v8::Local<Type> val
 

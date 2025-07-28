@@ -93,12 +93,12 @@ public:
     void addManagedResource(void* resource, v8::Local<v8::Value> value, std::function<void(void*)>&& deleter);
 
     template <typename T>
-    [[nodiscard]] inline static v8::Local<internal::V8Type<T>> unwrap(Local<T> const& value) {
+    [[nodiscard]] inline static v8::Local<internal::V8Type_v<T>> unwrap(Local<T> const& value) {
         return value.val; // friend
     }
 
     template <typename T>
-    [[nodiscard]] inline static Local<T> wrap(v8::Local<internal::V8Type<T>> const& value) {
+    [[nodiscard]] inline static Local<T> wrap(v8::Local<internal::V8Type_v<T>> const& value) {
         return Local<T>{value};
     }
 

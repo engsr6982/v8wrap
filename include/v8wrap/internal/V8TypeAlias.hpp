@@ -16,7 +16,7 @@ struct V8TypeAlias {
 };
 
 template <typename T>
-using V8Type = typename V8TypeAlias<T>::type;
+using V8Type_v = typename V8TypeAlias<T>::type;
 
 
 #define TYPE_ALIAS(WRAP_TYPE, V8_TYPE)                                                                                 \

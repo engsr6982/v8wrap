@@ -11,7 +11,7 @@ namespace v8wrap::internal {
 
 template <typename T>
 class V8GlobalRef final {
-    using V8GlobalType = v8::Global<internal::V8Type<T>>;
+    using V8GlobalType = v8::Global<internal::V8Type_v<T>>;
 
     JsRuntime*   mRuntime{nullptr};
     V8GlobalType mHandle{};
