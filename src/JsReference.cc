@@ -291,7 +291,7 @@ size_t Local<JsArray>::length() const { return static_cast<size_t>(val->Length()
 Local<JsValue> Local<JsArray>::get(size_t index) const {
     auto&& [isolate, ctx] = JsRuntimeScope::currentIsolateAndContextChecked();
     v8::TryCatch vtry{isolate};
-    auto         maybe = val->Get(ctx, index);
+    auto         maybe = val->Get(ctx, static_cast<uint32_t>(index));
     JsException::rethrow(vtry);
     return Local<JsValue>{maybe.ToLocalChecked()};
 }
@@ -299,7 +299,7 @@ Local<JsValue> Local<JsArray>::get(size_t index) const {
 void Local<JsArray>::set(size_t index, Local<JsValue> const& value) {
     auto&& [isolate, ctx] = JsRuntimeScope::currentIsolateAndContextChecked();
     v8::TryCatch vtry{isolate};
-    val->Set(ctx, index, value.val).ToChecked();
+    val->Set(ctx, static_cast<uint32_t>(index), value.val).ToChecked();
     JsException::rethrow(vtry);
 }
 

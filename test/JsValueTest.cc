@@ -5,6 +5,7 @@
 #include "v8wrap/JsRuntime.hpp"
 #include "v8wrap/JsRuntimeScope.hpp"
 #include "v8wrap/Types.hpp"
+#include <cstddef>
 #include <iostream>
 
 
@@ -172,8 +173,6 @@ TEST_CASE_METHOD(JsValueTestFixture, "JsObject") {
     }
 
     SECTION("Instance Check") {
-        v8wrap::JsRuntimeScope enter(rt);
-
         auto obj         = v8wrap::JsObject::newObject();
         auto constructor = v8wrap::JsObject::newObject();
         CHECK_THROWS_AS(obj.instanceof(constructor) == false, v8wrap::JsException);
@@ -254,7 +253,7 @@ TEST_CASE_METHOD(JsValueTestFixture, "JsArray Boundary Tests") {
     }
 
     SECTION("Negative index returns undefined") {
-        CHECK(arr.get(-1).isUndefined()); // undefined
+        CHECK(arr.get(static_cast<size_t>(-1)).isUndefined()); // undefined
     }
 
     SECTION("Valid access works") {
