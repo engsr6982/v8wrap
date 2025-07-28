@@ -97,6 +97,12 @@ public:
         requires(!IsJsFunctionCallback<Fn>)
     [[nodiscard]] static Local<JsFunction> newFunction(Fn&& func);
 
+    /**
+     * Bind any C++ overload function.
+     */
+    template <typename... Fn>
+        requires(sizeof...(Fn) > 1 && (!IsJsFunctionCallback<Fn> && ...))
+    [[nodiscard]] static Local<JsFunction> newFunction(Fn&&... func);
 
     /**
      * Function creation implementation.

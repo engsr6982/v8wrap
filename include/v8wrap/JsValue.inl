@@ -38,4 +38,11 @@ Local<JsFunction> JsFunction::newFunction(Fn&& func) {
     return newFunctionImpl(internal::bindStaticFunction(std::forward<Fn>(func)));
 }
 
+template <typename... Fn>
+    requires(sizeof...(Fn) > 1 && (!IsJsFunctionCallback<Fn> && ...))
+Local<JsFunction> JsFunction::newFunction(Fn&&... func) {
+    return newFunctionImpl(internal::bindStaticOverloadedFunction(std::forward<Fn>(func)...));
+}
+
+
 } // namespace v8wrap

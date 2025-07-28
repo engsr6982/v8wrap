@@ -89,14 +89,31 @@ TEST_CASE_METHOD(BindingTestFixture, "Static Binding") {
         );
     }
 
-    // TODO: overload support
-    // SECTION("Overload") {
-    //     auto fn1 = v8wrap::JsFunction::newFunction(static_cast<int (*)(int)>(&overloadedFn));
-    //     auto fn2 = v8wrap::JsFunction::newFunction(static_cast<std::string (*)(std::string const&)>(&overloadedFn));
-    //     auto fn3 =
-    //         v8wrap::JsFunction::newFunction(static_cast<std::string (*)(int, std::string const&)>(&overloadedFn));
-    //     rt->getGlobalThis().set(v8wrap::JsString::newString("overloadedFn"), fn1);
-    //     rt->getGlobalThis().set(v8wrap::JsString::newString("overloadedFn"), fn2);
-    //     rt->getGlobalThis().set(v8wrap::JsString::newString("overloadedFn"), fn3);
-    // }
+    SECTION("Overload") {
+        auto fn = v8wrap::JsFunction::newFunction(
+            static_cast<int (*)(int)>(&overloadedFn),
+            static_cast<std::string (*)(std::string const&)>(&overloadedFn),
+            static_cast<std::string (*)(int, std::string const&)>(&overloadedFn)
+        );
+        rt->getGlobalThis().set(v8wrap::JsString::newString("overloadedFn"), fn);
+
+        auto pick1 = rt->eval("overloadedFn(1.0);");
+        REQUIRE(pick1.isNumber());
+        REQUIRE(pick1.asNumber().getInt32() == 1);
+
+        auto pick2 = rt->eval("overloadedFn('hello');");
+        REQUIRE(pick2.isString());
+        REQUIRE(pick2.asString().getValue() == "hello");
+
+        auto pick3 = rt->eval("overloadedFn(1, 'hello');");
+        REQUIRE(pick3.isString());
+        REQUIRE(pick3.asString().getValue() == "1hello");
+
+        // No matching overload
+        REQUIRE_THROWS_MATCHES(
+            rt->eval("overloadedFn(1, 2);"),
+            v8wrap::JsException,
+            Catch::Matchers::ExceptionMessageMatcher("Uncaught Error: no overload found")
+        );
+    }
 }

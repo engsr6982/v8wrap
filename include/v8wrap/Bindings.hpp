@@ -3,8 +3,10 @@
 #include "v8wrap/JsValue.hpp"
 #include "v8wrap/TypeConverter.hpp"
 #include "v8wrap/Types.hpp"
+#include <array>
 #include <cstddef>
 #include <tuple>
+#include <vector>
 
 
 namespace v8wrap {
@@ -107,6 +109,23 @@ JsFunctionCallback bindStaticFunction(Func&& func) {
     };
 }
 
+template <typename... Funcs>
+JsFunctionCallback bindStaticOverloadedFunction(Funcs&&... funcs) {
+    std::vector functions = {bindStaticFunction(std::forward<Funcs>(funcs))...};
+    return [fs = std::move(functions)](Arguments const& args) -> Local<JsValue> {
+        for (size_t i = 0; i < sizeof...(Funcs); ++i) {
+            try {
+                return std::invoke(fs[i], args);
+            } catch (JsException const&) {
+                if (i == sizeof...(Funcs) - 1) {
+                    throw JsException{"no overload found"};
+                }
+            }
+        }
+        return {}; // undefined
+    };
+}
+
 template <typename Fn>
 JsGetterCallback bindStaticGetter(Fn&& fn) {}
 
@@ -120,6 +139,9 @@ JsInstanceConstructor bindInstanceConstructor(Fn&& fn) {}
 
 template <typename C, typename Fn>
 JsInstanceFunctionCallback bindInstanceMethod(Fn&& fn) {}
+
+template <typename C, typename... Met>
+JsInstanceFunctionCallback bindInstanceOverloadedMethod(C* obj, Met&&... methods) {}
 
 template <typename C, typename Fn>
 JsInstanceGetterCallback bindInstanceGetter(Fn&& fn) {}
