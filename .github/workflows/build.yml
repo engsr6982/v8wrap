@@ -3,14 +3,14 @@ on:
     paths:
       - "xmake.lua"
       - "src/**/*"
-      - "tests/**/*"
+      - "test/**/*"
       - "include/**/*"
       - ".github/workflows/build.yml"
   pull_request:
     paths:
       - "xmake.lua"
       - "src/**/*"
-      - "tests/**/*"
+      - "test/**/*"
       - "include/**/*"
       - ".github/workflows/build.yml"
   workflow_dispatch:
