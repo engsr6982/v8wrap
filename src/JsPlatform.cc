@@ -1,15 +1,16 @@
 #include "v8wrap/JsPlatform.hpp"
-#include "v8-isolate.h"
 #include "v8wrap/JsRuntime.hpp"
+#include <memory>
+#include <mutex>
+#include <vector>
+
+V8_WRAP_WARNING_GUARD_BEGIN
 #include <libplatform/libplatform-export.h>
 #include <libplatform/libplatform.h>
 #include <libplatform/v8-tracing.h>
-#include <memory>
-#include <mutex>
 #include <v8-initialization.h>
 #include <v8-platform.h>
-#include <vector>
-
+V8_WRAP_WARNING_GUARD_END
 
 namespace v8wrap {
 

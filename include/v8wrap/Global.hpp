@@ -37,4 +37,14 @@ static_assert(
 #endif
 
 
+#if defined(_MSC_VER)
+#define V8_WRAP_WARNING_GUARD_BEGIN                                                                                    \
+    __pragma(warning(push)) __pragma(warning(disable : 4100)) // unreferenced formal parameter
+#define V8_WRAP_WARNING_GUARD_END __pragma(warning(pop))
+#else
+#define V8_WRAP_WARNING_GUARD_BEGIN
+#define V8_WRAP_WARNING_GUARD_END
+#endif
+
+
 } // namespace v8wrap

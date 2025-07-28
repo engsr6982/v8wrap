@@ -1,8 +1,4 @@
 #include "v8wrap/JsReference.hpp"
-#include "v8-exception.h"
-#include "v8-local-handle.h"
-#include "v8-primitive.h"
-#include "v8-value.h"
 #include "v8wrap/JsException.hpp"
 #include "v8wrap/JsRuntimeScope.hpp"
 #include "v8wrap/JsValue.hpp"
@@ -10,6 +6,12 @@
 #include <algorithm>
 #include <cassert>
 
+V8_WRAP_WARNING_GUARD_BEGIN
+#include <v8-exception.h>
+#include <v8-local-handle.h>
+#include <v8-primitive.h>
+#include <v8-value.h>
+V8_WRAP_WARNING_GUARD_END
 
 namespace v8wrap {
 

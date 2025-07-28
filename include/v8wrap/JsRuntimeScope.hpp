@@ -1,9 +1,12 @@
 #pragma once
 #include "Global.hpp"
+
+V8_WRAP_WARNING_GUARD_BEGIN
 #include <v8-context.h>
 #include <v8-isolate.h>
 #include <v8-locker.h>
 #include <v8.h>
+V8_WRAP_WARNING_GUARD_END
 
 
 namespace v8wrap {

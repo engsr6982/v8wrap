@@ -2,8 +2,12 @@
 #include "Global.hpp"
 #include <exception>
 #include <string>
+
+
+V8_WRAP_WARNING_GUARD_BEGIN
 #include <v8-exception.h>
 #include <v8-persistent-handle.h>
+V8_WRAP_WARNING_GUARD_END
 
 
 namespace v8wrap {

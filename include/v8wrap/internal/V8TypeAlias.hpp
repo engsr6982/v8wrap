@@ -1,10 +1,13 @@
 #pragma once
+#include "v8wrap/Global.hpp"
 #include "v8wrap/Types.hpp"
 
+V8_WRAP_WARNING_GUARD_BEGIN
 #include <v8-function.h>
 #include <v8-object.h>
 #include <v8-primitive.h>
 #include <v8-value.h>
+V8_WRAP_WARNING_GUARD_END
 
 
 namespace v8wrap::internal {

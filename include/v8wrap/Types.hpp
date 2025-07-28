@@ -1,6 +1,11 @@
 #pragma once
+#include "Global.hpp"
 #include <functional>
+
+
+V8_WRAP_WARNING_GUARD_BEGIN
 #include <v8-function.h>
+V8_WRAP_WARNING_GUARD_END
 
 namespace v8wrap {
 

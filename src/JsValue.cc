@@ -1,17 +1,19 @@
 #include "v8wrap/JsValue.hpp"
-#include "v8-external.h"
-#include "v8-function-callback.h"
-#include "v8-value.h"
 #include "v8wrap/JsException.hpp"
 #include "v8wrap/JsReference.hpp"
 #include "v8wrap/JsRuntime.hpp"
 #include "v8wrap/JsRuntimeScope.hpp"
 #include <string_view>
+
+V8_WRAP_WARNING_GUARD_BEGIN
 #include <v8-exception.h>
+#include <v8-external.h>
+#include <v8-function-callback.h>
 #include <v8-local-handle.h>
 #include <v8-primitive.h>
 #include <v8-template.h>
-
+#include <v8-value.h>
+V8_WRAP_WARNING_GUARD_END
 
 namespace v8wrap {
 

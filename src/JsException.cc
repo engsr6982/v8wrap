@@ -4,13 +4,15 @@
 #include "v8wrap/JsValue.hpp"
 #include <algorithm>
 #include <exception>
+
+V8_WRAP_WARNING_GUARD_BEGIN
 #include <v8-exception.h>
 #include <v8-local-handle.h>
 #include <v8-persistent-handle.h>
 #include <v8-primitive.h>
 #include <v8-value.h>
 #include <v8.h>
-
+V8_WRAP_WARNING_GUARD_END
 
 namespace v8wrap {
 

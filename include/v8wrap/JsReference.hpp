@@ -6,10 +6,13 @@
 #include <cstdint>
 #include <string>
 #include <type_traits>
+#include <vector>
+
+V8_WRAP_WARNING_GUARD_BEGIN
 #include <v8-function.h>
 #include <v8-local-handle.h>
 #include <v8-primitive.h>
-#include <vector>
+V8_WRAP_WARNING_GUARD_END
 
 
 namespace v8wrap {

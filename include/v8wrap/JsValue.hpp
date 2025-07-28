@@ -6,7 +6,10 @@
 #include <string>
 #include <string_view>
 #include <sys/stat.h>
+
+V8_WRAP_WARNING_GUARD_BEGIN
 #include <v8-function-callback.h>
+V8_WRAP_WARNING_GUARD_END
 
 
 namespace v8wrap {
@@ -94,7 +97,6 @@ public:
         requires(!IsJsFunctionCallback<Fn>)
     [[nodiscard]] static Local<JsFunction> newFunction(Fn&& func);
 
-    
 
     /**
      * Function creation implementation.

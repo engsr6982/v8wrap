@@ -3,8 +3,12 @@
 #include "v8wrap/Types.hpp"
 #include <memory>
 #include <mutex>
-#include <v8-platform.h>
 #include <vector>
+
+V8_WRAP_WARNING_GUARD_BEGIN
+#include <v8-platform.h>
+V8_WRAP_WARNING_GUARD_END
+
 
 namespace v8wrap {
 
