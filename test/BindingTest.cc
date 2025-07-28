@@ -145,3 +145,41 @@ TEST_CASE_METHOD(BindingTestFixture, "Static Binding") {
         );
     }
 }
+
+
+class Test {
+public:
+    static int         add(int a, int b) { return a + b; }
+    static std::string name;
+};
+std::string Test::name{"test"};
+
+
+TEST_CASE_METHOD(BindingTestFixture, "Binding class") {
+    v8wrap::JsRuntimeScope enter{rt};
+
+    SECTION("Static method") {
+        auto fn = v8wrap::JsFunction::newFunction(&Test::add);
+        rt->getGlobalThis().set(v8wrap::JsString::newString("add"), fn);
+
+        auto value = rt->eval("add(1, 2);");
+        REQUIRE(value.isNumber());
+        REQUIRE(value.asNumber().getInt32() == 3);
+    }
+
+    SECTION("Static property") {
+        // TODO: static property
+    }
+
+    SECTION("Instance method") {
+        // TODO: instance method
+    }
+
+    SECTION("Instance property") {
+        // TODO: instance property
+    }
+
+    SECTION("Instance constructor") {
+        // TODO: instance constructor
+    }
+}
