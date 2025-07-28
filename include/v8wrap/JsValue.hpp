@@ -80,14 +80,25 @@ public:
 
 class JsFunction : public JsValue {
 public:
+    /**
+     * Create a JavaScript callable function.
+     */
     template <typename T = JsFunctionCallback>
         requires IsJsFunctionCallback<T>
     [[nodiscard]] static Local<JsFunction> newFunction(T&& cb);
 
+    /**
+     * Binding wrapping arbitrary C++ functions, function pointers, lambdas, and callable objects.
+     */
     template <typename Fn>
         requires(!IsJsFunctionCallback<Fn>)
     [[nodiscard]] static Local<JsFunction> newFunction(Fn&& func);
 
+    
+
+    /**
+     * Function creation implementation.
+     */
     [[nodiscard]] static Local<JsFunction> newFunctionImpl(JsFunctionCallback cb);
 };
 
