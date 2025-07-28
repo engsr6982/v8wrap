@@ -1,6 +1,5 @@
 #pragma once
 #include "Global.hpp"
-#include "v8-value.h"
 #include <exception>
 #include <memory>
 #include <string>
@@ -9,6 +8,7 @@
 V8_WRAP_WARNING_GUARD_BEGIN
 #include <v8-exception.h>
 #include <v8-persistent-handle.h>
+#include <v8-value.h>
 V8_WRAP_WARNING_GUARD_END
 
 
