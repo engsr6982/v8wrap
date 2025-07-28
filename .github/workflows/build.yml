@@ -2,16 +2,16 @@ on:
   push:
     paths:
       - "xmake.lua"
-      - "src/**"
-      - "tests/**"
-      - "include/**"
+      - "src/**/*"
+      - "tests/**/*"
+      - "include/**/*"
       - ".github/workflows/build.yml"
   pull_request:
     paths:
       - "xmake.lua"
-      - "src/**"
-      - "tests/**"
-      - "include/**"
+      - "src/**/*"
+      - "tests/**/*"
+      - "include/**/*"
       - ".github/workflows/build.yml"
   workflow_dispatch:
 
