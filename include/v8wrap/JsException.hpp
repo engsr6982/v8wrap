@@ -1,6 +1,8 @@
 #pragma once
 #include "Global.hpp"
+#include "v8-value.h"
 #include <exception>
+#include <memory>
 #include <string>
 
 
@@ -24,13 +26,14 @@ public:
         TypeError
     };
 
-    V8WRAP_DISALLOW_COPY(JsException)
-
     explicit JsException(v8::TryCatch const& tryCatch);
     explicit JsException(std::string message, Type type = Type::Error);
 
-    JsException(JsException&&) noexcept;
-    JsException& operator=(JsException&&) noexcept;
+    // The C++ standard requires exception classes to be reproducible
+    JsException(JsException const&)                = default;
+    JsException& operator=(JsException const&)     = default;
+    JsException(JsException&&) noexcept            = default;
+    JsException& operator=(JsException&&) noexcept = default;
 
     [[nodiscard]] Type type() const noexcept;
 
@@ -58,9 +61,17 @@ private:
     void extractMessage() const noexcept;
     void makeException() const;
 
-    Type                          mType{Type::Unknown};
-    mutable std::string           mMessage{};
-    mutable v8::Global<v8::Value> mException{};
+    /**
+     * v8::Global does not allow copying of resources,
+     * but the C++ standard requires exception classes to be replicated
+     */
+    struct ExceptionContext {
+        Type                          type{Type::Unknown};
+        mutable std::string           message{};
+        mutable v8::Global<v8::Value> exception{};
+    };
+
+    std::shared_ptr<ExceptionContext> mExceptionCtx{nullptr};
 };
 
 
