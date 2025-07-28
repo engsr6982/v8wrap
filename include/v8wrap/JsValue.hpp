@@ -82,7 +82,7 @@ class JsFunction : public JsValue {
 public:
     template <typename T = JsFunctionCallback>
         requires IsJsFunctionCallback<T>
-    [[nodiscard]] static Local<JsFunction> newFunction(T cb);
+    [[nodiscard]] static Local<JsFunction> newFunction(T&& cb);
 
     template <typename Fn>
         requires(!IsJsFunctionCallback<Fn>)

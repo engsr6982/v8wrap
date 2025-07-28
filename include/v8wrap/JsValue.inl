@@ -28,8 +28,8 @@ Local<JsBigInt> JsBigInt::newBigInt(T u) {
 
 template <typename T>
     requires IsJsFunctionCallback<T>
-Local<JsFunction> JsFunction::newFunction(T cb) {
-    return newFunctionImpl(std::move(cb));
+Local<JsFunction> JsFunction::newFunction(T&& cb) {
+    return newFunctionImpl(std::forward<T>(cb));
 }
 
 template <typename Fn>
