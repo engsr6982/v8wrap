@@ -116,4 +116,32 @@ TEST_CASE_METHOD(BindingTestFixture, "Static Binding") {
             Catch::Matchers::ExceptionMessageMatcher("Uncaught Error: no overload found")
         );
     }
+
+    SECTION("Overload with lambda") {
+        auto fn = v8wrap::JsFunction::newFunction(
+            [](int a) { return a; },
+            [](std::string const& str) { return str; },
+            [](int a, float b) { return a + b; }
+        );
+        rt->getGlobalThis().set(v8wrap::JsString::newString("overloadedFn"), fn);
+
+        auto pick1 = rt->eval("overloadedFn(1.0);");
+        REQUIRE(pick1.isNumber());
+        REQUIRE(pick1.asNumber().getInt32() == 1);
+
+        auto pick2 = rt->eval("overloadedFn('hello');");
+        REQUIRE(pick2.isString());
+        REQUIRE(pick2.asString().getValue() == "hello");
+
+        auto pick3 = rt->eval("overloadedFn(1, 2.0);");
+        REQUIRE(pick3.isNumber());
+        REQUIRE(pick3.asNumber().getDouble() == 3.0);
+
+        // No matching overload
+        REQUIRE_THROWS_MATCHES(
+            rt->eval("overloadedFn(1, 2, 3);"),
+            v8wrap::JsException,
+            Catch::Matchers::ExceptionMessageMatcher("Uncaught Error: no overload found")
+        );
+    }
 }
