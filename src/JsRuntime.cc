@@ -1,5 +1,6 @@
 #include "v8wrap/JsRuntime.hpp"
 #include "v8-local-handle.h"
+#include "v8-template.h"
 #include "v8wrap/Bindings.hpp"
 #include "v8wrap/JsException.hpp"
 #include "v8wrap/JsPlatform.hpp"
@@ -64,9 +65,14 @@ void JsRuntime::destroy() {
             key->deleter(key->resource);
             delete key;
         }
+        for (auto& [_, ctor] : mJsClassConstructor) {
+            ctor.Reset();
+        }
 
         // TODO: implement
 
+        mJsClassConstructor.clear();
+        mRegisteredBindings.clear();
         mManagedResources.clear();
         mContext.Reset();
     }
@@ -153,7 +159,41 @@ void JsRuntime::addManagedResource(void* resource, v8::Local<v8::Value> value, s
     mManagedResources.emplace(managed.release(), std::move(weak));
 }
 
-void JsRuntime::registerBindingClass(ClassBinding const& binding) {}
+void JsRuntime::registerBindingClass(ClassBinding const& binding) {
+    if (mRegisteredBindings.contains(binding.mClassName)) {
+        throw JsException("Class binding already registered: " + binding.mClassName);
+    }
+
+    v8::TryCatch vtry(mIsolate);
+
+    v8::Local<v8::FunctionTemplate> constructor; // js: new T()
+    if (binding.hasInstanceConstructor()) {
+        // TODO: implement
+    } else {
+        constructor = v8::FunctionTemplate::New(
+            mIsolate,
+            nullptr,
+            {},
+            {},
+            0,
+            v8::ConstructorBehavior::kThrow // Static classes have no constructors
+        );
+        constructor->RemovePrototype();
+    }
+
+    auto scriptClassName = JsString::newString(binding.mClassName);
+    constructor->SetClassName(JsValueHelper::unwrap(scriptClassName));
+
+    // TODO: implement
+
+    auto function = constructor->GetFunction(mContext.Get(mIsolate));
+    JsException::rethrow(vtry);
+
+    mRegisteredBindings.emplace(binding.mClassName, &binding);
+    mJsClassConstructor.emplace(&binding, v8::Global<v8::FunctionTemplate>{mIsolate, constructor});
+
+    setVauleToGlobalThis(scriptClassName, JsValueHelper::wrap<JsFunction>(function.ToLocalChecked()));
+}
 
 
 } // namespace v8wrap

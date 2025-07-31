@@ -92,6 +92,8 @@ public:
         InstanceBinding     instance,
         ClassBinding const* parent
     );
+
+    [[nodiscard]] bool hasInstanceConstructor() const;
 };
 
 

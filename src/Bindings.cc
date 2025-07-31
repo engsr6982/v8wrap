@@ -52,5 +52,7 @@ ClassBinding::ClassBinding(
   mInstanceBinding(std::move(instance)),
   mExtends(parent) {}
 
+bool ClassBinding::hasInstanceConstructor() const { return mInstanceBinding.mConstructor != nullptr; }
+
 
 } // namespace v8wrap

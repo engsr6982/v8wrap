@@ -1,6 +1,7 @@
 #pragma once
 #include "Global.hpp"
 #include "Types.hpp"
+#include "v8wrap/Bindings.hpp"
 #include "v8wrap/Concepts.hpp"
 #include "v8wrap/JsReference.hpp"
 #include "v8wrap/JsValue.hpp"
@@ -120,8 +121,9 @@ private:
     bool mDestroying{false};
     bool mIsExternalIsolate{false};
 
-    std::unordered_map<ManagedResource*, v8::Global<v8::Value>> mManagedResources;
-    std::unordered_map<std::string, ClassBinding const*>        mRegisteredBindings;
+    std::unordered_map<ManagedResource*, v8::Global<v8::Value>>               mManagedResources;
+    std::unordered_map<std::string, ClassBinding const*>                      mRegisteredBindings;
+    std::unordered_map<ClassBinding const*, v8::Global<v8::FunctionTemplate>> mJsClassConstructor;
 };
 
 

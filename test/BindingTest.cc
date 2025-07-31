@@ -204,4 +204,19 @@ TEST_CASE_METHOD(BindingTestFixture, "Binding class") {
     v8wrap::JsRuntimeScope enter{rt};
 
     rt->registerBindingClass(TestBinding);
+
+    auto exist = rt->eval("Test !== undefined");
+    REQUIRE(exist.isBoolean());
+    REQUIRE(exist.asBoolean().getValue() == true);
+
+    auto isFunc = rt->eval("typeof Test === 'function'");
+    REQUIRE(isFunc.isBoolean());
+    REQUIRE(isFunc.asBoolean().getValue() == true);
+
+    // Static classes do not allow new
+    REQUIRE_THROWS_MATCHES(
+        rt->eval("new Test();"),
+        v8wrap::JsException,
+        Catch::Matchers::ExceptionMessageMatcher("Uncaught TypeError: Test is not a constructor")
+    );
 }
