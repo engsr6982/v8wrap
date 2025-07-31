@@ -35,27 +35,20 @@ struct StaticBinding {
         JsGetterCallback const mGetter;
         JsSetterCallback const mSetter;
 
-        explicit Property(std::string name, JsGetterCallback getter, JsSetterCallback setter)
-        : mName(std::move(name)),
-          mGetter(std::move(getter)),
-          mSetter(std::move(setter)) {}
+        explicit Property(std::string name, JsGetterCallback getter, JsSetterCallback setter);
     };
 
     struct Function {
         std::string const        mName;
         JsFunctionCallback const mCallback;
 
-        explicit Function(std::string name, JsFunctionCallback callback)
-        : mName(std::move(name)),
-          mCallback(std::move(callback)) {}
+        explicit Function(std::string name, JsFunctionCallback callback);
     };
 
     std::vector<Property> const mProperty;
     std::vector<Function> const mFunctions;
 
-    explicit StaticBinding(std::vector<Property> property, std::vector<Function> functions)
-    : mProperty(std::move(property)),
-      mFunctions(std::move(functions)) {}
+    explicit StaticBinding(std::vector<Property> property, std::vector<Function> functions);
 };
 
 struct InstanceBinding {
@@ -64,19 +57,14 @@ struct InstanceBinding {
         JsInstanceGetterCallback const mGetter;
         JsInstanceSetterCallback const mSetter;
 
-        explicit Property(std::string name, JsInstanceGetterCallback getter, JsInstanceSetterCallback setter)
-        : mName(std::move(name)),
-          mGetter(std::move(getter)),
-          mSetter(std::move(setter)) {}
+        explicit Property(std::string name, JsInstanceGetterCallback getter, JsInstanceSetterCallback setter);
     };
 
     struct Function {
         std::string const                mName;
         JsInstanceFunctionCallback const mCallback;
 
-        explicit Function(std::string name, JsInstanceFunctionCallback callback)
-        : mName(std::move(name)),
-          mCallback(std::move(callback)) {}
+        explicit Function(std::string name, JsInstanceFunctionCallback callback);
     };
 
     JsInstanceConstructor const mConstructor;
@@ -87,10 +75,7 @@ struct InstanceBinding {
         JsInstanceConstructor constructor,
         std::vector<Property> property,
         std::vector<Function> functions
-    )
-    : mConstructor(std::move(constructor)),
-      mProperty(std::move(property)),
-      mFunctions(std::move(functions)) {}
+    );
 };
 
 
@@ -101,11 +86,12 @@ public:
     InstanceBinding const mInstanceBinding;
     ClassBinding const*   mExtends;
 
-    explicit ClassBinding(std::string name, StaticBinding static_, InstanceBinding instance, ClassBinding const* parent)
-    : mClassName(std::move(name)),
-      mStaticBinding(std::move(static_)),
-      mInstanceBinding(std::move(instance)),
-      mExtends(parent) {}
+    explicit ClassBinding(
+        std::string         name,
+        StaticBinding       static_,
+        InstanceBinding     instance,
+        ClassBinding const* parent
+    );
 };
 
 
