@@ -2,10 +2,11 @@
 #include "Types.hpp"
 #include "v8wrap/Concepts.hpp"
 #include "v8wrap/Global.hpp"
+#include "v8wrap/internal/V8TypeAlias.hpp"
 #include <cstddef>
 #include <string>
 #include <string_view>
-#include <sys/stat.h>
+
 
 V8_WRAP_WARNING_GUARD_BEGIN
 #include <v8-function-callback.h>
@@ -120,7 +121,7 @@ public:
     [[nodiscard]] static Local<JsArray> newArray(size_t length = 0);
 };
 
-
+class JsRuntime; // forward declaration
 class Arguments {
     JsRuntime*                          mRuntime;
     v8::FunctionCallbackInfo<v8::Value> mArgs;
@@ -144,6 +145,16 @@ public:
     Local<JsValue> operator[](size_t index) const;
 };
 
+struct JsValueHelper {
+    JsValueHelper() = delete;
+
+    template <typename T>
+        requires IsWrappedV8Type<T>
+    [[nodiscard]] inline static v8::Local<internal::V8Type_v<T>> unwrap(Local<T> const& value);
+
+    template <typename T>
+    [[nodiscard]] inline static Local<T> wrap(v8::Local<internal::V8Type_v<T>> const& value);
+};
 
 } // namespace v8wrap
 

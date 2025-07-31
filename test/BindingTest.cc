@@ -1,6 +1,7 @@
 #include "catch2/catch_test_macros.hpp"
 #include "catch2/matchers/catch_matchers.hpp"
 #include "catch2/matchers/catch_matchers_exception.hpp"
+#include "v8wrap/Bindings.hpp"
 #include "v8wrap/JsException.hpp"
 #include "v8wrap/JsPlatform.hpp"
 #include "v8wrap/JsReference.hpp"
@@ -149,37 +150,58 @@ TEST_CASE_METHOD(BindingTestFixture, "Static Binding") {
 
 class Test {
 public:
-    static int         add(int a, int b) { return a + b; }
-    static std::string name;
-};
-std::string Test::name{"test"};
+    // ordinary function
+    static int add(int a, int b) { return a + b; }
 
+    // overloaded function
+    static std::string append(std::string const& a, std::string const& b) { return a + b; }
+    static std::string append(std::string const& a, int b) { return a + std::to_string(b); }
+
+    // script function
+    static v8wrap::Local<v8wrap::JsValue> subtract(v8wrap::Arguments const& args) {
+        REQUIRE(args.length() == 2);
+        REQUIRE(args[0].isNumber());
+        REQUIRE(args[1].isNumber());
+
+        double a = args[0].asNumber().getDouble();
+        double b = args[1].asNumber().getDouble();
+        return v8wrap::JsNumber::newNumber(a - b);
+    }
+
+    static int constexpr readOnly = 114; // read-only member
+    static std::string name;             // read-write member
+    static bool        custom;
+};
+std::string Test::name   = "Test";
+bool        Test::custom = true;
+
+
+v8wrap::ClassBinding TestBinding =
+    v8wrap::bindingClass<Test>("Test")
+        // static binding
+        .function("add", &Test::add)
+        .function(
+            "append",
+            static_cast<std::string (*)(std::string const&, std::string const&)>(&Test::append),
+            static_cast<std::string (*)(std::string const&, int)>(&Test::append)
+        )
+        .function("subtract", &Test::subtract)
+        .property("readOnly", &Test::readOnly) // Automatically generate getters and setters (non-const)
+        .property("name", &Test::name)
+        .property(
+            "noSetter",
+            []() -> v8wrap::Local<v8wrap::JsValue> { return v8wrap::JsString::newString("noSetter"); }
+        )
+        .property(
+            "custom",
+            []() -> v8wrap::Local<v8wrap::JsValue> { return v8wrap::JsBoolean::newBoolean(Test::custom); },
+            [](v8wrap::Local<v8wrap::JsValue> const& val) { Test::custom = val.asBoolean().getValue(); }
+        )
+        // instance binding
+        .build();
 
 TEST_CASE_METHOD(BindingTestFixture, "Binding class") {
     v8wrap::JsRuntimeScope enter{rt};
 
-    SECTION("Static method") {
-        auto fn = v8wrap::JsFunction::newFunction(&Test::add);
-        rt->getGlobalThis().set(v8wrap::JsString::newString("add"), fn);
-
-        auto value = rt->eval("add(1, 2);");
-        REQUIRE(value.isNumber());
-        REQUIRE(value.asNumber().getInt32() == 3);
-    }
-
-    SECTION("Static property") {
-        // TODO: static property
-    }
-
-    SECTION("Instance method") {
-        // TODO: instance method
-    }
-
-    SECTION("Instance property") {
-        // TODO: instance property
-    }
-
-    SECTION("Instance constructor") {
-        // TODO: instance constructor
-    }
+    rt->registerBindingClass(TestBinding);
 }

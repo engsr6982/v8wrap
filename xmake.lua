@@ -10,6 +10,7 @@ if is_plat("windows") then
     if not has_config("vs_runtime") then
         set_runtimes("MT")
     end
+    set_toolchains("clang-cl")
 elseif is_plat("linux") then 
     set_toolchains("clang")
 end

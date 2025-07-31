@@ -1,4 +1,6 @@
 #include "v8wrap/JsRuntime.hpp"
+#include "v8-local-handle.h"
+#include "v8wrap/Bindings.hpp"
 #include "v8wrap/JsException.hpp"
 #include "v8wrap/JsPlatform.hpp"
 #include "v8wrap/JsReference.hpp"
@@ -82,8 +84,8 @@ Local<JsValue> JsRuntime::eval(Local<JsString> const& code) { return eval(code, 
 Local<JsValue> JsRuntime::eval(Local<JsString> const& code, Local<JsString> const& source) {
     v8::TryCatch try_catch(mIsolate);
 
-    auto v8Code   = code.val;
-    auto v8Source = source.val;
+    auto v8Code   = JsValueHelper::unwrap(code);
+    auto v8Source = JsValueHelper::unwrap(source);
     auto ctx      = mContext.Get(mIsolate);
 
     auto origin = v8::ScriptOrigin(v8Source);
@@ -92,7 +94,7 @@ Local<JsValue> JsRuntime::eval(Local<JsString> const& code, Local<JsString> cons
 
     auto result = script.ToLocalChecked()->Run(ctx);
     JsException::rethrow(try_catch);
-    return Local<JsValue>(result.ToLocalChecked());
+    return JsValueHelper::wrap<JsValue>(result.ToLocalChecked());
 }
 
 void JsRuntime::loadFile(std::filesystem::path const& path) {
@@ -108,7 +110,9 @@ void JsRuntime::loadFile(std::filesystem::path const& path) {
     eval(JsString::newString(code), JsString::newString(path.string()));
 }
 
-Local<JsObject> JsRuntime::getGlobalThis() const { return Local<JsObject>(mContext.Get(mIsolate)->Global()); }
+Local<JsObject> JsRuntime::getGlobalThis() const {
+    return JsValueHelper::wrap<JsObject>(mContext.Get(mIsolate)->Global());
+}
 
 Local<JsValue> JsRuntime::getVauleFromGlobalThis(Local<JsString> const& key) const {
     auto globalThis = getGlobalThis();
@@ -148,6 +152,8 @@ void JsRuntime::addManagedResource(void* resource, v8::Local<v8::Value> value, s
     );
     mManagedResources.emplace(managed.release(), std::move(weak));
 }
+
+void JsRuntime::registerBindingClass(ClassBinding const& binding) {}
 
 
 } // namespace v8wrap

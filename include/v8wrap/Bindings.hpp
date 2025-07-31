@@ -1,12 +1,6 @@
 #pragma once
-#include "v8wrap/JsException.hpp"
-#include "v8wrap/JsValue.hpp"
-#include "v8wrap/TypeConverter.hpp"
+#include "v8wrap/Concepts.hpp"
 #include "v8wrap/Types.hpp"
-#include <array>
-#include <cstddef>
-#include <tuple>
-#include <vector>
 
 
 namespace v8wrap {
@@ -14,143 +8,193 @@ namespace v8wrap {
 
 namespace internal {
 
+// Forward statement
 
-// 主模板：对任意类型 operator()
-template <typename T>
-struct FunctionTraits : FunctionTraits<decltype(&T::operator())> {};
-
-// 普通函数、函数指针
-template <typename R, typename... Args>
-struct FunctionTraits<R (*)(Args...)> {
-    using ReturnType          = R;
-    using ArgsTuple           = std::tuple<Args...>;
-    static constexpr size_t N = sizeof...(Args);
-};
-
-template <typename R, typename... Args>
-struct FunctionTraits<R(Args...)> {
-    using ReturnType          = R;
-    using ArgsTuple           = std::tuple<Args...>;
-    static constexpr size_t N = sizeof...(Args);
-};
-
-template <typename R, typename... Args>
-struct FunctionTraits<std::function<R(Args...)>> {
-    using ReturnType          = R;
-    using ArgsTuple           = std::tuple<Args...>;
-    static constexpr size_t N = sizeof...(Args);
-};
-
-// 成员函数
-template <typename C, typename R, typename... Args>
-struct FunctionTraits<R (C::*)(Args...) const> { // const for lambdas
-    using ReturnType          = R;
-    using ArgsTuple           = std::tuple<Args...>;
-    static constexpr size_t N = sizeof...(Args);
-};
-
-// 非 const 成员函数
-template <typename C, typename R, typename... Args>
-struct FunctionTraits<R (C::*)(Args...)> {
-    using ReturnType          = R;
-    using ArgsTuple           = std::tuple<Args...>;
-    static constexpr size_t N = sizeof...(Args);
-};
-
-// const noexcept 成员函数
-template <typename C, typename R, typename... Args>
-struct FunctionTraits<R (C::*)(Args...) const noexcept> {
-    using ReturnType          = R;
-    using ArgsTuple           = std::tuple<Args...>;
-    static constexpr size_t N = sizeof...(Args);
-};
-
-
-// 获取参数个数
-template <typename T>
-constexpr size_t ArgsCount_v = FunctionTraits<T>::N;
-
-// 获取第N个参数类型
-template <typename T, size_t N>
-using ArgNType = std::tuple_element_t<N, typename FunctionTraits<T>::ArgsTuple>;
-
-// 获取首个参数类型
-template <typename T>
-using ArgType_t = ArgNType<T, 0>;
-
-
-// 转换参数类型
-template <typename Tuple, std::size_t... Is>
-decltype(auto) ConvertArgsToTuple(const Arguments& args, std::index_sequence<Is...>) {
-    return std::make_tuple(ConvertToCpp<std::tuple_element_t<Is, Tuple>>(args[Is])...);
-}
-
-
-// static
 template <typename Func>
-JsFunctionCallback bindStaticFunction(Func&& func) {
-    return [f = std::forward<Func>(func)](Arguments const& args) -> Local<JsValue> {
-        using Traits       = FunctionTraits<std::decay_t<Func>>;
-        using R            = typename Traits::ReturnType;
-        using Tuple        = typename Traits::ArgsTuple;
-        constexpr size_t N = std::tuple_size_v<Tuple>;
+JsFunctionCallback bindStaticFunction(Func&& func);
 
-        if (args.length() != N) {
-            throw JsException("argument count mismatch");
-        }
-
-        if constexpr (std::is_void_v<R>) {
-            std::apply(f, ConvertArgsToTuple<Tuple>(args, std::make_index_sequence<N>()));
-            return JsUndefined::newUndefined();
-        } else {
-            auto ret = std::apply(f, ConvertArgsToTuple<Tuple>(args, std::make_index_sequence<N>()));
-            return ConvertToJs(ret);
-        }
-    };
-}
-
-template <typename... Funcs>
-JsFunctionCallback bindStaticOverloadedFunction(Funcs&&... funcs) {
-    std::vector functions = {bindStaticFunction(std::forward<Funcs>(funcs))...};
-    return [fs = std::move(functions)](Arguments const& args) -> Local<JsValue> {
-        for (size_t i = 0; i < sizeof...(Funcs); ++i) {
-            try {
-                return std::invoke(fs[i], args);
-            } catch (JsException const&) {
-                if (i == sizeof...(Funcs) - 1) {
-                    throw JsException{"no overload found"};
-                }
-            }
-        }
-        return {}; // undefined
-    };
-}
+template <typename... Func>
+JsFunctionCallback bindStaticOverloadedFunction(Func&&... funcs);
 
 template <typename Fn>
-JsGetterCallback bindStaticGetter(Fn&& fn) {}
+JsGetterCallback bindStaticGetter(Fn&& fn);
 
 template <typename Fn>
-JsSetterCallback bindStaticSetter(Fn&& fn) {}
+JsSetterCallback bindStaticSetter(Fn&& fn);
 
-
-// Instance
-template <typename C, typename Fn>
-JsInstanceConstructor bindInstanceConstructor(Fn&& fn) {}
-
-template <typename C, typename Fn>
-JsInstanceFunctionCallback bindInstanceMethod(Fn&& fn) {}
-
-template <typename C, typename... Met>
-JsInstanceFunctionCallback bindInstanceOverloadedMethod(C* obj, Met&&... methods) {}
-
-template <typename C, typename Fn>
-JsInstanceGetterCallback bindInstanceGetter(Fn&& fn) {}
-
-template <typename C, typename Fn>
-JsInstanceSetterCallback bindInstanceSetter(Fn&& fn) {}
+template <typename Ty>
+std::pair<JsGetterCallback, JsSetterCallback> bindStaticProperty(Ty* p);
 
 
 } // namespace internal
 
 
+struct StaticBinding {
+    struct Property {
+        std::string const      mName;
+        JsGetterCallback const mGetter;
+        JsSetterCallback const mSetter;
+
+        explicit Property(std::string name, JsGetterCallback getter, JsSetterCallback setter)
+        : mName(std::move(name)),
+          mGetter(std::move(getter)),
+          mSetter(std::move(setter)) {}
+    };
+
+    struct Function {
+        std::string const        mName;
+        JsFunctionCallback const mCallback;
+
+        explicit Function(std::string name, JsFunctionCallback callback)
+        : mName(std::move(name)),
+          mCallback(std::move(callback)) {}
+    };
+
+    std::vector<Property> const mProperty;
+    std::vector<Function> const mFunctions;
+
+    explicit StaticBinding(std::vector<Property> property, std::vector<Function> functions)
+    : mProperty(std::move(property)),
+      mFunctions(std::move(functions)) {}
+};
+
+struct InstanceBinding {
+    struct Property {
+        std::string const              mName;
+        JsInstanceGetterCallback const mGetter;
+        JsInstanceSetterCallback const mSetter;
+
+        explicit Property(std::string name, JsInstanceGetterCallback getter, JsInstanceSetterCallback setter)
+        : mName(std::move(name)),
+          mGetter(std::move(getter)),
+          mSetter(std::move(setter)) {}
+    };
+
+    struct Function {
+        std::string const                mName;
+        JsInstanceFunctionCallback const mCallback;
+
+        explicit Function(std::string name, JsInstanceFunctionCallback callback)
+        : mName(std::move(name)),
+          mCallback(std::move(callback)) {}
+    };
+
+    JsInstanceConstructor const mConstructor;
+    std::vector<Property> const mProperty;
+    std::vector<Function> const mFunctions;
+
+    explicit InstanceBinding(
+        JsInstanceConstructor constructor,
+        std::vector<Property> property,
+        std::vector<Function> functions
+    )
+    : mConstructor(std::move(constructor)),
+      mProperty(std::move(property)),
+      mFunctions(std::move(functions)) {}
+};
+
+
+class ClassBinding {
+public:
+    std::string const     mClassName;
+    StaticBinding const   mStaticBinding;
+    InstanceBinding const mInstanceBinding;
+    ClassBinding const*   mExtends;
+
+    explicit ClassBinding(std::string name, StaticBinding static_, InstanceBinding instance, ClassBinding const* parent)
+    : mClassName(std::move(name)),
+      mStaticBinding(std::move(static_)),
+      mInstanceBinding(std::move(instance)),
+      mExtends(parent) {}
+};
+
+
+template <typename T = void>
+struct ClassBindingBuilder {
+private:
+    std::string                            mClassName;
+    std::vector<StaticBinding::Property>   mStaticProperty;
+    std::vector<StaticBinding::Function>   mStaticFunctions;
+    JsInstanceConstructor                  mInstanceConstructor;
+    std::vector<InstanceBinding::Property> mInstanceProperty;
+    std::vector<InstanceBinding::Function> mInstanceFunctions;
+
+public:
+    explicit ClassBindingBuilder(std::string className) : mClassName(std::move(className)) {}
+
+    template <typename Fn>
+        requires(IsJsFunctionCallback<Fn>)
+    ClassBindingBuilder& function(std::string name, Fn&& fn) {
+        mStaticFunctions.emplace_back(std::move(name), std::forward<Fn>(fn));
+        return *this;
+    }
+
+    template <typename Fn>
+        requires(!IsJsFunctionCallback<Fn>)
+    ClassBindingBuilder& function(std::string name, Fn&& fn) {
+        mStaticFunctions.emplace_back(std::move(name), v8wrap::internal::bindStaticFunction(std::forward<Fn>(fn)));
+        return *this;
+    }
+
+    template <typename... Fn>
+        requires(sizeof...(Fn) > 1 && (!IsJsFunctionCallback<Fn> && ...))
+    ClassBindingBuilder& function(std::string name, Fn&&... fn) {
+        mStaticFunctions.emplace_back(
+            std::move(name),
+            v8wrap::internal::bindStaticOverloadedFunction(std::forward<Fn>(fn)...)
+        );
+        return *this;
+    }
+
+    ClassBindingBuilder& property(std::string name, JsGetterCallback getter, JsSetterCallback setter) {
+        mStaticProperty.emplace_back(std::move(name), std::move(getter), std::move(setter));
+        return *this;
+    }
+
+    ClassBindingBuilder& property(std::string name, JsGetterCallback getter) {
+        mStaticProperty.emplace_back(std::move(name), std::move(getter), nullptr);
+        return *this;
+    }
+
+    template <typename Ty>
+    ClassBindingBuilder& property(std::string name, Ty* mem) {
+        auto gs = internal::bindStaticProperty<Ty>(mem);
+        mStaticProperty.emplace_back(std::move(name), std::move(gs.first), std::move(gs.second));
+        return *this;
+    }
+
+    // template <typename>
+    // ClassBindingBuilder* constructor() {}
+
+    // template <typename>
+    // ClassBindingBuilder& instanceProperty() {}
+
+    // template <typename>
+    // ClassBindingBuilder& instanceFunction() {}
+
+    // ClassBindingBuilder& extends(ClassBinding<P> const& parent) {}
+
+    ClassBinding build() {
+        return ClassBinding{
+            std::move(mClassName),
+            StaticBinding{std::move(mStaticProperty), std::move(mStaticFunctions)},
+            InstanceBinding{
+                          std::move(mInstanceConstructor),
+                          std::move(mInstanceProperty),
+                          std::move(mInstanceFunctions)
+            },
+            nullptr
+        };
+    }
+};
+
+
+template <typename T>
+inline ClassBindingBuilder<T> bindingClass(std::string className) {
+    return ClassBindingBuilder<T>(std::move(className));
+}
+
+
 } // namespace v8wrap
+
+#include "v8wrap/Bindings.inl" // include implementation

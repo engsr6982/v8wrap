@@ -2,7 +2,6 @@
 #include "v8wrap/JsException.hpp"
 #include "v8wrap/JsRuntimeScope.hpp"
 #include "v8wrap/JsValue.hpp"
-#include "v8wrap/internal/ArgsHelper.hpp"
 #include <algorithm>
 #include <cassert>
 
@@ -333,8 +332,17 @@ Local<JsValue> Local<JsFunction>::call(Local<JsValue> const& thiz, std::vector<L
     auto&& [isolate, ctx] = JsRuntimeScope::currentIsolateAndContextChecked();
     v8::TryCatch vtry{isolate};
 
-    int  argc   = static_cast<int>(args.size());
-    auto argv   = internal::extractArgs(args);
+    int argc = static_cast<int>(args.size());
+
+    v8::Local<v8::Value>* argv = nullptr;
+    if (!args.empty()) {
+        static_assert(
+            sizeof(Local<JsValue>) == sizeof(v8::Local<v8::Value>),
+            "Local<JsValue> must be binary-compatible with v8::Local<v8::Value>"
+        );
+        argv = reinterpret_cast<v8::Local<v8::Value>*>(const_cast<Local<JsValue>*>(args.data()));
+    }
+
     auto result = val->Call(ctx, thiz.val, argc, argv);
     JsException::rethrow(vtry);
     return Local<JsValue>{result.ToLocalChecked()};

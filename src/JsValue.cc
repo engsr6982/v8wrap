@@ -69,7 +69,7 @@ Local<JsSymbol> JsSymbol::newSymbol() {
 }
 Local<JsSymbol> JsSymbol::newSymbol(std::string_view description) {
     auto isolate = JsRuntimeScope::currentRuntimeIsolateChecked();
-    auto v8Sym   = v8::Symbol::New(isolate, JsRuntime::unwrap(JsString::newString(description)));
+    auto v8Sym   = v8::Symbol::New(isolate, JsValueHelper::unwrap(JsString::newString(description)));
     return Local<JsSymbol>{v8Sym};
 }
 Local<JsSymbol> JsSymbol::newSymbol(const char* description) { return newSymbol(std::string_view{description}); }
@@ -77,7 +77,7 @@ Local<JsSymbol> JsSymbol::newSymbol(std::string const& description) { return new
 
 Local<JsSymbol> JsSymbol::forKey(Local<JsString> const& str) {
     auto isolate = JsRuntimeScope::currentRuntimeIsolateChecked();
-    return Local<JsSymbol>{v8::Symbol::For(isolate, JsRuntime::unwrap(str))};
+    return Local<JsSymbol>{v8::Symbol::For(isolate, JsValueHelper::unwrap(str))};
 }
 
 
@@ -100,7 +100,7 @@ Local<JsFunction> JsFunction::newFunctionImpl(JsFunctionCallback cb) {
             auto args = Arguments{data->runtime, info};
             try {
                 auto returnValue = data->cb(args); // call native
-                info.GetReturnValue().Set(JsRuntime::unwrap(returnValue));
+                info.GetReturnValue().Set(JsValueHelper::unwrap(returnValue));
             } catch (JsException const& e) {
                 e.rethrowToRuntime(); // throw to v8 (js)
             }

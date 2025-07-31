@@ -45,4 +45,15 @@ Local<JsFunction> JsFunction::newFunction(Fn&&... func) {
 }
 
 
+template <typename T>
+    requires IsWrappedV8Type<T>
+v8::Local<internal::V8Type_v<T>> JsValueHelper::unwrap(Local<T> const& value) {
+    return value.val; // friend
+}
+template <typename T>
+Local<T> JsValueHelper::wrap(v8::Local<internal::V8Type_v<T>> const& value) {
+    return Local<T>{value};
+}
+
+
 } // namespace v8wrap

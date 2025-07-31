@@ -52,9 +52,7 @@ public:
     void setData(std::shared_ptr<void> data);
 
     template <typename T>
-    [[nodiscard]] inline std::shared_ptr<T> getData() const {
-        return std::static_pointer_cast<T>(mUserData);
-    }
+    [[nodiscard]] inline std::shared_ptr<T> getData() const;
 
     /**
      * Stop and destroy the current Js runtime.
@@ -74,9 +72,7 @@ public:
 
     template <typename T>
         requires StringLike<T>
-    Local<JsValue> eval(T const& str) {
-        return eval(JsString::newString(str));
-    }
+    Local<JsValue> eval(T const& str);
 
     void loadFile(std::filesystem::path const& path);
 
@@ -95,15 +91,12 @@ public:
      */
     void addManagedResource(void* resource, v8::Local<v8::Value> value, std::function<void(void*)>&& deleter);
 
-    template <typename T>
-    [[nodiscard]] inline static v8::Local<internal::V8Type_v<T>> unwrap(Local<T> const& value) {
-        return value.val; // friend
-    }
+    /**
+     * Register a binding class and mount it to globalThis
+     */
+    void registerBindingClass(ClassBinding const& binding);
 
-    template <typename T>
-    [[nodiscard]] inline static Local<T> wrap(v8::Local<internal::V8Type_v<T>> const& value) {
-        return Local<T>{value};
-    }
+    // Local<JsValue> newNativeClass(ClassBinding const& binding, T* instance);
 
 private:
     friend class JsRuntimeScope;
@@ -128,7 +121,10 @@ private:
     bool mIsExternalIsolate{false};
 
     std::unordered_map<ManagedResource*, v8::Global<v8::Value>> mManagedResources;
+    std::unordered_map<std::string, ClassBinding const*>        mRegisteredBindings;
 };
 
 
 } // namespace v8wrap
+
+#include "v8wrap/JsRuntime.inl" // include implementation
