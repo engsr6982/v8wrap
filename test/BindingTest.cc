@@ -242,20 +242,20 @@ TEST_CASE_METHOD(BindingTestFixture, "Binding class") {
     }
 
     SECTION("Static functions") {
-        auto pick1 = rt->eval("Test.add(1, 2);");
-        REQUIRE(pick1.isNumber());
-        REQUIRE(pick1.asNumber().getInt32() == 3);
+        auto add = rt->eval("Test.add(1, 2);");
+        REQUIRE(add.isNumber());
+        REQUIRE(add.asNumber().getInt32() == 3);
 
-        auto pick2 = rt->eval("Test.append('Hello, ', 'world!');");
+        auto pick1 = rt->eval("Test.append('Hello, ', 'world!');");
+        REQUIRE(pick1.isString());
+        REQUIRE(pick1.asString().getValue() == "Hello, world!");
+
+        auto pick2 = rt->eval("Test.append('Hello, ', 123);");
         REQUIRE(pick2.isString());
-        REQUIRE(pick2.asString().getValue() == "Hello, world!");
+        REQUIRE(pick2.asString().getValue() == "Hello, 123");
 
-        auto pick3 = rt->eval("Test.append('Hello, ', 123);");
-        REQUIRE(pick3.isString());
-        REQUIRE(pick3.asString().getValue() == "Hello, 123");
-
-        auto pick4 = rt->eval("Test.subtract(5, 3);");
-        REQUIRE(pick4.isNumber());
-        REQUIRE(pick4.asNumber().getDouble() == 2);
+        auto subtract = rt->eval("Test.subtract(5, 3);");
+        REQUIRE(subtract.isNumber());
+        REQUIRE(subtract.asNumber().getDouble() == 2);
     }
 }
