@@ -100,6 +100,9 @@ public:
     // Local<JsValue> newNativeClass(ClassBinding const& binding, T* instance);
 
 private:
+    void implStaticRegister(v8::Local<v8::FunctionTemplate>& ctor, StaticBinding const& staticBinding);
+    void implInstanceRegister(v8::Local<v8::FunctionTemplate>& ctor, InstanceBinding const& instanceBinding);
+
     friend class JsRuntimeScope;
     friend class ExitJsRuntimeScope;
     friend class internal::V8EscapeScope;

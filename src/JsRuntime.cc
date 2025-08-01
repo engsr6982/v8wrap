@@ -1,5 +1,9 @@
 #include "v8wrap/JsRuntime.hpp"
+#include "v8-external.h"
+#include "v8-function-callback.h"
 #include "v8-local-handle.h"
+#include "v8-object.h"
+#include "v8-primitive.h"
 #include "v8-template.h"
 #include "v8wrap/Bindings.hpp"
 #include "v8wrap/JsException.hpp"
@@ -184,7 +188,8 @@ void JsRuntime::registerBindingClass(ClassBinding const& binding) {
     auto scriptClassName = JsString::newString(binding.mClassName);
     constructor->SetClassName(JsValueHelper::unwrap(scriptClassName));
 
-    // TODO: implement
+    implStaticRegister(constructor, binding.mStaticBinding);
+    implInstanceRegister(constructor, binding.mInstanceBinding);
 
     auto function = constructor->GetFunction(mContext.Get(mIsolate));
     JsException::rethrow(vtry);
@@ -194,6 +199,75 @@ void JsRuntime::registerBindingClass(ClassBinding const& binding) {
 
     setVauleToGlobalThis(scriptClassName, JsValueHelper::wrap<JsFunction>(function.ToLocalChecked()));
 }
+
+void JsRuntime::implStaticRegister(v8::Local<v8::FunctionTemplate>& ctor, StaticBinding const& staticBinding) {
+    for (auto& property : staticBinding.mProperty) {
+        auto scriptPropertyName = JsString::newString(property.mName);
+
+        auto v8Getter = [](v8::Local<v8::Name>, v8::PropertyCallbackInfo<v8::Value> const& info) {
+            auto pbin = static_cast<StaticBinding::Property*>(info.Data().As<v8::External>()->Value());
+            try {
+                auto ret = pbin->mGetter();
+                info.GetReturnValue().Set(JsValueHelper::unwrap(ret));
+            } catch (JsException const& e) {
+                e.rethrowToRuntime();
+            }
+        };
+
+        v8::AccessorNameSetterCallback v8Setter = nullptr;
+        if (property.mSetter) {
+            v8Setter = [](v8::Local<v8::Name>, v8::Local<v8::Value> value, v8::PropertyCallbackInfo<void> const& info) {
+                auto pbin = static_cast<StaticBinding::Property*>(info.Data().As<v8::External>()->Value());
+                try {
+                    pbin->mSetter(JsValueHelper::wrap<JsValue>(value));
+                } catch (JsException const& e) {
+                    e.rethrowToRuntime();
+                }
+            };
+        } else {
+            v8Setter = [](v8::Local<v8::Name>, v8::Local<v8::Value>, v8::PropertyCallbackInfo<void> const&) {
+                JsException(
+                    "Native property have only one getter, and you cannot modify native property without "
+                    "getters",
+                    JsException::Type::TypeError
+                )
+                    .rethrowToRuntime();
+            };
+        }
+
+        ctor->SetNativeDataProperty(
+            JsValueHelper::unwrap(scriptPropertyName).As<v8::Name>(),
+            std::move(v8Getter),
+            std::move(v8Setter),
+            v8::External::New(mIsolate, const_cast<StaticBinding::Property*>(&property)),
+            v8::PropertyAttribute::DontDelete
+        );
+    }
+    for (auto& function : staticBinding.mFunctions) {
+        auto scriptFunctionName = JsString::newString(function.mName);
+
+        auto fn = v8::FunctionTemplate::New(
+            mIsolate,
+            [](v8::FunctionCallbackInfo<v8::Value> const& info) {
+                auto fbin = static_cast<StaticBinding::Function*>(info.Data().As<v8::External>()->Value());
+
+                try {
+                    auto ret = (fbin->mCallback)(Arguments{JsRuntimeScope::currentRuntime(), info});
+                    info.GetReturnValue().Set(JsValueHelper::unwrap(ret));
+                } catch (JsException const& e) {
+                    e.rethrowToRuntime();
+                }
+            },
+            v8::External::New(mIsolate, const_cast<StaticBinding::Function*>(&function)),
+            {},
+            0,
+            v8::ConstructorBehavior::kThrow
+        );
+        ctor->Set(JsValueHelper::unwrap(scriptFunctionName).As<v8::Name>(), fn, v8::PropertyAttribute::DontDelete);
+    }
+}
+
+void JsRuntime::implInstanceRegister(v8::Local<v8::FunctionTemplate>& ctor, InstanceBinding const& instanceBinding) {}
 
 
 } // namespace v8wrap

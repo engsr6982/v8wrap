@@ -189,10 +189,6 @@ v8wrap::ClassBinding TestBinding =
         .property("readOnly", &Test::readOnly) // Automatically generate getters and setters (non-const)
         .property("name", &Test::name)
         .property(
-            "noSetter",
-            []() -> v8wrap::Local<v8wrap::JsValue> { return v8wrap::JsString::newString("noSetter"); }
-        )
-        .property(
             "custom",
             []() -> v8wrap::Local<v8wrap::JsValue> { return v8wrap::JsBoolean::newBoolean(Test::custom); },
             [](v8wrap::Local<v8wrap::JsValue> const& val) { Test::custom = val.asBoolean().getValue(); }
@@ -219,4 +215,47 @@ TEST_CASE_METHOD(BindingTestFixture, "Binding class") {
         v8wrap::JsException,
         Catch::Matchers::ExceptionMessageMatcher("Uncaught TypeError: Test is not a constructor")
     );
+
+    SECTION("Static properties") {
+        // properties can be modified
+        REQUIRE(rt->eval("Test.name === 'Test'").asBoolean().getValue() == true);
+
+        rt->eval("Test.name = '啊吧啊吧'");
+        REQUIRE(Test::name == "啊吧啊吧"); // Test::name is modified
+        REQUIRE(rt->eval("Test.name === '啊吧啊吧'").asBoolean().getValue() == true);
+
+        // readOnly properties cannot be modified
+        REQUIRE(rt->eval("Test.readOnly === 114").asBoolean().getValue() == true);
+        REQUIRE_THROWS_MATCHES(
+            rt->eval("Test.readOnly = 514;"),
+            v8wrap::JsException,
+            Catch::Matchers::ExceptionMessageMatcher("Uncaught TypeError: Native property have only one getter, and "
+                                                     "you cannot modify native property without getters")
+        );
+        REQUIRE(Test::readOnly == 114); // Test::readOnly is not modified
+
+        // custom properties
+        REQUIRE(rt->eval("Test.custom === true").asBoolean().getValue() == true);
+        rt->eval("Test.custom = false;");
+        REQUIRE(Test::custom == false); // Test::custom is modified
+        REQUIRE(rt->eval("Test.custom === false").asBoolean().getValue() == true);
+    }
+
+    SECTION("Static functions") {
+        auto pick1 = rt->eval("Test.add(1, 2);");
+        REQUIRE(pick1.isNumber());
+        REQUIRE(pick1.asNumber().getInt32() == 3);
+
+        auto pick2 = rt->eval("Test.append('Hello, ', 'world!');");
+        REQUIRE(pick2.isString());
+        REQUIRE(pick2.asString().getValue() == "Hello, world!");
+
+        auto pick3 = rt->eval("Test.append('Hello, ', 123);");
+        REQUIRE(pick3.isString());
+        REQUIRE(pick3.asString().getValue() == "Hello, 123");
+
+        auto pick4 = rt->eval("Test.subtract(5, 3);");
+        REQUIRE(pick4.isNumber());
+        REQUIRE(pick4.asNumber().getDouble() == 2);
+    }
 }
