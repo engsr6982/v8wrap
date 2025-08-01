@@ -21,9 +21,12 @@ struct BindingTestFixture {
 };
 
 
-void defaultFunc(int a, double b) { std::cout << "defaultFunc: " << a << ", " << b << std::endl; }
+void defaultFunc(int a, double b) {
+    REQUIRE(a == 1);
+    REQUIRE(b == 2.0);
+}
 
-void noArgsFunc() { std::cout << "noArgsFunc" << std::endl; }
+void noArgsFunc() { REQUIRE(true); }
 
 bool stdcout(std::string const& str) {
     std::cout << str << std::endl;
