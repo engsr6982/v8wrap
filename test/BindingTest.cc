@@ -199,7 +199,7 @@ v8wrap::ClassBinding TestBinding =
         // instance binding
         .build();
 
-TEST_CASE_METHOD(BindingTestFixture, "Binding class") {
+TEST_CASE_METHOD(BindingTestFixture, "Static binding") {
     v8wrap::JsRuntimeScope enter{rt};
 
     rt->registerBindingClass(TestBinding);
@@ -262,3 +262,12 @@ TEST_CASE_METHOD(BindingTestFixture, "Binding class") {
         REQUIRE(subtract.asNumber().getDouble() == 2);
     }
 }
+
+
+// TODO: Test instance binding
+class Actor {};
+
+class Player : public Actor {};
+
+
+TEST_CASE_METHOD(BindingTestFixture, "Instance binding") {}
