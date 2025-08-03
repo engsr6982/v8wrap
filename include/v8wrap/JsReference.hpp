@@ -30,7 +30,7 @@ public:                                                                         
     bool            operator==(Local<JsValue> const& other) const;                                                     \
                                                                                                                        \
 private:                                                                                                               \
-    friend class JsValueHelper;                                                                                            \
+    friend struct JsValueHelper;                                                                                            \
     friend class JsException;                                                                                          \
     friend class VALUE;                                                                                                \
     template <typename>                                                                                                \
