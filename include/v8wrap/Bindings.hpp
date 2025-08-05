@@ -1,5 +1,6 @@
 #pragma once
 #include "v8wrap/Concepts.hpp"
+#include "v8wrap/Native.hpp"
 #include "v8wrap/Types.hpp"
 
 
@@ -97,8 +98,14 @@ public:
 };
 
 
-template <typename T = void>
+template <typename C = void, typename H = void>
 struct ClassBindingBuilder {
+    static_assert(
+        std::is_void_v<C> == std::is_void_v<H>,
+        "T and H must both be void (for static class) or both non-void (for instance class)"
+    );
+    static_assert(std::is_void_v<C> || Holder<H, C>, "For instance class, H must satisfy Holder<H, T> concept");
+
 private:
     std::string                            mClassName;
     std::vector<StaticBinding::Property>   mStaticProperty;
@@ -151,8 +158,27 @@ public:
         return *this;
     }
 
-    // template <typename>
-    // ClassBindingBuilder* constructor() {}
+
+    template <typename Fn = JsInstanceConstructor>
+        requires(!std::is_void_v<C>, IsJsFunctionCallback<Fn>)
+    ClassBindingBuilder& constructor(Fn ctor) {
+        // TODO: impl
+        return *this;
+    }
+
+    template <typename Fn>
+        requires(!std::is_void_v<C> && !IsJsInstanceConstructor<Fn>)
+    ClassBindingBuilder& constructor(Fn&& ctor) {
+        // TODO: impl
+        return *this;
+    }
+
+    template <typename... Fn>
+        requires(!std::is_void_v<C> && sizeof...(Fn) > 1 && (!IsJsInstanceConstructor<Fn> && ...))
+    ClassBindingBuilder& constructor(Fn&&... ctors) {
+        // TODO: impl
+        return *this;
+    }
 
     // template <typename>
     // ClassBindingBuilder& instanceProperty() {}
@@ -177,9 +203,9 @@ public:
 };
 
 
-template <typename T>
-inline ClassBindingBuilder<T> bindingClass(std::string className) {
-    return ClassBindingBuilder<T>(std::move(className));
+template <typename C, typename H = void>
+inline ClassBindingBuilder<C, H> bindingClass(std::string className) {
+    return ClassBindingBuilder<C, H>(std::move(className));
 }
 
 

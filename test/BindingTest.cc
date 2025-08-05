@@ -8,10 +8,12 @@
 #include "v8wrap/JsRuntime.hpp"
 #include "v8wrap/JsRuntimeScope.hpp"
 #include "v8wrap/JsValue.hpp"
+#include "v8wrap/Native.hpp"
 #include "v8wrap/Types.hpp"
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
 #include <iostream>
+#include <utility>
 
 
 struct BindingTestFixture {
@@ -179,9 +181,8 @@ std::string Test::name   = "Test";
 bool        Test::custom = true;
 
 
-v8wrap::ClassBinding TestBinding =
-    v8wrap::bindingClass<Test>("Test")
-        // static binding
+v8wrap::ClassBinding StaticBind =
+    v8wrap::bindingClass<void>("Test")
         .function("add", &Test::add)
         .function(
             "append",
@@ -196,13 +197,12 @@ v8wrap::ClassBinding TestBinding =
             []() -> v8wrap::Local<v8wrap::JsValue> { return v8wrap::JsBoolean::newBoolean(Test::custom); },
             [](v8wrap::Local<v8wrap::JsValue> const& val) { Test::custom = val.asBoolean().getValue(); }
         )
-        // instance binding
         .build();
 
 TEST_CASE_METHOD(BindingTestFixture, "Static binding") {
     v8wrap::JsRuntimeScope enter{rt};
 
-    rt->registerBindingClass(TestBinding);
+    rt->registerBindingClass(StaticBind);
 
     auto exist = rt->eval("Test !== undefined");
     REQUIRE(exist.isBoolean());
@@ -265,9 +265,34 @@ TEST_CASE_METHOD(BindingTestFixture, "Static binding") {
 
 
 // TODO: Test instance binding
-class Actor {};
+// TODO: Test inheritance
+class Actor {
+    int mID;
 
-class Player : public Actor {};
+    static int genID() {
+        static int id = 0;
+        return id++;
+    }
 
+public:
+    virtual ~Actor() { std::cout << "Actor::~Actor()" << std::endl; }
+
+    virtual std::string getTypeName() const { return "Actor"; }
+
+    virtual int getID() const { return mID; }
+
+    Actor() : mID(genID()) {}
+};
+
+class Player : public Actor {
+    std::string mName;
+
+public:
+    Player(std::string name) : mName(std::move(name)) {}
+
+    std::string getTypeName() const override { return "Player"; }
+
+    std::string getName() const { return mName; }
+};
 
 TEST_CASE_METHOD(BindingTestFixture, "Instance binding") {}

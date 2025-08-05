@@ -1,137 +1,79 @@
 #pragma once
-#include "v8wrap/Global.hpp"
 #include "v8wrap/Types.hpp"
+#include <concepts>
 #include <memory>
-#include <optional>
-#include <type_traits>
 
 
 namespace v8wrap {
 
 
-template <typename Ty, typename Holder>
-concept CustomHolderConcept =
-    std::is_move_constructible_v<Holder> && std::is_move_assignable_v<Holder> && requires(Holder h, JsRuntime* rt) {
-        { h(rt) } -> std::same_as<Ty*>;
-    };
+template <typename H>
+concept HasDeleter = requires(H* h, JsRuntime* rt) {
+    { h->deleter(rt) } -> std::same_as<void>;
+};
 
 
-template <typename T, typename CustomHolder = void>
-class ResourceHolder {
-    static_assert(
-        std::is_void_v<CustomHolder> || CustomHolderConcept<T, CustomHolder>,
-        "CustomHolder must be void or satisfy CustomHolderConcept."
-    );
+// When Owned is true, it means that v8wrap takes over ownership of the resource, and a deleter needs to be provided.
+// v8wrap calls this deleter when the resource is destroyed.
+// On the other hand, v8wrap does not take over the resource, the lifecycle of the resource is externally responsible,
+// and v8wrap does not notify the resource of its release
+// example:
+// struct Res {};
+// struct MyResHolder {
+//     Res* ptr;
+//     MyResHolder(Res* ptr) : ptr(ptr) {} // constructible_from is required
+//     Res* operator()(JsRuntime*) const { return ptr; } // requires
+//     void deleter(JsRuntime*) const { delete ptr; } // only required when Owned is true
+// }
+//
+// The design concept of this Holder is that v8wrap is not responsible for creating and destroying.
+// These methods should be provided by you (the user) v8wrap only for calls between Js <=> C++
+template <typename H, typename Ty, bool Owned = true>
+concept Holder = requires(H h, JsRuntime* rt) {
+    { h(rt) } -> std::same_as<Ty*>;
+} && (Owned ? HasDeleter<H> : !HasDeleter<H>) && std::constructible_from<H, Ty*>;
 
-public:
-    enum class Type {
-        Value,      // C++ value
-        Reference,  // C++ reference (dangerous!)
-        RawPointer, // Raw pointer (external ownership)
-        UniquePtr,  // std::unique_ptr
-        SharedPtr,  // std::shared_ptr
-        WeakPtr,    // std::weak_ptr
-        Custom      // Custom type (return T*)
-    };
 
-    [[nodiscard]] inline T* get() const {
-        switch (mType) {
-        case Type::Value:
-            return &mValue.value();
-        case Type::Reference:
-        case Type::RawPointer:
-            return mRawPointer;
-        case Type::UniquePtr:
-            return mUniquePtr.get();
-        case Type::SharedPtr:
-            return mSharedPtr.get();
-        case Type::WeakPtr:
-            return mWeakPtr.lock().get();
-        case Type::Custom:
-            return mCustom();
-        }
-    }
+template <typename T>
+struct UniquePtrHolder {
+    std::unique_ptr<T> ptr;
+    UniquePtrHolder(std::unique_ptr<T> ptr) : ptr(std::move(ptr)) {}
 
-    [[nodiscard]] inline bool isValid() const {
-        // Because value holding is always safe, but references are not guaranteed to be secure,
-        // and other types are valid as long as they are not null pointers
-        switch (mType) {
-        case Type::Value:
-            return true;
-        case Type::Reference:
-            return false; // External guarantee of validity
-        case Type::RawPointer:
-        case Type::UniquePtr:
-        case Type::SharedPtr:
-        case Type::WeakPtr:
-        case Type::Custom:
-            return get() != nullptr;
-        }
-    }
+    T*   operator()(JsRuntime*) const { return ptr.get(); }
+    void deleter(JsRuntime*) const { ptr.reset(); }
+};
 
-    [[nodiscard]] inline Type type() const { return mType; }
+template <typename T>
+struct SharedPtrHolder {
+    std::shared_ptr<T> ptr;
+    SharedPtrHolder(std::shared_ptr<T> ptr) : ptr(std::move(ptr)) {}
 
-    explicit ResourceHolder(T&& value) : mType(Type::Value), mValue(std::move(value)) {}
-    explicit ResourceHolder(T& value) : mType(Type::Reference), mRawPointer(&value) {
-        struct [[deprecated("Using references as bindings is dangerous because binding wrappers don't know if "
-                            "references are always valid, which can lead to dangling references!")]] Warning {};
-        Warning unused{};
-    }
-    explicit ResourceHolder(T* ptr) : mType(Type::RawPointer), mRawPointer(ptr) {}
-    explicit ResourceHolder(std::unique_ptr<T> ptr) : mType(Type::UniquePtr), mUniquePtr(std::move(ptr)) {}
-    explicit ResourceHolder(std::shared_ptr<T> ptr) : mType(Type::SharedPtr), mSharedPtr(std::move(ptr)) {}
-    explicit ResourceHolder(std::weak_ptr<T> ptr) : mType(Type::WeakPtr), mWeakPtr(std::move(ptr)) {}
+    T*   operator()(JsRuntime*) const { return ptr.get(); }
+    void deleter(JsRuntime*) const { ptr.reset(); }
+};
 
-    template <typename U = CustomHolder>
-    explicit ResourceHolder(U&& holder)
-        requires(!std::is_void_v<U> && CustomHolderConcept<T, U>)
-    : mType(Type::Custom),
-      mCustom(std::forward<U>(holder)) {}
+template <typename T>
+struct WeakPtrHolder {
+    std::weak_ptr<T> ptr;
+    WeakPtrHolder(std::weak_ptr<T> ptr) : ptr(std::move(ptr)) {}
 
-    V8WRAP_DISALLOW_COPY(ResourceHolder);
-    ResourceHolder(ResourceHolder&& other) noexcept : mType(other.mType) { handleMove(other); }
-    ResourceHolder& operator=(ResourceHolder&& other) noexcept {
-        if (this != &other) {
-            mType = other.mType;
-            handleMove(other);
-        }
-        return *this;
-    }
+    T*   operator()(JsRuntime*) const { return ptr.lock().get(); }
+    void deleter(JsRuntime*) const { ptr.reset(); }
+};
 
-private:
-    void handleMove(ResourceHolder& other) {
-        switch (mType) {
-        case Type::Value:
-            mValue = std::move(other.mValue);
-            break;
-        case Type::Reference:
-        case Type::RawPointer:
-            mRawPointer = other.mRawPointer;
-            break;
-        case Type::UniquePtr:
-            mUniquePtr = std::move(other.mUniquePtr);
-            break;
-        case Type::SharedPtr:
-            mSharedPtr = std::move(other.mSharedPtr);
-            break;
-        case Type::WeakPtr:
-            mWeakPtr = std::move(other.mWeakPtr);
-            break;
-        case Type::Custom:
-            mCustom = std::move(other.mCustom);
-            break;
-        }
-    }
+template <typename T>
+struct UnsafeRawPtrHolder {
+    T* ptr;
+    UnsafeRawPtrHolder(T* ptr) : ptr(ptr) {}
+    T* operator()(JsRuntime*) const { return ptr; }
+};
 
-    Type const mType;
-
-    std::optional<T> mValue{std::nullopt};
-    T* mRawPointer{nullptr}; // Because the reference must be initialized, the address is stored in the original pointer
-    std::unique_ptr<T> mUniquePtr{nullptr};
-    std::shared_ptr<T> mSharedPtr{nullptr};
-    std::weak_ptr<T>   mWeakPtr{nullptr};
-
-    std::conditional_t<!std::is_void_v<CustomHolder>, CustomHolder, std::monostate> mCustom{};
+template <typename T>
+struct RawPtrHolder {
+    T* ptr;
+    RawPtrHolder(T* ptr) : ptr(ptr) {}
+    T*   operator()(JsRuntime*) const { return ptr; }
+    void deleter(JsRuntime*) const { ptr = nullptr; }
 };
 
 

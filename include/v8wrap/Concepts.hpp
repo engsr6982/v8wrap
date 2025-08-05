@@ -30,6 +30,8 @@ concept StringLike = requires(const T& s) {
 template <typename T>
 concept IsJsFunctionCallback = std::is_invocable_r_v<Local<JsValue>, T, Arguments const&>;
 
+template <typename T>
+concept IsJsInstanceConstructor = std::is_invocable_r_v<void*, T, Arguments const&>;
 
 template <typename T>
 concept IsWrappedV8Type =
