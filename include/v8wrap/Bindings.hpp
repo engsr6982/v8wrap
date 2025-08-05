@@ -102,9 +102,9 @@ template <typename C = void, typename H = void>
 struct ClassBindingBuilder {
     static_assert(
         std::is_void_v<C> == std::is_void_v<H>,
-        "T and H must both be void (for static class) or both non-void (for instance class)"
+        "C and H must both be void (for static class) or both non-void (for instance class)"
     );
-    static_assert(std::is_void_v<C> || Holder<H, C>, "For instance class, H must satisfy Holder<H, T> concept");
+    static_assert(std::is_void_v<C> || Holder<H, C>, "For instance class, H must satisfy Holder<H, C> concept");
 
 private:
     std::string                            mClassName;
