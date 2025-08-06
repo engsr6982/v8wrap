@@ -77,7 +77,9 @@ struct TypeConverter<Local<T>> {
 namespace internal {
 
 template <typename T>
-using TypedConverter = TypeConverter<typename std::decay<T>::type>;
+// using TypedConverter = TypeConverter<typename std::decay<T>::type>;
+using TypedConverter = TypeConverter<std::remove_cvref_t<T>>;
+
 
 template <typename T, typename = void>
 struct IsTypeConverterAvailable : std::false_type {};
