@@ -418,5 +418,23 @@ Local<JsObject> JsRuntime::newBindingClass(std::string const& className, void* i
     return newBindingClass(*iter->second, instance);
 }
 
+bool JsRuntime::isInstanceOf(Local<JsObject> const& obj, ClassBinding const& binding) const {
+    auto iter = mJsClassConstructor.find(&binding);
+    if (iter == mJsClassConstructor.end()) {
+        return false;
+    }
+    auto ctor = iter->second.Get(mIsolate);
+    return ctor->HasInstance(JsValueHelper::unwrap(obj));
+}
+
+void* JsRuntime::getBindingClassInstance(Local<JsObject> const& obj) const {
+    auto v8Obj       = JsValueHelper::unwrap(obj);
+    auto holder      = v8Obj->GetAlignedPointerFromInternalField(0);
+    auto typedHolder = reinterpret_cast<IHolder*>(holder);
+    if (!isInstanceOf(obj, *typedHolder->mClassBinding)) {
+        return nullptr;
+    }
+    return typedHolder->mClassBinding->unwrapInstance(holder, const_cast<JsRuntime*>(typedHolder->mRuntime));
+}
 
 } // namespace v8wrap

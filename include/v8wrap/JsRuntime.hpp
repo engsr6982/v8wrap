@@ -100,6 +100,10 @@ public:
     Local<JsObject> newBindingClass(ClassBinding const& binding, void* instance);
     Local<JsObject> newBindingClass(std::string const& className, void* instance);
 
+    [[nodiscard]] bool isInstanceOf(Local<JsObject> const& obj, ClassBinding const& binding) const;
+
+    [[nodiscard]] void* getBindingClassInstance(Local<JsObject> const& obj) const;
+
 private:
     void implStaticRegister(v8::Local<v8::FunctionTemplate>& ctor, StaticBinding const& staticBinding);
     v8::Local<v8::FunctionTemplate> createInstanceClassCtor(ClassBinding const& binding);
