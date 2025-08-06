@@ -437,4 +437,6 @@ void* JsRuntime::getBindingClassInstance(Local<JsObject> const& obj) const {
     return typedHolder->mClassBinding->unwrapInstance(holder, const_cast<JsRuntime*>(typedHolder->mRuntime));
 }
 
+void JsRuntime::gc() const { mIsolate->LowMemoryNotification(); }
+
 } // namespace v8wrap

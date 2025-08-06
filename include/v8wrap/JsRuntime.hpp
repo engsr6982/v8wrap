@@ -104,6 +104,8 @@ public:
 
     [[nodiscard]] void* getBindingClassInstance(Local<JsObject> const& obj) const;
 
+    void gc() const;
+
 private:
     void implStaticRegister(v8::Local<v8::FunctionTemplate>& ctor, StaticBinding const& staticBinding);
     v8::Local<v8::FunctionTemplate> createInstanceClassCtor(ClassBinding const& binding);
