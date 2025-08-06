@@ -26,7 +26,7 @@ InstanceBinding::Property::Property(std::string name, JsInstanceGetterCallback g
   mSetter(std::move(setter)) {}
 
 
-InstanceBinding::Function::Function(std::string name, JsInstanceFunctionCallback callback)
+InstanceBinding::Method::Method(std::string name, JsInstanceMethodCallback callback)
 : mName(std::move(name)),
   mCallback(std::move(callback)) {}
 
@@ -34,12 +34,12 @@ InstanceBinding::Function::Function(std::string name, JsInstanceFunctionCallback
 InstanceBinding::InstanceBinding(
     JsInstanceConstructor constructor,
     std::vector<Property> property,
-    std::vector<Function> functions,
+    std::vector<Method>   functions,
     size_t                classSize
 )
 : mConstructor(std::move(constructor)),
   mProperty(std::move(property)),
-  mFunctions(std::move(functions)),
+  mMethods(std::move(functions)),
   mClassSize(classSize) {}
 
 

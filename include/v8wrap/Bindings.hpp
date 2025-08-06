@@ -32,6 +32,12 @@ std::pair<JsGetterCallback, JsSetterCallback> bindStaticProperty(Ty* p);
 template <typename C, typename... Args>
 JsInstanceConstructor bindInstanceConstructor();
 
+template <typename C, typename Func>
+JsInstanceMethodCallback bindInstanceMethod(Func&& fn);
+
+template <typename C, typename... Func>
+JsInstanceMethodCallback bindInstanceOverloadedMethod(Func&&... funcs);
+
 
 } // namespace internal
 
@@ -67,22 +73,22 @@ struct InstanceBinding {
         explicit Property(std::string name, JsInstanceGetterCallback getter, JsInstanceSetterCallback setter);
     };
 
-    struct Function {
-        std::string const                mName;
-        JsInstanceFunctionCallback const mCallback;
+    struct Method {
+        std::string const              mName;
+        JsInstanceMethodCallback const mCallback;
 
-        explicit Function(std::string name, JsInstanceFunctionCallback callback);
+        explicit Method(std::string name, JsInstanceMethodCallback callback);
     };
 
     JsInstanceConstructor const mConstructor;
     std::vector<Property> const mProperty;
-    std::vector<Function> const mFunctions;
+    std::vector<Method> const   mMethods;
     size_t const                mClassSize; // sizeof(C) for instance class
 
     explicit InstanceBinding(
         JsInstanceConstructor constructor,
         std::vector<Property> property,
-        std::vector<Function> functions,
+        std::vector<Method>   functions,
         size_t                classSize
     );
 };
@@ -146,7 +152,7 @@ private:
     std::vector<StaticBinding::Function>   mStaticFunctions;
     JsInstanceConstructor                  mInstanceConstructor;
     std::vector<InstanceBinding::Property> mInstanceProperty;
-    std::vector<InstanceBinding::Function> mInstanceFunctions;
+    std::vector<InstanceBinding::Method>   mInstanceFunctions;
     bool const                             mIsInstanceClass = !std::is_void_v<C> && !std::is_void_v<H>;
 
 public:
@@ -154,40 +160,37 @@ public:
 
     template <typename Fn>
         requires(IsJsFunctionCallback<Fn>)
-    ClassBindingBuilder& function(std::string name, Fn&& fn) {
+    ClassBindingBuilder<C, H>& function(std::string name, Fn&& fn) {
         mStaticFunctions.emplace_back(std::move(name), std::forward<Fn>(fn));
         return *this;
     }
 
     template <typename Fn>
         requires(!IsJsFunctionCallback<Fn>)
-    ClassBindingBuilder& function(std::string name, Fn&& fn) {
-        mStaticFunctions.emplace_back(std::move(name), v8wrap::internal::bindStaticFunction(std::forward<Fn>(fn)));
+    ClassBindingBuilder<C, H>& function(std::string name, Fn&& fn) {
+        mStaticFunctions.emplace_back(std::move(name), internal::bindStaticFunction(std::forward<Fn>(fn)));
         return *this;
     }
 
     template <typename... Fn>
         requires(sizeof...(Fn) > 1 && (!IsJsFunctionCallback<Fn> && ...))
-    ClassBindingBuilder& function(std::string name, Fn&&... fn) {
-        mStaticFunctions.emplace_back(
-            std::move(name),
-            v8wrap::internal::bindStaticOverloadedFunction(std::forward<Fn>(fn)...)
-        );
+    ClassBindingBuilder<C, H>& function(std::string name, Fn&&... fn) {
+        mStaticFunctions.emplace_back(std::move(name), internal::bindStaticOverloadedFunction(std::forward<Fn>(fn)...));
         return *this;
     }
 
-    ClassBindingBuilder& property(std::string name, JsGetterCallback getter, JsSetterCallback setter) {
+    ClassBindingBuilder<C, H>& property(std::string name, JsGetterCallback getter, JsSetterCallback setter) {
         mStaticProperty.emplace_back(std::move(name), std::move(getter), std::move(setter));
         return *this;
     }
 
-    ClassBindingBuilder& property(std::string name, JsGetterCallback getter) {
+    ClassBindingBuilder<C, H>& property(std::string name, JsGetterCallback getter) {
         mStaticProperty.emplace_back(std::move(name), std::move(getter), nullptr);
         return *this;
     }
 
     template <typename Ty>
-    ClassBindingBuilder& property(std::string name, Ty* mem) {
+    ClassBindingBuilder<C, H>& property(std::string name, Ty* mem) {
         auto gs = internal::bindStaticProperty<Ty>(mem);
         mStaticProperty.emplace_back(std::move(name), std::move(gs.first), std::move(gs.second));
         return *this;
@@ -201,13 +204,13 @@ public:
      */
     template <typename... Args>
         requires(!std::is_void_v<C>)
-    ClassBindingBuilder& constructor() {
+    ClassBindingBuilder<C, H>& constructor() {
         static_assert(
             !std::is_aggregate_v<C> && std::is_constructible_v<C, Args...>,
             "Constructor must be callable with the specified arguments"
         );
         if (mInstanceConstructor) throw std::logic_error("Constructor has already been registered!");
-        mInstanceConstructor = v8wrap::internal::bindInstanceConstructor<C, Args...>();
+        mInstanceConstructor = internal::bindInstanceConstructor<C, Args...>();
         return *this;
     }
 
@@ -216,7 +219,7 @@ public:
      */
     template <typename T = C>
         requires(!std::is_void_v<T>)
-    ClassBindingBuilder& customConstructor(JsInstanceConstructor ctor) {
+    ClassBindingBuilder<C, H>& customConstructor(JsInstanceConstructor ctor) {
         if (mInstanceConstructor) throw std::logic_error("Constructor has already been registered!");
         mInstanceConstructor = std::move(ctor);
         return *this;
@@ -227,19 +230,40 @@ public:
      */
     template <typename T = C>
         requires(!std::is_void_v<T>)
-    ClassBindingBuilder& disableConstructor() {
+    ClassBindingBuilder<C, H>& disableConstructor() {
         if (mInstanceConstructor) throw std::logic_error("Constructor has already been registered!");
         mInstanceConstructor = [](Arguments const&) { return nullptr; };
         return *this;
     }
 
-    // template <typename>
-    // ClassBindingBuilder& instanceProperty() {}
+    template <typename Fn>
+        requires(!std::is_void_v<C> && IsJsFunctionCallback<Fn>)
+    ClassBindingBuilder<C, H>& instanceMethod(std::string name, Fn&& fn) {
+        mInstanceFunctions.emplace_back(std::move(name), std::forward<Fn>(fn));
+        return *this;
+    }
+
+    template <typename Fn>
+        requires(!std::is_void_v<C> && !IsJsFunctionCallback<Fn>)
+    ClassBindingBuilder<C, H>& instanceMethod(std::string name, Fn&& fn) {
+        mInstanceFunctions.emplace_back(std::move(name), internal::bindInstanceMethod<C>(std::forward<Fn>(fn)));
+        return *this;
+    }
+
+    template <typename... Fn>
+        requires(!std::is_void_v<C> && (sizeof...(Fn) > 1 && (!IsJsFunctionCallback<Fn> && ...)))
+    ClassBindingBuilder<C, H>& instanceMethod(std::string name, Fn&&... fn) {
+        mInstanceFunctions.emplace_back(
+            std::move(name),
+            internal::bindInstanceOverloadedMethod<C>(std::forward<Fn>(fn)...)
+        );
+        return *this;
+    }
 
     // template <typename>
-    // ClassBindingBuilder& instanceFunction() {}
+    // ClassBindingBuilder<C, H>& instanceProperty() {}
 
-    // ClassBindingBuilder& extends(ClassBinding<P> const& parent) {}
+    // ClassBindingBuilder<C, H>& extends(ClassBinding<P> const& parent) {}
 
     ClassBinding build() {
         if (mIsInstanceClass && !mInstanceConstructor) {

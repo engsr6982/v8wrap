@@ -74,7 +74,7 @@ using JsSetterCallback   = std::function<void(Local<JsValue> const&)>;
 using JsInstanceConstructor = std::function<void*(Arguments const& args)>;
 
 // template <typename T>
-using JsInstanceFunctionCallback = std::function<Local<JsValue>(void*, Arguments const& args)>;
+using JsInstanceMethodCallback = std::function<Local<JsValue>(void*, Arguments const& args)>;
 
 // template <typename T>
 using JsInstanceSetterCallback = std::function<void(void*, Local<JsValue> const& value)>;

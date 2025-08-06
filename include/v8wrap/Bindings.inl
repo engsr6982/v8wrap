@@ -182,11 +182,58 @@ JsInstanceConstructor bindInstanceConstructor() {
     };
 }
 
-template <typename C, typename Fn>
-JsInstanceFunctionCallback bindInstanceMethod(Fn&& fn) {}
+template <typename C, typename Func>
+JsInstanceMethodCallback bindInstanceMethod(Func&& fn) {
+    return [f = std::forward<Func>(fn)](void* inst, const Arguments& args) -> Local<JsValue> {
+        using Traits       = FunctionTraits<std::decay_t<Func>>;
+        using R            = typename Traits::ReturnType;
+        using Tuple        = typename Traits::ArgsTuple;
+        constexpr size_t N = std::tuple_size_v<Tuple>;
 
-template <typename C, typename... Met>
-JsInstanceFunctionCallback bindInstanceOverloadedMethod(C* obj, Met&&... methods) {}
+        if (args.length() != N) {
+            throw JsException("argument count mismatch");
+        }
+
+        auto typedInstance = static_cast<C*>(inst);
+
+        if constexpr (std::is_void_v<R>) {
+            std::apply(
+                f,
+                std::tuple_cat(
+                    std::make_tuple(typedInstance),
+                    ConvertArgsToTuple<Tuple>(args, std::make_index_sequence<N>())
+                )
+            );
+            return JsUndefined::newUndefined();
+        } else {
+            auto ret = std::apply(
+                f,
+                std::tuple_cat(
+                    std::make_tuple(typedInstance),
+                    ConvertArgsToTuple<Tuple>(args, std::make_index_sequence<N>())
+                )
+            );
+            return ConvertToJs(ret);
+        }
+    };
+}
+
+template <typename C, typename... Func>
+JsInstanceMethodCallback bindInstanceOverloadedMethod(Func&&... funcs) {
+    std::vector functions = {bindInstanceMethod(std::forward<Func>(funcs))...};
+    return [fs = std::move(functions)](void* inst, Arguments const& args) -> Local<JsValue> {
+        for (size_t i = 0; i < sizeof...(Func); ++i) {
+            try {
+                return std::invoke(fs[i], inst, args);
+            } catch (JsException const&) {
+                if (i == sizeof...(Func) - 1) {
+                    throw JsException{"no overload found"};
+                }
+            }
+        }
+        return {}; // undefined
+    };
+}
 
 template <typename C, typename Fn>
 JsInstanceGetterCallback bindInstanceGetter(Fn&& fn) {}

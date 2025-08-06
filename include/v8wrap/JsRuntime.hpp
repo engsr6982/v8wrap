@@ -97,7 +97,8 @@ public:
      */
     void registerBindingClass(ClassBinding const& binding);
 
-    // Local<JsValue> newNativeClass(ClassBinding const& binding, T* instance);
+    Local<JsObject> newBindingClass(ClassBinding const& binding, void* instance);
+    Local<JsObject> newBindingClass(std::string const& className, void* instance);
 
 private:
     void implStaticRegister(v8::Local<v8::FunctionTemplate>& ctor, StaticBinding const& staticBinding);
@@ -124,6 +125,9 @@ private:
 
     bool mDestroying{false};
     bool mIsExternalIsolate{false};
+
+    // This symbol is used to mark the construction of objects from C++ (with special logic).
+    v8::Global<v8::Symbol> mConstructorSymbol{};
 
     std::unordered_map<ManagedResource*, v8::Global<v8::Value>>               mManagedResources;
     std::unordered_map<std::string, ClassBinding const*>                      mRegisteredBindings;

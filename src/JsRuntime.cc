@@ -15,6 +15,7 @@
 #include <cassert>
 #include <fstream>
 #include <utility>
+#include <vector>
 
 V8_WRAP_WARNING_GUARD_BEGIN
 #include <v8-context.h>
@@ -41,12 +42,16 @@ JsRuntime::JsRuntime() : mPlatform(JsPlatform::getPlatform()) {
     v8::HandleScope    handle_scope(mIsolate);
     mContext.Reset(mIsolate, v8::Context::New(mIsolate));
     mPlatform->addRuntime(this);
+
+    mConstructorSymbol = v8::Global<v8::Symbol>(mIsolate, v8::Symbol::New(mIsolate));
 }
 
 JsRuntime::JsRuntime(v8::Isolate* isolate, v8::Local<v8::Context> context)
 : mIsolate(isolate),
   mContext(v8::Global<v8::Context>{isolate, context}),
-  mIsExternalIsolate(true) {}
+  mIsExternalIsolate(true) {
+    mConstructorSymbol = v8::Global<v8::Symbol>(mIsolate, v8::Symbol::New(mIsolate));
+}
 
 JsRuntime::~JsRuntime() = default;
 
@@ -76,6 +81,7 @@ void JsRuntime::destroy() {
 
         // TODO: implement
 
+        mConstructorSymbol.Reset();
         mJsClassConstructor.clear();
         mRegisteredBindings.clear();
         mManagedResources.clear();
@@ -298,7 +304,15 @@ v8::Local<v8::FunctionTemplate> JsRuntime::createInstanceClassCtor(ClassBinding 
                     throw JsException{"Native class constructor cannot be called as a function"};
                 }
 
-                void* instance = ctor(Arguments{runtime, info});
+                void* instance = nullptr;
+                if (info.Length() == 2 && info[0]->IsSymbol()
+                    && info[0]->StrictEquals(runtime->mConstructorSymbol.Get(runtime->mIsolate))
+                    && info[1]->IsExternal()) {
+                    instance = info[1].As<v8::External>()->Value(); // constructor call from native code
+                } else {
+                    instance = ctor(Arguments{runtime, info}); // constructor call from JS code
+                }
+
                 if (instance == nullptr) {
                     throw JsException{"This native class cannot be constructed."};
                 }
@@ -336,7 +350,73 @@ v8::Local<v8::FunctionTemplate> JsRuntime::createInstanceClassCtor(ClassBinding 
     return ctor;
 }
 
-void JsRuntime::implInstanceRegister(v8::Local<v8::FunctionTemplate>& ctor, InstanceBinding const& instanceBinding) {}
+void JsRuntime::implInstanceRegister(v8::Local<v8::FunctionTemplate>& ctor, InstanceBinding const& instanceBinding) {
+    auto iTemplate = ctor->InstanceTemplate();
+    auto signature = v8::Signature::New(mIsolate);
+
+    for (auto& method : instanceBinding.mMethods) {
+        auto scriptMethodName = JsString::newString(method.mName);
+
+        auto fn = v8::FunctionTemplate::New(
+            mIsolate,
+            [](v8::FunctionCallbackInfo<v8::Value> const& info) {
+                auto method = static_cast<InstanceBinding::Method*>(info.Data().As<v8::External>()->Value());
+                auto holder = info.This()->GetAlignedPointerFromInternalField(0);
+
+                auto typedHolder = reinterpret_cast<IHolder*>(holder);
+                auto runtime     = const_cast<JsRuntime*>(typedHolder->mRuntime);
+                auto binding     = typedHolder->mClassBinding;
+
+                auto thiz = binding->unwrapInstance(holder, runtime);
+
+                try {
+                    auto val = (method->mCallback)(thiz, Arguments{runtime, info});
+                    info.GetReturnValue().Set(JsValueHelper::unwrap(val));
+                } catch (JsException const& e) {
+                    e.rethrowToRuntime();
+                }
+            },
+            v8::External::New(mIsolate, const_cast<InstanceBinding::Method*>(&method)),
+            signature
+        );
+        iTemplate->Set(JsValueHelper::unwrap(scriptMethodName), fn, v8::PropertyAttribute::DontDelete);
+    }
+}
+
+Local<JsObject> JsRuntime::newBindingClass(ClassBinding const& binding, void* instance) {
+    auto iter = mJsClassConstructor.find(&binding);
+    if (iter == mJsClassConstructor.end()) {
+        throw JsException{
+            "The native class " + binding.mClassName + " is not registered, so an instance cannot be constructed."
+        };
+    }
+
+    v8::TryCatch vtry{mIsolate};
+
+    auto ctx  = mContext.Get(mIsolate);
+    auto ctor = iter->second.Get(mIsolate)->GetFunction(ctx);
+    JsException::rethrow(vtry);
+
+    auto args = std::vector<v8::Local<v8::Value>>{
+        mConstructorSymbol.Get(mIsolate).As<v8::Value>(),
+        v8::External::New(mIsolate, instance)
+    };
+    auto val = ctor.ToLocalChecked()->NewInstance(ctx, static_cast<int>(args.size()), args.data());
+    JsException::rethrow(vtry);
+
+    return JsValueHelper::wrap<JsObject>(val.ToLocalChecked());
+}
+
+Local<JsObject> JsRuntime::newBindingClass(std::string const& className, void* instance) {
+    auto iter = mRegisteredBindings.find(className);
+    if (iter == mRegisteredBindings.end()) {
+        // return {}; // undefined
+        throw JsException{
+            "The native class " + className + " is not registered, so an instance cannot be constructed."
+        };
+    }
+    return newBindingClass(*iter->second, instance);
+}
 
 
 } // namespace v8wrap
