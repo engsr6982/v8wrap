@@ -34,6 +34,15 @@ template <typename T>
 concept IsJsInstanceConstructor = std::is_invocable_r_v<void*, T, Arguments const&>;
 
 template <typename T>
+concept HasDefaultConstructor = requires {
+    { T{} } -> std::same_as<T>;
+    requires std::is_default_constructible_v<T>;
+};
+
+template <typename T>
+concept HasUserDeclaredDestructor = !std::is_trivially_destructible_v<T>;
+
+template <typename T>
 concept IsWrappedV8Type =
     std::is_same_v<std::remove_cvref_t<T>, JsValue> || std::is_same_v<std::remove_cvref_t<T>, JsNull>
     || std::is_same_v<std::remove_cvref_t<T>, JsUndefined> || std::is_same_v<std::remove_cvref_t<T>, JsBoolean>

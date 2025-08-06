@@ -13,6 +13,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
 #include <iostream>
+#include <string>
 #include <utility>
 
 
@@ -284,15 +285,49 @@ public:
     Actor() : mID(genID()) {}
 };
 
+class UUID {
+    std::string mUUID{};
+
+public:
+    UUID() = default;
+    UUID(std::string uuid) : mUUID(std::move(uuid)) {}
+
+    std::string const& getUUID() const { return mUUID; }
+};
+
 class Player : public Actor {
-    std::string mName;
+    std::string mName{};
+    UUID        mUUID{};
 
 public:
     Player(std::string name) : mName(std::move(name)) {}
 
     std::string getTypeName() const override { return "Player"; }
 
-    std::string getName() const { return mName; }
+    std::string const& getName() const { return mName; }
+
+    UUID const& getUUID() const { return mUUID; }
 };
 
-TEST_CASE_METHOD(BindingTestFixture, "Instance binding") {}
+
+v8wrap::ClassBinding ActorBind =
+    v8wrap::bindingClass<Actor, v8wrap::RawPtrHolder<Actor>>("Actor").disableConstructor().build();
+
+v8wrap::ClassBinding PlayerBind =
+    v8wrap::bindingClass<Player, v8wrap::RawPtrHolder<Player>>("Player").disableConstructor().build();
+
+v8wrap::ClassBinding UUIDBind = v8wrap::bindingClass<UUID, v8wrap::RawPtrHolder<UUID>>("UUID").constructor<>().build();
+
+TEST_CASE_METHOD(BindingTestFixture, "Instance binding") {
+    auto fn = &Player::getName;
+
+    v8wrap::JsRuntimeScope enter{rt};
+    rt->registerBindingClass(ActorBind);
+    rt->registerBindingClass(PlayerBind);
+    rt->registerBindingClass(UUIDBind);
+
+    SECTION("JavaScript constructor") {
+        auto uuid = rt->eval("new UUID();");
+        REQUIRE(uuid.isObject());
+    }
+}

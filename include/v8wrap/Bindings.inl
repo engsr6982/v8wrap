@@ -156,8 +156,31 @@ std::pair<JsGetterCallback, JsSetterCallback> bindStaticProperty(Ty* p) {
 
 
 // Instance
-template <typename C, typename Fn>
-JsInstanceConstructor bindInstanceConstructor(Fn&& fn) {}
+template <typename C, typename... Args>
+JsInstanceConstructor bindInstanceConstructor() {
+    return [](Arguments const& args) -> void* {
+        if constexpr (sizeof...(Args) == 0) {
+            static_assert(
+                HasDefaultConstructor<C>,
+                "Class C must have a no-argument constructor; otherwise, a constructor must be specified."
+            );
+            if (args.length() != 0) return nullptr; // Parameter mismatch
+            return new C();
+
+        } else {
+            constexpr size_t N = sizeof...(Args);
+            if (args.length() != N) return nullptr; // Parameter mismatch
+
+            using Tuple = std::tuple<Args...>;
+
+            auto parameters = ConvertArgsToTuple<Tuple>(args, std::make_index_sequence<N>());
+            return std::apply(
+                [](auto&&... unpackedArgs) { return new C(std::forward<decltype(unpackedArgs)>(unpackedArgs)...); },
+                std::move(parameters)
+            );
+        }
+    };
+}
 
 template <typename C, typename Fn>
 JsInstanceFunctionCallback bindInstanceMethod(Fn&& fn) {}
@@ -175,8 +198,6 @@ JsInstanceSetterCallback bindInstanceSetter(Fn&& fn) {}
 // std::pair<JsInstanceGetterCallback, JsInstanceSetterCallback> bindInstanceProperty(C obj, T C::* prop) {}
 
 } // namespace internal
-
-
 
 
 } // namespace v8wrap

@@ -101,6 +101,7 @@ public:
 
 private:
     void implStaticRegister(v8::Local<v8::FunctionTemplate>& ctor, StaticBinding const& staticBinding);
+    v8::Local<v8::FunctionTemplate> createInstanceClassCtor(ClassBinding const& binding);
     void implInstanceRegister(v8::Local<v8::FunctionTemplate>& ctor, InstanceBinding const& instanceBinding);
 
     friend class JsRuntimeScope;

@@ -84,11 +84,7 @@ using JsInstanceGetterCallback = std::function<Local<JsValue>(void*)>;
 
 
 // 绑定相关
-template <typename T>
-class ClassDefine;
-
-template <typename T>
-class EnumDefine;
+class ClassBinding;
 
 
 namespace internal {

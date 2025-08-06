@@ -34,23 +34,31 @@ InstanceBinding::Function::Function(std::string name, JsInstanceFunctionCallback
 InstanceBinding::InstanceBinding(
     JsInstanceConstructor constructor,
     std::vector<Property> property,
-    std::vector<Function> functions
+    std::vector<Function> functions,
+    size_t                classSize
 )
 : mConstructor(std::move(constructor)),
   mProperty(std::move(property)),
-  mFunctions(std::move(functions)) {}
+  mFunctions(std::move(functions)),
+  mClassSize(classSize) {}
 
 
 ClassBinding::ClassBinding(
     std::string         name,
     StaticBinding       static_,
     InstanceBinding     instance,
-    ClassBinding const* parent
+    ClassBinding const* parent,
+    HolderCtor          holderCtor,
+    HolderGetter        holderGetter,
+    HolderDeleter       holderDeleter
 )
 : mClassName(std::move(name)),
   mStaticBinding(std::move(static_)),
   mInstanceBinding(std::move(instance)),
-  mExtends(parent) {}
+  mExtends(parent),
+  mHolderCtor(std::move(holderCtor)),
+  mHolderGetter(std::move(holderGetter)),
+  mHolderDeleter(std::move(holderDeleter)) {}
 
 bool ClassBinding::hasInstanceConstructor() const { return mInstanceBinding.mConstructor != nullptr; }
 
