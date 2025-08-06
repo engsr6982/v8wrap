@@ -14,7 +14,20 @@ struct IHolder {
 };
 
 
-template <typename H, typename Ty, bool Owned = true>
+/**
+ * In v8wrap, every instance class bound to JavaScript requires a Holder.
+ * v8wrap does not care about how you store or manage this resource.
+ * When a bound class is constructed, v8wrap will store the instance (void*) in the Holder.
+ * Similarly, when the resource is destructed, v8wrap will delete this Holder. If you need to release the resource, you
+ *  must do so in the destructor of the Holder.
+ * For safety, all Holders must satisfy the constraints of Holder and inherit from IHolder.
+ * You are not responsible for initializing the resources of IHolder; v8wrap will initialize it at the appropriate time.
+ * Each Holder should follow the RAII principle, which can maximize the prevention of memory leaks.
+ * The design concept of Holder is to separate construction and storage, providing maximum flexibility.
+ * Therefore, the safety of the resource is the responsibility of the Holder, and v8wrap only manages the life cycle of
+ *  the Holder.
+ */
+template <typename H, typename Ty>
 concept Holder = std::is_base_of_v<IHolder, H> && std::is_final_v<H> && std::constructible_from<H, Ty*>
               && HasUserDeclaredDestructor<H> && requires(H h, JsRuntime* rt) {
                      { h(rt) } -> std::same_as<Ty*>;
