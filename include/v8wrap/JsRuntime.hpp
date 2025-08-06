@@ -104,6 +104,9 @@ public:
 
     [[nodiscard]] void* getBindingClassInstance(Local<JsObject> const& obj) const;
 
+    template <typename T>
+    [[nodiscard]] inline T* getBindingClassInstance(Local<JsObject> const& obj) const;
+
     void gc() const;
 
 private:

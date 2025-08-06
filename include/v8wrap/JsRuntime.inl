@@ -17,5 +17,10 @@ Local<JsValue> JsRuntime::eval(T const& str) {
     return eval(JsString::newString(str));
 }
 
+template <typename T>
+T* JsRuntime::getBindingClassInstance(Local<JsObject> const& obj) const {
+    return static_cast<T*>(this->getBindingClassInstance(obj));
+}
+
 
 } // namespace v8wrap
