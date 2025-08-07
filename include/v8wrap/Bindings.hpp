@@ -265,6 +265,7 @@ public:
     // ClassBindingBuilder<C, H>& instanceProperty() {}
 
     ClassBindingBuilder<C, H>& extends(ClassBinding const& parent) {
+        static_assert(!std::is_void_v<C>, "Only instance classes can set up inheritance.");
         mExtends = &parent;
         return *this;
     }

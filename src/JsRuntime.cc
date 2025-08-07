@@ -196,6 +196,12 @@ void JsRuntime::registerBindingClass(ClassBinding const& binding) {
     ctor->SetClassName(JsValueHelper::unwrap(scriptClassName));
 
     if (binding.mExtends != nullptr) {
+        if (!binding.mExtends->hasInstanceConstructor()) {
+            throw JsException{
+                binding.mClassName + " cannot inherit from " + binding.mExtends->mClassName
+                + " because it is a static class without a prototype."
+            };
+        }
         auto iter = mJsClassConstructor.find(binding.mExtends);
         if (iter == mJsClassConstructor.end()) {
             throw JsException{
