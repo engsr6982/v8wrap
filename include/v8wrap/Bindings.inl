@@ -106,7 +106,7 @@ JsFunctionCallback bindStaticFunction(Func&& func) {
             std::apply(f, ConvertArgsToTuple<Tuple>(args, std::make_index_sequence<N>()));
             return JsUndefined::newUndefined();
         } else {
-            auto ret = std::apply(f, ConvertArgsToTuple<Tuple>(args, std::make_index_sequence<N>()));
+            decltype(auto) ret = std::apply(f, ConvertArgsToTuple<Tuple>(args, std::make_index_sequence<N>()));
             return ConvertToJs(ret);
         }
     };
@@ -206,7 +206,7 @@ JsInstanceMethodCallback bindInstanceMethod(Func&& fn) {
             );
             return JsUndefined::newUndefined();
         } else {
-            auto ret = std::apply(
+            decltype(auto) ret = std::apply(
                 f,
                 std::tuple_cat(
                     std::make_tuple(typedInstance),
