@@ -369,7 +369,7 @@ v8::Local<v8::FunctionTemplate> JsRuntime::createInstanceClassCtor(ClassBinding 
 }
 
 void JsRuntime::implInstanceRegister(v8::Local<v8::FunctionTemplate>& ctor, InstanceBinding const& instanceBinding) {
-    auto iTemplate = ctor->InstanceTemplate();
+    auto prototype = ctor->PrototypeTemplate();
     auto signature = v8::Signature::New(mIsolate);
 
     for (auto& method : instanceBinding.mMethods) {
@@ -397,7 +397,68 @@ void JsRuntime::implInstanceRegister(v8::Local<v8::FunctionTemplate>& ctor, Inst
             v8::External::New(mIsolate, const_cast<InstanceBinding::Method*>(&method)),
             signature
         );
-        iTemplate->Set(JsValueHelper::unwrap(scriptMethodName), fn, v8::PropertyAttribute::DontDelete);
+        prototype->Set(JsValueHelper::unwrap(scriptMethodName), fn, v8::PropertyAttribute::DontDelete);
+    }
+
+    for (auto& prop : instanceBinding.mProperty) {
+        auto scriptPropertyName = JsString::newString(prop.mName);
+        auto data               = v8::External::New(mIsolate, const_cast<InstanceBinding::Property*>(&prop));
+        v8::Local<v8::FunctionTemplate> v8Getter;
+        v8::Local<v8::FunctionTemplate> v8Setter;
+
+        v8Getter = v8::FunctionTemplate::New(
+            mIsolate,
+            [](v8::FunctionCallbackInfo<v8::Value> const& info) {
+                auto prop   = static_cast<InstanceBinding::Property*>(info.Data().As<v8::External>()->Value());
+                auto holder = info.This()->GetAlignedPointerFromInternalField(0);
+
+                auto typedHolder = reinterpret_cast<IHolder*>(holder);
+                auto runtime     = const_cast<JsRuntime*>(typedHolder->mRuntime);
+                auto binding     = typedHolder->mClassBinding;
+
+                auto thiz = binding->unwrapInstance(holder, runtime);
+
+                try {
+                    auto val = (prop->mGetter)(thiz);
+                    info.GetReturnValue().Set(JsValueHelper::unwrap(val));
+                } catch (JsException const& e) {
+                    e.rethrowToRuntime();
+                }
+            },
+            data,
+            signature
+        );
+
+        if (prop.mSetter) {
+            v8Setter = v8::FunctionTemplate::New(
+                mIsolate,
+                [](v8::FunctionCallbackInfo<v8::Value> const& info) {
+                    auto prop   = static_cast<InstanceBinding::Property*>(info.Data().As<v8::External>()->Value());
+                    auto holder = info.This()->GetAlignedPointerFromInternalField(0);
+
+                    auto typedHolder = reinterpret_cast<IHolder*>(holder);
+                    auto runtime     = const_cast<JsRuntime*>(typedHolder->mRuntime);
+                    auto binding     = typedHolder->mClassBinding;
+
+                    auto thiz = binding->unwrapInstance(holder, runtime);
+
+                    try {
+                        (prop->mSetter)(thiz, JsValueHelper::wrap<JsValue>(info[0]));
+                    } catch (JsException const& e) {
+                        e.rethrowToRuntime();
+                    }
+                },
+                data,
+                signature
+            );
+        }
+
+        prototype->SetAccessorProperty(
+            JsValueHelper::unwrap(scriptPropertyName).As<v8::Name>(),
+            v8Getter,
+            v8Setter,
+            v8::PropertyAttribute::DontDelete
+        );
     }
 }
 

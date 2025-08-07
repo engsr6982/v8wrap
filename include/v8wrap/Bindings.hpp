@@ -38,6 +38,15 @@ JsInstanceMethodCallback bindInstanceMethod(Func&& fn);
 template <typename C, typename... Func>
 JsInstanceMethodCallback bindInstanceOverloadedMethod(Func&&... funcs);
 
+template <typename C, typename Fn>
+JsInstanceGetterCallback bindInstanceGetter(Fn&& fn);
+
+template <typename C, typename Fn>
+JsInstanceSetterCallback bindInstanceSetter(Fn&& fn);
+
+template <typename C, typename Ty>
+std::pair<JsInstanceGetterCallback, JsInstanceSetterCallback> bindInstanceProperty(Ty C::* prop);
+
 
 } // namespace internal
 
@@ -140,10 +149,15 @@ constexpr size_t size_of_v<void> = 0;
 
 template <typename C = void, typename H = void>
 struct ClassBindingBuilder {
+    // 确保 C 与 H 一致：要么都是 void（用于静态类），要么都不是 void（用于实例类）
+    // Ensure C and H are either both void (for static class) or both non-void (for instance class)
     static_assert(
         std::is_void_v<C> == std::is_void_v<H>,
         "C and H must both be void (for static class) or both non-void (for instance class)"
     );
+
+    // 实例类要求 H 满足 Holder<H, C> 的概念约束
+    // Instance classes require H to satisfy the Holder<H, C> concept
     static_assert(std::is_void_v<C> || Holder<H, C>, "For instance class, H must satisfy Holder<H, C> concept");
 
 private:
@@ -159,6 +173,7 @@ private:
 public:
     explicit ClassBindingBuilder(std::string className) : mClassName(std::move(className)) {}
 
+    // 注册静态方法（已包装的 JsFunctionCallback） / Register static function (already wrapped)
     template <typename Fn>
         requires(IsJsFunctionCallback<Fn>)
     ClassBindingBuilder<C, H>& function(std::string name, Fn&& fn) {
@@ -166,6 +181,7 @@ public:
         return *this;
     }
 
+    // 注册静态方法（自动包装） / Register static function (wrap C++ callable)
     template <typename Fn>
         requires(!IsJsFunctionCallback<Fn>)
     ClassBindingBuilder<C, H>& function(std::string name, Fn&& fn) {
@@ -173,6 +189,7 @@ public:
         return *this;
     }
 
+    // 注册重载静态方法 / Register overloaded static functions
     template <typename... Fn>
         requires(sizeof...(Fn) > 1 && (!IsJsFunctionCallback<Fn> && ...))
     ClassBindingBuilder<C, H>& function(std::string name, Fn&&... fn) {
@@ -180,28 +197,45 @@ public:
         return *this;
     }
 
-    ClassBindingBuilder<C, H>& property(std::string name, JsGetterCallback getter, JsSetterCallback setter) {
+    // 注册静态属性（回调形式）/ Static property with raw callback
+    ClassBindingBuilder<C, H>& property(std::string name, JsGetterCallback getter, JsSetterCallback setter = nullptr) {
         mStaticProperty.emplace_back(std::move(name), std::move(getter), std::move(setter));
         return *this;
     }
 
-    ClassBindingBuilder<C, H>& property(std::string name, JsGetterCallback getter) {
-        mStaticProperty.emplace_back(std::move(name), std::move(getter), nullptr);
-        return *this;
-    }
-
+    // 静态属性（变量指针）/ Static property from global/static variable pointer
     template <typename Ty>
-    ClassBindingBuilder<C, H>& property(std::string name, Ty* mem) {
-        auto gs = internal::bindStaticProperty<Ty>(mem);
+    ClassBindingBuilder<C, H>& property(std::string name, Ty* member) {
+        auto gs = internal::bindStaticProperty<Ty>(member);
         mStaticProperty.emplace_back(std::move(name), std::move(gs.first), std::move(gs.second));
         return *this;
     }
 
+    // 静态属性（仅 getter）/ Static property with only getter
+    template <typename G>
+        requires(!IsJsGetterCallback<G>)
+    ClassBindingBuilder<C, H>& property(std::string name, G&& getter) {
+        mStaticProperty.emplace_back(std::move(name), internal::bindStaticGetter(std::forward<G>(getter)), nullptr);
+        return *this;
+    }
 
+    // 静态属性（getter + setter）/ Static property with getter and setter
+    template <typename G, typename S>
+        requires(!IsJsGetterCallback<G> && !IsJsSetterCallback<S>)
+    ClassBindingBuilder<C, H>& property(std::string name, G&& getter, S&& setter) {
+        mStaticProperty.emplace_back(
+            std::move(name),
+            internal::bindStaticGetter(std::forward<G>(getter)),
+            internal::bindStaticSetter(std::forward<S>(setter))
+        );
+        return *this;
+    }
+
+
+    /* Instance Interface */
     /**
-     * Bind a constructor. If no parameters are passed, the default constructor is used.
-     * Note: When the default constructor or a specified constructor is overloaded,
-     * the corresponding class must have the specified constructor!
+     * 绑定默认构造函数。必须可被指定参数调用。
+     * Bind a default constructor. C must be constructible with specified arguments.
      */
     template <typename... Args>
         requires(!std::is_void_v<C>)
@@ -216,7 +250,8 @@ public:
     }
 
     /**
-     * Custom constructor. Handle the construction by yourself and then return T*.
+     * 自定义构造逻辑。返回对象指针。
+     * Register a custom constructor. Should return a pointer to the instance.
      */
     template <typename T = C>
         requires(!std::is_void_v<T>)
@@ -227,7 +262,8 @@ public:
     }
 
     /**
-     * Prohibit construction on the JavaScript side
+     * 禁用构造函数，使 JavaScript 无法构造此类。
+     * Disable constructor from being called in JavaScript.
      */
     template <typename T = C>
         requires(!std::is_void_v<T>)
@@ -237,22 +273,25 @@ public:
         return *this;
     }
 
+    // 注册实例方法（已包装）/ Instance method with JsInstanceMethodCallback
     template <typename Fn>
-        requires(!std::is_void_v<C> && IsJsFunctionCallback<Fn>)
+        requires(!std::is_void_v<C> && IsJsInstanceMethodCallback<Fn>)
     ClassBindingBuilder<C, H>& instanceMethod(std::string name, Fn&& fn) {
         mInstanceFunctions.emplace_back(std::move(name), std::forward<Fn>(fn));
         return *this;
     }
 
+    // 实例方法（自动包装）/ Instance method with automatic binding
     template <typename Fn>
-        requires(!std::is_void_v<C> && !IsJsFunctionCallback<Fn>)
+        requires(!std::is_void_v<C> && !IsJsInstanceMethodCallback<Fn>)
     ClassBindingBuilder<C, H>& instanceMethod(std::string name, Fn&& fn) {
         mInstanceFunctions.emplace_back(std::move(name), internal::bindInstanceMethod<C>(std::forward<Fn>(fn)));
         return *this;
     }
 
+    // 实例重载方法 / Overloaded instance methods
     template <typename... Fn>
-        requires(!std::is_void_v<C> && (sizeof...(Fn) > 1 && (!IsJsFunctionCallback<Fn> && ...)))
+        requires(!std::is_void_v<C> && (sizeof...(Fn) > 1 && (!IsJsInstanceMethodCallback<Fn> && ...)))
     ClassBindingBuilder<C, H>& instanceMethod(std::string name, Fn&&... fn) {
         mInstanceFunctions.emplace_back(
             std::move(name),
@@ -261,9 +300,44 @@ public:
         return *this;
     }
 
-    // template <typename>
-    // ClassBindingBuilder<C, H>& instanceProperty() {}
+    // 实例属性（回调）/ Instance property with callbacks
+    ClassBindingBuilder<C, H>&
+    instanceProperty(std::string name, JsInstanceGetterCallback getter, JsInstanceSetterCallback setter = nullptr) {
+        static_assert(!std::is_void_v<C>, "Only instance class can have instanceProperty");
+        mInstanceProperty.emplace_back(std::move(name), std::move(getter), std::move(setter));
+        return *this;
+    }
 
+    // 实例属性（成员变量）/ Instance property from C::* member
+    template <typename Member>
+        requires(!std::is_void_v<C> && std::is_member_object_pointer_v<Member>)
+    ClassBindingBuilder<C, H>& instanceProperty(std::string name, Member member) {
+        auto gs = internal::bindInstanceProperty<C>(member);
+        mInstanceProperty.emplace_back(std::move(name), std::move(gs.first), std::move(gs.second));
+        return *this;
+    }
+
+    // 实例属性（仅 getter）/ Instance property with only getter
+    template <typename G>
+        requires(!std::is_void_v<C> && !IsJsInstanceGetterCallback<G>)
+    ClassBindingBuilder<C, H>& instanceProperty(std::string name, G&& getter) {
+        mInstanceProperty.emplace_back(std::move(name), internal::bindInstanceGetter(std::forward<G>(getter)), nullptr);
+        return *this;
+    }
+
+    // 实例属性（getter + setter）/ Instance property with getter and setter
+    template <typename G, typename S>
+        requires(!std::is_void_v<C> && !IsJsInstanceGetterCallback<G> && !IsJsInstanceSetterCallback<S>)
+    ClassBindingBuilder<C, H>& instanceProperty(std::string name, G&& getter, S&& setter) {
+        mInstanceProperty.emplace_back(
+            std::move(name),
+            internal::bindInstanceGetter(std::forward<G>(getter)),
+            internal::bindInstanceSetter(std::forward<S>(setter))
+        );
+        return *this;
+    }
+
+    // 设置继承关系 / Set base class
     ClassBindingBuilder<C, H>& extends(ClassBinding const& parent) {
         static_assert(!std::is_void_v<C>, "Only instance classes can set up inheritance.");
         mExtends = &parent;

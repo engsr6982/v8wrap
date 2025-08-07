@@ -236,13 +236,34 @@ JsInstanceMethodCallback bindInstanceOverloadedMethod(Func&&... funcs) {
 }
 
 template <typename C, typename Fn>
-JsInstanceGetterCallback bindInstanceGetter(Fn&& fn) {}
+JsInstanceGetterCallback bindInstanceGetter(Fn&& fn) {
+    return [f = std::forward<Fn>(fn)](void* inst) -> Local<JsValue> {
+        return ConvertToJs(std::invoke(f, static_cast<C*>(inst)));
+    };
+}
 
 template <typename C, typename Fn>
-JsInstanceSetterCallback bindInstanceSetter(Fn&& fn) {}
+JsInstanceSetterCallback bindInstanceSetter(Fn&& fn) {
+    using Ty = ArgType_t<Fn>;
+    return [f = std::forward<Fn>(fn)](void* inst, Local<JsValue> const& value) -> void {
+        std::invoke(f, static_cast<C*>(inst), ConvertToCpp<Ty>(value));
+    };
+}
 
-// template <typename C, typename T>
-// std::pair<JsInstanceGetterCallback, JsInstanceSetterCallback> bindInstanceProperty(C obj, T C::* prop) {}
+template <typename C, typename Ty>
+std::pair<JsInstanceGetterCallback, JsInstanceSetterCallback> bindInstanceProperty(Ty C::* prop) {
+    if constexpr (std::is_const_v<Ty>) {
+        return {
+            bindInstanceGetter<C>([prop](C* inst) -> Ty { return inst->*prop; }),
+            nullptr // const
+        };
+    } else {
+        return {
+            bindInstanceGetter<C>([prop](C* inst) -> Ty { return inst->*prop; }),
+            bindInstanceSetter<C>([prop](C* inst, Ty val) -> void { inst->*prop = val; })
+        };
+    }
+}
 
 } // namespace internal
 

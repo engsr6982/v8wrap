@@ -31,7 +31,23 @@ template <typename T>
 concept IsJsFunctionCallback = std::is_invocable_r_v<Local<JsValue>, T, Arguments const&>;
 
 template <typename T>
+concept IsJsGetterCallback = std::is_invocable_r_v<Local<JsValue>, T>;
+
+template <typename T>
+concept IsJsSetterCallback = std::is_invocable_r_v<void, T, Local<JsValue> const&>;
+
+template <typename T>
 concept IsJsInstanceConstructor = std::is_invocable_r_v<void*, T, Arguments const&>;
+
+template <typename T>
+concept IsJsInstanceMethodCallback = std::is_invocable_r_v<Local<JsValue>, T, void*, Arguments const&>;
+
+template <typename T>
+concept IsJsInstanceGetterCallback = std::is_invocable_r_v<Local<JsValue>, T, void*>;
+
+template <typename T>
+concept IsJsInstanceSetterCallback = std::is_invocable_r_v<void, T, void*, Local<JsValue> const&>;
+
 
 template <typename T>
 concept HasDefaultConstructor = requires {
