@@ -105,7 +105,7 @@ public:
     [[nodiscard]] void* getNativeInstanceOf(Local<JsObject> const& obj) const;
 
     template <typename T>
-    [[nodiscard]] inline T* getBindingClassInstance(Local<JsObject> const& obj) const;
+    [[nodiscard]] inline T* getNativeInstanceOf(Local<JsObject> const& obj) const;
 
     void gc() const;
 

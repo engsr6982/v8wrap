@@ -321,7 +321,8 @@ public:
     template <typename G>
         requires(!std::is_void_v<C> && !IsJsInstanceGetterCallback<G> && !std::is_member_object_pointer_v<G>)
     ClassBindingBuilder<C, H>& instanceProperty(std::string name, G&& getter) {
-        mInstanceProperty.emplace_back(std::move(name), internal::bindInstanceGetter(std::forward<G>(getter)), nullptr);
+        mInstanceProperty
+            .emplace_back(std::move(name), internal::bindInstanceGetter<C>(std::forward<G>(getter)), nullptr);
         return *this;
     }
 
@@ -331,8 +332,8 @@ public:
     ClassBindingBuilder<C, H>& instanceProperty(std::string name, G&& getter, S&& setter) {
         mInstanceProperty.emplace_back(
             std::move(name),
-            internal::bindInstanceGetter(std::forward<G>(getter)),
-            internal::bindInstanceSetter(std::forward<S>(setter))
+            internal::bindInstanceGetter<C>(std::forward<G>(getter)),
+            internal::bindInstanceSetter<C>(std::forward<S>(setter))
         );
         return *this;
     }
