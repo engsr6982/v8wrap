@@ -195,6 +195,18 @@ void JsRuntime::registerBindingClass(ClassBinding const& binding) {
     auto scriptClassName = JsString::newString(binding.mClassName);
     ctor->SetClassName(JsValueHelper::unwrap(scriptClassName));
 
+    if (binding.mExtends != nullptr) {
+        auto iter = mJsClassConstructor.find(binding.mExtends);
+        if (iter == mJsClassConstructor.end()) {
+            throw JsException{
+                binding.mClassName + " cannot inherit from " + binding.mExtends->mClassName
+                + " because the parent class is not registered."
+            };
+        }
+        auto parentCtor = iter->second.Get(mIsolate);
+        ctor->Inherit(parentCtor);
+    }
+
     implStaticRegister(ctor, binding.mStaticBinding);
     implInstanceRegister(ctor, binding.mInstanceBinding);
 

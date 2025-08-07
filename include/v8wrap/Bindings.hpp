@@ -99,7 +99,7 @@ public:
     std::string const     mClassName;
     StaticBinding const   mStaticBinding;
     InstanceBinding const mInstanceBinding;
-    ClassBinding const*   mExtends;
+    ClassBinding const*   mExtends{nullptr};
 
     [[nodiscard]] bool hasInstanceConstructor() const;
 
@@ -153,6 +153,7 @@ private:
     JsInstanceConstructor                  mInstanceConstructor;
     std::vector<InstanceBinding::Property> mInstanceProperty;
     std::vector<InstanceBinding::Method>   mInstanceFunctions;
+    ClassBinding const*                    mExtends         = nullptr;
     bool const                             mIsInstanceClass = !std::is_void_v<C> && !std::is_void_v<H>;
 
 public:
@@ -263,7 +264,10 @@ public:
     // template <typename>
     // ClassBindingBuilder<C, H>& instanceProperty() {}
 
-    // ClassBindingBuilder<C, H>& extends(ClassBinding<P> const& parent) {}
+    ClassBindingBuilder<C, H>& extends(ClassBinding const& parent) {
+        mExtends = &parent;
+        return *this;
+    }
 
     ClassBinding build() {
         if (mIsInstanceClass && !mInstanceConstructor) {
@@ -289,7 +293,7 @@ public:
             std::move(mClassName),
             StaticBinding{std::move(mStaticProperty), std::move(mStaticFunctions)},
             InstanceBinding{std::move(mInstanceConstructor), std::move(mInstanceProperty), std::move(mInstanceFunctions), size_of_v<C>},
-            nullptr,
+            mExtends,
             std::move(ctor),
             std::move(getter),
             std::move(deleter),
