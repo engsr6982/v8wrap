@@ -319,7 +319,7 @@ public:
 
     // 实例属性（仅 getter）/ Instance property with only getter
     template <typename G>
-        requires(!std::is_void_v<C> && !IsJsInstanceGetterCallback<G>)
+        requires(!std::is_void_v<C> && !IsJsInstanceGetterCallback<G> && !std::is_member_object_pointer_v<G>)
     ClassBindingBuilder<C, H>& instanceProperty(std::string name, G&& getter) {
         mInstanceProperty.emplace_back(std::move(name), internal::bindInstanceGetter(std::forward<G>(getter)), nullptr);
         return *this;
