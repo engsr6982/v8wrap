@@ -198,20 +198,18 @@ JsInstanceMethodCallback bindInstanceMethod(Func&& fn) {
 
         if constexpr (std::is_void_v<R>) {
             std::apply(
-                f,
-                std::tuple_cat(
-                    std::make_tuple(typedInstance),
-                    ConvertArgsToTuple<Tuple>(args, std::make_index_sequence<N>())
-                )
+                [typedInstance, &f](auto&&... unpackedArgs) {
+                    (typedInstance->*f)(std::forward<decltype(unpackedArgs)>(unpackedArgs)...);
+                },
+                ConvertArgsToTuple<Tuple>(args, std::make_index_sequence<N>())
             );
             return JsUndefined::newUndefined();
         } else {
             decltype(auto) ret = std::apply(
-                f,
-                std::tuple_cat(
-                    std::make_tuple(typedInstance),
-                    ConvertArgsToTuple<Tuple>(args, std::make_index_sequence<N>())
-                )
+                [typedInstance, &f](auto&&... unpackedArgs) -> R {
+                    return (typedInstance->*f)(std::forward<decltype(unpackedArgs)>(unpackedArgs)...);
+                },
+                ConvertArgsToTuple<Tuple>(args, std::make_index_sequence<N>())
             );
             return ConvertToJs(ret);
         }

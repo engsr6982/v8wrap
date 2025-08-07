@@ -283,7 +283,7 @@ public:
 
     // 实例方法（自动包装）/ Instance method with automatic binding
     template <typename Fn>
-        requires(!std::is_void_v<C> && !IsJsInstanceMethodCallback<Fn>)
+        requires(!std::is_void_v<C> && !IsJsInstanceMethodCallback<Fn> && std::is_member_function_pointer_v<Fn>)
     ClassBindingBuilder<C, H>& instanceMethod(std::string name, Fn&& fn) {
         mInstanceFunctions.emplace_back(std::move(name), internal::bindInstanceMethod<C>(std::forward<Fn>(fn)));
         return *this;
@@ -291,7 +291,11 @@ public:
 
     // 实例重载方法 / Overloaded instance methods
     template <typename... Fn>
-        requires(!std::is_void_v<C> && (sizeof...(Fn) > 1 && (!IsJsInstanceMethodCallback<Fn> && ...)))
+        requires(
+            !std::is_void_v<C>
+            && (sizeof...(Fn) > 1 && (!IsJsInstanceMethodCallback<Fn> && ...)
+                && (std::is_member_function_pointer_v<Fn> && ...))
+        )
     ClassBindingBuilder<C, H>& instanceMethod(std::string name, Fn&&... fn) {
         mInstanceFunctions.emplace_back(
             std::move(name),
