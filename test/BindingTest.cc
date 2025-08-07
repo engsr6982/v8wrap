@@ -9,6 +9,7 @@
 #include "v8wrap/JsRuntimeScope.hpp"
 #include "v8wrap/JsValue.hpp"
 #include "v8wrap/Native.hpp"
+#include "v8wrap/TypeConverter.hpp"
 #include "v8wrap/Types.hpp"
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
@@ -268,66 +269,233 @@ TEST_CASE_METHOD(BindingTestFixture, "Static binding") {
 // TODO: Test instance binding
 // TODO: Test inheritance
 class Actor {
-    int mID;
-
     static int genID() {
         static int id = 0;
         return id++;
     }
 
 public:
-    virtual ~Actor() { std::cout << "Actor::~Actor()" << std::endl; }
+    int id_;
+
+    Actor() : id_(genID()) { std::cout << "Actor::Actor() & id = " << id_ << std::endl; }
+    virtual ~Actor() { std::cout << "Actor::~Actor() & id = " << id_ << std::endl; }
 
     virtual std::string getTypeName() const { return "Actor"; }
 
-    virtual int getID() const { return mID; }
+    virtual int getID() const { return id_; }
 
-    Actor() : mID(genID()) {}
+    static std::string foo() { return "Actor::foo()"; }
+    static std::string bar; // static member
 };
+std::string Actor::bar = "Actor::bar";
 
 class UUID {
-    std::string mUUID{};
-
 public:
-    UUID() = default;
-    UUID(std::string uuid) : mUUID(std::move(uuid)) {}
+    std::string str_id_{};
 
-    std::string const& getUUID() const { return mUUID; }
+    UUID() = default;
+    UUID(std::string uuid) : str_id_(std::move(uuid)) {}
+
+    std::string const& getUUID() const { return str_id_; }
+
+    void setUUID(std::string uuid) { this->str_id_ = std::move(uuid); }
 };
 
 class Player : public Actor {
-    std::string mName{};
-    UUID        mUUID{};
-
 public:
-    Player(std::string name) : mName(std::move(name)) {}
+    std::string name_{};
+    UUID        uuid_{};
+
+    Player(std::string name) : name_(std::move(name)) {}
 
     std::string getTypeName() const override { return "Player"; }
 
-    std::string const& getName() const { return mName; }
+    std::string const& getName() const { return name_; }
 
-    UUID const& getUUID() const { return mUUID; }
+    void setName(std::string name) { this->name_ = std::move(name); }
+
+    UUID const& getUUID() const { return uuid_; }
+
+    void setUUID(UUID uuid) { this->uuid_ = std::move(uuid); }
 };
 
 
-v8wrap::ClassBinding ActorBind =
-    v8wrap::bindingClass<Actor, v8wrap::RawPtrHolder<Actor>>("Actor").disableConstructor().build();
+v8wrap::ClassBinding UUIDBind = v8wrap::bindingClass<UUID, v8wrap::RawPtrHolder<UUID>>("UUID")
+                                    .constructor<std::string>()
+                                    .instanceProperty("str_id_", &UUID::str_id_)
+                                    .instanceMethod("getUUID", &UUID::getUUID)
+                                    .instanceMethod("setUUID", &UUID::setUUID)
+                                    .build();
+
+namespace v8wrap {
+template <>
+struct TypeConverter<UUID> {
+    static Local<JsValue> toJs(UUID const& uuid) {
+        return JsRuntimeScope::currentRuntimeChecked().newInstanceOf(UUIDBind, const_cast<UUID*>(&uuid));
+    }
+
+    static UUID toCpp(Local<JsValue> const& value) {
+        if (!value.isObject()) {
+            return {};
+        }
+        auto inst = JsRuntimeScope::currentRuntimeChecked().getNativeInstanceOf<UUID>(value.asObject());
+        if (!inst) {
+            return {};
+        }
+        return *inst;
+    }
+};
+} // namespace v8wrap
+
+v8wrap::ClassBinding ActorBind = v8wrap::bindingClass<Actor, v8wrap::RawPtrHolder<Actor>>("Actor")
+                                     .disableConstructor()
+                                     .instanceProperty("id_", &Actor::id_)
+                                     .instanceMethod("getTypeName", &Actor::getTypeName)
+                                     .instanceMethod("getID", &Actor::getID)
+                                     .function("foo", &Actor::foo)
+                                     .property("bar", &Actor::bar)
+                                     .build();
 
 v8wrap::ClassBinding PlayerBind =
-    v8wrap::bindingClass<Player, v8wrap::RawPtrHolder<Player>>("Player").disableConstructor().build();
+    v8wrap::bindingClass<Player, v8wrap::RawPtrHolder<Player>>("Player")
+        .customConstructor([](v8wrap::Arguments const& args) -> void* {
+            if (args.length() != 1) {
+                return nullptr;
+            }
+            if (!args[0].isString()) {
+                return nullptr;
+            }
+            return new Player(args[0].asString().getValue());
+        })
+        .instanceProperty("name_", &Player::name_)
+        .instanceProperty(
+            "uuid_",
+            /* ! Note: Dangerous behavior. Attention should be paid to the lifecycle of nested objects. */
+            [](void* inst) -> v8wrap::Local<v8wrap::JsValue> {
+                auto typed = static_cast<Player*>(inst);
+                /*
+                 ! Due to the specialization of the TypeConverter below,
+                 !  returning a reference will result in the association of their lifecycles.
+                 ! This is extremely dangerous because the lifecycle of UUID is actually tied to that of Player, which
+                 !  will lead to a crash!
+                 ! The safe way is to copy a copy from here, or ensure the lifecycle of the Player.
+                 */
+                auto& rt = v8wrap::JsRuntimeScope::currentRuntimeChecked();
+                return rt.newInstanceOf(UUIDBind, new UUID(typed->uuid_)); // copy constructor
+            },
+            [](void* inst, v8wrap::Local<v8wrap::JsValue> const& value) -> void {
+                auto typed = static_cast<Player*>(inst);
+                if (!value.isObject()) {
+                    return;
+                }
+                auto& rt = v8wrap::JsRuntimeScope::currentRuntimeChecked();
+                if (!rt.isInstanceOf(value.asObject(), UUIDBind)) {
+                    throw v8wrap::JsException{"Not a UUID instance"};
+                }
+                auto uuid = rt.getNativeInstanceOf<UUID>(value.asObject());
+                if (!uuid) {
+                    return;
+                }
+                typed->uuid_ = *uuid;
+            }
+        )
+        .instanceMethod("getTypeName", &Player::getTypeName)
+        .instanceMethod("getName", &Player::getName)
+        .instanceMethod("setName", &Player::setName)
+        .instanceMethod("getUUID", &Player::getUUID)
+        .instanceMethod("setUUID", &Player::setUUID)
+        .extends(ActorBind)
+        .build();
 
-v8wrap::ClassBinding UUIDBind = v8wrap::bindingClass<UUID, v8wrap::RawPtrHolder<UUID>>("UUID").constructor<>().build();
 
 TEST_CASE_METHOD(BindingTestFixture, "Instance binding") {
-    auto fn = &Player::getName;
-
     v8wrap::JsRuntimeScope enter{rt};
-    rt->registerBindingClass(ActorBind);
-    rt->registerBindingClass(PlayerBind);
-    rt->registerBindingClass(UUIDBind);
 
-    SECTION("JavaScript constructor") {
-        auto uuid = rt->eval("new UUID();");
+    REQUIRE_NOTHROW(rt->registerBindingClass(ActorBind));
+    REQUIRE_NOTHROW(rt->registerBindingClass(PlayerBind));
+    REQUIRE_NOTHROW(rt->registerBindingClass(UUIDBind));
+
+    SECTION("Verify the construction behavior") {
+        // Binding construction
+        auto uuid = rt->eval("new UUID('abcdef');");
         REQUIRE(uuid.isObject());
+        REQUIRE(rt->isInstanceOf(uuid.asObject(), UUIDBind));
+        REQUIRE(rt->getNativeInstanceOf<UUID>(uuid.asObject())->str_id_ == "abcdef");
+
+        // Custom construction
+        auto player = rt->eval("new Player('John');");
+        REQUIRE(player.isObject());
+        REQUIRE(rt->isInstanceOf(player.asObject(), PlayerBind));
+        REQUIRE(rt->getNativeInstanceOf<Player>(player.asObject())->name_ == "John");
+
+        // Prohibition of construction
+        REQUIRE_THROWS_MATCHES(
+            rt->eval("new Actor('John');"),
+            v8wrap::JsException,
+            Catch::Matchers::Message("Uncaught Error: This native class cannot be constructed.")
+        );
+
+        // C++ side construction
+        auto fn = v8wrap::JsFunction::newFunction([](v8wrap::Arguments const& args) -> v8wrap::Local<v8wrap::JsValue> {
+            REQUIRE(args.length() == 0);
+            return v8wrap::JsRuntimeScope::currentRuntimeChecked().newInstanceOf(ActorBind, new Actor());
+        });
+        rt->setVauleToGlobalThis(v8wrap::JsString::newString("getActor"), fn);
+        auto actor = rt->eval("getActor();");
+        REQUIRE(actor.isObject());
+        REQUIRE(rt->isInstanceOf(actor.asObject(), ActorBind));
+    }
+
+    SECTION("Verify prototype properties behavior") {
+        // Static properties
+        auto actorFoo = rt->eval("Actor.bar;");
+        REQUIRE(actorFoo.isString());
+        REQUIRE(actorFoo.asString().getValue() == "Actor::bar");
+
+        auto playerFoo = rt->eval("Player.bar;");
+        REQUIRE(playerFoo.isString());
+        REQUIRE(playerFoo.asString().getValue() == "Actor::bar");
+
+        // Instance properties
+        auto playerName = rt->eval("new Player('John').name_;");
+        REQUIRE(playerName.isString());
+        REQUIRE(playerName.asString().getValue() == "John");
+
+        //! Special case: the member is a native class
+        auto playerUUID = rt->eval("new Player('John').uuid_;");
+        REQUIRE(playerUUID.isObject());
+        REQUIRE(rt->isInstanceOf(playerUUID.asObject(), UUIDBind));
+    }
+
+    SECTION("Verify method behavior") {
+        rt->eval("globalThis.player = new Player('John');");
+
+        auto typeName = rt->eval("player.getTypeName();");
+        REQUIRE(typeName.isString());
+        REQUIRE(typeName.asString().getValue() == "Player");
+
+        auto name = rt->eval("player.getName();");
+        REQUIRE(name.isString());
+        REQUIRE(name.asString().getValue() == "John");
+
+        // Call the base class method
+        auto id = rt->eval("player.getID();");
+        REQUIRE(id.isNumber());
+        REQUIRE(id.asNumber().getInt32() == 4);
+    }
+
+    SECTION("Verify inheritability") {
+        rt->eval(R"(
+            class MyUUID extends UUID {
+                constructor(id) {
+                    super(id);
+                }
+            }
+        )");
+
+        auto myUUID = rt->eval("new MyUUID('A3.1415926535');");
+        REQUIRE(myUUID.isObject());
+        REQUIRE(rt->isInstanceOf(myUUID.asObject(), UUIDBind));
+        REQUIRE(rt->getNativeInstanceOf<UUID>(myUUID.asObject())->str_id_ == "A3.1415926535");
     }
 }
