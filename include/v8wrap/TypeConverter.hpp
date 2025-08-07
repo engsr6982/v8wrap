@@ -10,7 +10,9 @@ namespace v8wrap {
 
 
 template <typename T>
-struct TypeConverter;
+struct TypeConverter {
+    static_assert(sizeof(T) == 0, "Cannot convert Js to this type T; no TypeConverter defined.");
+};
 
 
 template <>
