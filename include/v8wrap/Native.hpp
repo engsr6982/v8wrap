@@ -49,6 +49,7 @@ template <typename T>
 struct UnsafeRawPtrHolder final : public IHolder {
     T* ptr;
     UnsafeRawPtrHolder(T* ptr) : ptr(ptr) {}
+    ~UnsafeRawPtrHolder() { /* unsafe! */ }
     T* operator()(JsRuntime*) const { return ptr; }
 };
 

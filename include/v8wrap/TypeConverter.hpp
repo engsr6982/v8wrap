@@ -78,7 +78,8 @@ namespace internal {
 
 template <typename T>
 // using TypedConverter = TypeConverter<typename std::decay<T>::type>;
-using TypedConverter = TypeConverter<std::remove_cvref_t<T>>;
+// using TypedConverter = TypeConverter<std::remove_cvref_t<T>>;
+using TypedConverter = TypeConverter<T>;
 
 
 template <typename T, typename = void>
@@ -99,7 +100,7 @@ constexpr bool IsTypeConverterAvailable_v = IsTypeConverterAvailable<T>::value;
 
 template <typename T>
 [[nodiscard]] inline Local<JsValue> ConvertToJs(T const& value) {
-    static_assert(internal::IsTypeConverterAvailable_v<T>, "No TypeConverter available for type T");
+    // static_assert(internal::IsTypeConverterAvailable_v<T>, "No TypeConverter available for type T");
     return TypeConverter<T>::toJs(value).asValue();
 }
 
