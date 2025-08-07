@@ -211,26 +211,6 @@ public:
         return *this;
     }
 
-    // 静态属性（仅 getter）/ Static property with only getter
-    template <typename G>
-        requires(!IsJsGetterCallback<G>)
-    ClassBindingBuilder<C, H>& property(std::string name, G&& getter) {
-        mStaticProperty.emplace_back(std::move(name), internal::bindStaticGetter(std::forward<G>(getter)), nullptr);
-        return *this;
-    }
-
-    // 静态属性（getter + setter）/ Static property with getter and setter
-    template <typename G, typename S>
-        requires(!IsJsGetterCallback<G> && !IsJsSetterCallback<S>)
-    ClassBindingBuilder<C, H>& property(std::string name, G&& getter, S&& setter) {
-        mStaticProperty.emplace_back(
-            std::move(name),
-            internal::bindStaticGetter(std::forward<G>(getter)),
-            internal::bindStaticSetter(std::forward<S>(setter))
-        );
-        return *this;
-    }
-
 
     /* Instance Interface */
     /**
@@ -312,33 +292,12 @@ public:
         return *this;
     }
 
-    // 实例属性（成员变量）/ Instance property from C::* member
+    // 实例属性（成员变量）/ Instance property from T C::* member
     template <typename Member>
         requires(!std::is_void_v<C> && std::is_member_object_pointer_v<Member>)
     ClassBindingBuilder<C, H>& instanceProperty(std::string name, Member member) {
-        auto gs = internal::bindInstanceProperty<C>(member);
+        auto gs = internal::bindInstanceProperty<C>(std::forward<Member>(member));
         mInstanceProperty.emplace_back(std::move(name), std::move(gs.first), std::move(gs.second));
-        return *this;
-    }
-
-    // 实例属性（仅 getter）/ Instance property with only getter
-    template <typename G>
-        requires(!std::is_void_v<C> && !IsJsInstanceGetterCallback<G> && !std::is_member_object_pointer_v<G>)
-    ClassBindingBuilder<C, H>& instanceProperty(std::string name, G&& getter) {
-        mInstanceProperty
-            .emplace_back(std::move(name), internal::bindInstanceGetter<C>(std::forward<G>(getter)), nullptr);
-        return *this;
-    }
-
-    // 实例属性（getter + setter）/ Instance property with getter and setter
-    template <typename G, typename S>
-        requires(!std::is_void_v<C> && !IsJsInstanceGetterCallback<G> && !IsJsInstanceSetterCallback<S>)
-    ClassBindingBuilder<C, H>& instanceProperty(std::string name, G&& getter, S&& setter) {
-        mInstanceProperty.emplace_back(
-            std::move(name),
-            internal::bindInstanceGetter<C>(std::forward<G>(getter)),
-            internal::bindInstanceSetter<C>(std::forward<S>(setter))
-        );
         return *this;
     }
 

@@ -18,11 +18,11 @@ namespace v8wrap {
 namespace internal {
 
 
-// 主模板：对任意类型 operator()
+// Primary template: redirect to operator()
 template <typename T>
 struct FunctionTraits : FunctionTraits<decltype(&T::operator())> {};
 
-// 普通函数、函数指针
+// 普通函数 / 函数指针
 template <typename R, typename... Args>
 struct FunctionTraits<R (*)(Args...)> {
     using ReturnType          = R;
@@ -31,28 +31,13 @@ struct FunctionTraits<R (*)(Args...)> {
 };
 
 template <typename R, typename... Args>
-struct FunctionTraits<R(Args...)> {
-    using ReturnType          = R;
-    using ArgsTuple           = std::tuple<Args...>;
-    static constexpr size_t N = sizeof...(Args);
-};
+struct FunctionTraits<R(Args...)> : FunctionTraits<R (*)(Args...)> {};
 
+// std::function
 template <typename R, typename... Args>
-struct FunctionTraits<std::function<R(Args...)>> {
-    using ReturnType          = R;
-    using ArgsTuple           = std::tuple<Args...>;
-    static constexpr size_t N = sizeof...(Args);
-};
+struct FunctionTraits<std::function<R(Args...)>> : FunctionTraits<R (*)(Args...)> {};
 
-// 成员函数
-template <typename C, typename R, typename... Args>
-struct FunctionTraits<R (C::*)(Args...) const> { // const for lambdas
-    using ReturnType          = R;
-    using ArgsTuple           = std::tuple<Args...>;
-    static constexpr size_t N = sizeof...(Args);
-};
-
-// 非 const 成员函数
+// 成员函数指针（包括 const / noexcept 等）
 template <typename C, typename R, typename... Args>
 struct FunctionTraits<R (C::*)(Args...)> {
     using ReturnType          = R;
@@ -60,13 +45,14 @@ struct FunctionTraits<R (C::*)(Args...)> {
     static constexpr size_t N = sizeof...(Args);
 };
 
-// const noexcept 成员函数
 template <typename C, typename R, typename... Args>
-struct FunctionTraits<R (C::*)(Args...) const noexcept> {
-    using ReturnType          = R;
-    using ArgsTuple           = std::tuple<Args...>;
-    static constexpr size_t N = sizeof...(Args);
-};
+struct FunctionTraits<R (C::*)(Args...) const> : FunctionTraits<R (C::*)(Args...)> {};
+
+template <typename C, typename R, typename... Args>
+struct FunctionTraits<R (C::*)(Args...) const noexcept> : FunctionTraits<R (C::*)(Args...) const> {};
+
+template <typename T>
+struct DecayedFunctionTraits : FunctionTraits<std::remove_cvref_t<T>> {};
 
 
 // 获取参数个数
@@ -75,7 +61,7 @@ constexpr size_t ArgsCount_v = FunctionTraits<T>::N;
 
 // 获取第N个参数类型
 template <typename T, size_t N>
-using ArgNType = std::tuple_element_t<N, typename FunctionTraits<T>::ArgsTuple>;
+using ArgNType = std::tuple_element_t<N, typename DecayedFunctionTraits<T>::ArgsTuple>;
 
 // 获取首个参数类型
 template <typename T>
@@ -129,11 +115,13 @@ JsFunctionCallback bindStaticOverloadedFunction(Func&&... funcs) {
     };
 }
 
+// Fn: () -> Ty
 template <typename Fn>
 JsGetterCallback bindStaticGetter(Fn&& fn) {
     return [f = std::forward<Fn>(fn)]() -> Local<JsValue> { return ConvertToJs(std::invoke(f)); };
 }
 
+// Fn: (Ty) -> void
 template <typename Fn>
 JsSetterCallback bindStaticSetter(Fn&& fn) {
     using Ty = ArgType_t<Fn>;
@@ -143,14 +131,12 @@ JsSetterCallback bindStaticSetter(Fn&& fn) {
 template <typename Ty>
 std::pair<JsGetterCallback, JsSetterCallback> bindStaticProperty(Ty* p) {
     if constexpr (std::is_const_v<Ty>) {
-        return std::make_pair(
+        return {
             bindStaticGetter([p]() -> Ty { return *p; }),
             nullptr // const
-        );
+        };
     } else {
-        return std::make_pair(bindStaticGetter([p]() -> Ty { return *p; }), bindStaticSetter([p](Ty val) {
-                                  *p = val;
-                              }));
+        return {bindStaticGetter([p]() -> Ty { return *p; }), bindStaticSetter([p](Ty val) { *p = val; })};
     }
 }
 
@@ -233,6 +219,7 @@ JsInstanceMethodCallback bindInstanceOverloadedMethod(Func&&... funcs) {
     };
 }
 
+// Fn: (C*) -> Ty
 template <typename C, typename Fn>
 JsInstanceGetterCallback bindInstanceGetter(Fn&& fn) {
     return [f = std::forward<Fn>(fn)](void* inst) -> Local<JsValue> {
@@ -240,9 +227,10 @@ JsInstanceGetterCallback bindInstanceGetter(Fn&& fn) {
     };
 }
 
+// Fn: (void* inst, Ty val) -> void
 template <typename C, typename Fn>
 JsInstanceSetterCallback bindInstanceSetter(Fn&& fn) {
-    using Ty = ArgType_t<Fn>;
+    using Ty = ArgNType<Fn, 1>; // (void* inst, Ty val)
     return [f = std::forward<Fn>(fn)](void* inst, Local<JsValue> const& value) -> void {
         std::invoke(f, static_cast<C*>(inst), ConvertToCpp<Ty>(value));
     };
