@@ -19,7 +19,7 @@ Local<JsValue> JsRuntime::eval(T const& str) {
 
 template <typename T>
 T* JsRuntime::getBindingClassInstance(Local<JsObject> const& obj) const {
-    return static_cast<T*>(this->getBindingClassInstance(obj));
+    return static_cast<T*>(this->getNativeInstanceOf(obj));
 }
 
 

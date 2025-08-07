@@ -97,12 +97,12 @@ public:
      */
     void registerBindingClass(ClassBinding const& binding);
 
-    Local<JsObject> newBindingClass(ClassBinding const& binding, void* instance);
-    Local<JsObject> newBindingClass(std::string const& className, void* instance);
+    Local<JsObject> newInstanceOf(ClassBinding const& binding, void* instance);
+    Local<JsObject> newInstanceOf(std::string const& className, void* instance);
 
     [[nodiscard]] bool isInstanceOf(Local<JsObject> const& obj, ClassBinding const& binding) const;
 
-    [[nodiscard]] void* getBindingClassInstance(Local<JsObject> const& obj) const;
+    [[nodiscard]] void* getNativeInstanceOf(Local<JsObject> const& obj) const;
 
     template <typename T>
     [[nodiscard]] inline T* getBindingClassInstance(Local<JsObject> const& obj) const;

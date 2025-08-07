@@ -401,7 +401,7 @@ void JsRuntime::implInstanceRegister(v8::Local<v8::FunctionTemplate>& ctor, Inst
     }
 }
 
-Local<JsObject> JsRuntime::newBindingClass(ClassBinding const& binding, void* instance) {
+Local<JsObject> JsRuntime::newInstanceOf(ClassBinding const& binding, void* instance) {
     auto iter = mJsClassConstructor.find(&binding);
     if (iter == mJsClassConstructor.end()) {
         throw JsException{
@@ -425,7 +425,7 @@ Local<JsObject> JsRuntime::newBindingClass(ClassBinding const& binding, void* in
     return JsValueHelper::wrap<JsObject>(val.ToLocalChecked());
 }
 
-Local<JsObject> JsRuntime::newBindingClass(std::string const& className, void* instance) {
+Local<JsObject> JsRuntime::newInstanceOf(std::string const& className, void* instance) {
     auto iter = mRegisteredBindings.find(className);
     if (iter == mRegisteredBindings.end()) {
         // return {}; // undefined
@@ -433,7 +433,7 @@ Local<JsObject> JsRuntime::newBindingClass(std::string const& className, void* i
             "The native class " + className + " is not registered, so an instance cannot be constructed."
         };
     }
-    return newBindingClass(*iter->second, instance);
+    return newInstanceOf(*iter->second, instance);
 }
 
 bool JsRuntime::isInstanceOf(Local<JsObject> const& obj, ClassBinding const& binding) const {
@@ -445,7 +445,7 @@ bool JsRuntime::isInstanceOf(Local<JsObject> const& obj, ClassBinding const& bin
     return ctor->HasInstance(JsValueHelper::unwrap(obj));
 }
 
-void* JsRuntime::getBindingClassInstance(Local<JsObject> const& obj) const {
+void* JsRuntime::getNativeInstanceOf(Local<JsObject> const& obj) const {
     auto v8Obj       = JsValueHelper::unwrap(obj);
     auto holder      = v8Obj->GetAlignedPointerFromInternalField(0);
     auto typedHolder = reinterpret_cast<IHolder*>(holder);
