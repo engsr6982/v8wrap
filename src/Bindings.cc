@@ -48,19 +48,24 @@ ClassBinding::ClassBinding(
     StaticBinding       static_,
     InstanceBinding     instance,
     ClassBinding const* parent,
-    HolderCtor          holderCtor,
-    HolderGetter        holderGetter,
-    HolderDeleter       holderDeleter
+    OwnedHolderCtor     ownedHolderCtor,
+    OwnedHolderGetter   ownedHolderGetter,
+    OwnedHolderDeleter  ownedHolderDeleter,
+    ViewHolderCtor      viewHolderCtor,
+    ViewHolderGetter    viewHolderGetter,
+    ViewHolderDeleter   viewHolderDeleter
 )
 : mClassName(std::move(name)),
   mStaticBinding(std::move(static_)),
   mInstanceBinding(std::move(instance)),
   mExtends(parent),
-  mHolderCtor(std::move(holderCtor)),
-  mHolderGetter(std::move(holderGetter)),
-  mHolderDeleter(std::move(holderDeleter)) {}
+  mOwnedHolderCtor(std::move(ownedHolderCtor)),
+  mOwnedHolderGetter(std::move(ownedHolderGetter)),
+  mOwnedHolderDeleter(std::move(ownedHolderDeleter)),
+  mViewHolderCtor(std::move(viewHolderCtor)),
+  mViewHolderGetter(std::move(viewHolderGetter)),
+  mViewHolderDeleter(std::move(viewHolderDeleter)) {}
 
 bool ClassBinding::hasInstanceConstructor() const { return mInstanceBinding.mConstructor != nullptr; }
-
 
 } // namespace v8wrap

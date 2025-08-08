@@ -369,7 +369,7 @@ v8::Local<v8::FunctionTemplate> JsRuntime::createInstanceClassCtor(ClassBinding 
                     throw JsException{"This native class cannot be constructed."};
                 }
 
-                void* holder = binding->wrapInstance(instance);
+                void* holder = owner.has_value() ? binding->wrapView(instance) : binding->wrapOwned(instance);
                 {
                     auto typedHolder           = reinterpret_cast<IHolder*>(holder);
                     typedHolder->mRuntime      = runtime;
@@ -390,25 +390,25 @@ v8::Local<v8::FunctionTemplate> JsRuntime::createInstanceClassCtor(ClassBinding 
                         runtime->mIsolate->AdjustAmountOfExternalAllocatedMemory(
                             -static_cast<int64_t>(binding->mInstanceBinding.mClassSize)
                         );
-                        binding->deleteHolderAndInstance(holder);
+                        binding->freeOwned(holder);
                     });
 
                 } else {
-                    v8::Global<v8::Object> globalOwner{runtime->mIsolate, owner.value()};
-                    struct ViewHolder {
-                        JsRuntime*             mRuntime;
+                    struct Resource {
                         v8::Global<v8::Object> mOwner;
-                        void*                  mRawHolder;
+                        void*                  mViewHolder;
                     };
-                    auto view = new ViewHolder{runtime, std::move(globalOwner), holder};
-                    runtime->addManagedResource(view, info.This(), [](void* holder) {
-                        auto view = static_cast<ViewHolder*>(holder);
 
-                        auto raw      = view->mRawHolder;
-                        auto typedRaw = reinterpret_cast<IHolder*>(raw);
-                        // typedRaw->mClassBinding->deleteHolderAndInstance(raw); // TODO: Fix memory leak
+                    auto global   = v8::Global<v8::Object>{runtime->mIsolate, owner.value()};
+                    auto resource = new Resource{std::move(global), holder};
 
-                        view->mOwner.Reset(); // The view only needs to release the reference.
+                    runtime->addManagedResource(resource, info.This(), [](void* holder) {
+                        auto resource = static_cast<Resource*>(holder);
+
+                        auto raw   = resource->mViewHolder;
+                        auto typed = reinterpret_cast<IHolder*>(raw);
+                        typed->mClassBinding->freeView(raw);
+                        resource->mOwner.Reset(); // The view only needs to release the reference.
                     });
                 }
             } catch (JsException const& e) {
@@ -438,7 +438,7 @@ void JsRuntime::implInstanceRegister(v8::Local<v8::FunctionTemplate>& ctor, Inst
                 auto runtime     = const_cast<JsRuntime*>(typedHolder->mRuntime);
                 auto binding     = typedHolder->mClassBinding;
 
-                auto thiz = binding->unwrapInstance(holder, runtime);
+                auto thiz = binding->extractOwned(holder, runtime);
 
                 try {
                     auto val = (method->mCallback)(thiz, Arguments{runtime, info});
@@ -469,7 +469,7 @@ void JsRuntime::implInstanceRegister(v8::Local<v8::FunctionTemplate>& ctor, Inst
                 auto runtime     = const_cast<JsRuntime*>(typedHolder->mRuntime);
                 auto binding     = typedHolder->mClassBinding;
 
-                auto thiz = binding->unwrapInstance(holder, runtime);
+                auto thiz = binding->extractOwned(holder, runtime);
 
                 try {
                     auto val = (prop->mGetter)(thiz, Arguments{runtime, info});
@@ -493,7 +493,7 @@ void JsRuntime::implInstanceRegister(v8::Local<v8::FunctionTemplate>& ctor, Inst
                     auto runtime     = const_cast<JsRuntime*>(typedHolder->mRuntime);
                     auto binding     = typedHolder->mClassBinding;
 
-                    auto thiz = binding->unwrapInstance(holder, runtime);
+                    auto thiz = binding->extractOwned(holder, runtime);
 
                     try {
                         (prop->mSetter)(thiz, Arguments{runtime, info});
@@ -559,6 +559,14 @@ Local<JsObject> JsRuntime::newInstanceOfView(ClassBinding const& binding, void* 
         };
     }
 
+    if (!binding.hasViewHelperFunc()) {
+        throw JsException{
+            "The native class " + binding.mClassName
+            + " has no view helper function. Did you forget to set VH when using "
+              "bindingClass (aka bindingClass<Class, OwnedHolder, ViewHolder>)?"
+        };
+    }
+
     v8::TryCatch vtry{mIsolate};
 
     auto ctx  = mContext.Get(mIsolate);
@@ -593,7 +601,7 @@ void* JsRuntime::getNativeInstanceOf(Local<JsObject> const& obj) const {
     if (!isInstanceOf(obj, *typedHolder->mClassBinding)) {
         return nullptr;
     }
-    return typedHolder->mClassBinding->unwrapInstance(holder, const_cast<JsRuntime*>(typedHolder->mRuntime));
+    return typedHolder->mClassBinding->extractOwned(holder, const_cast<JsRuntime*>(typedHolder->mRuntime));
 }
 
 void JsRuntime::gc() const { mIsolate->LowMemoryNotification(); }

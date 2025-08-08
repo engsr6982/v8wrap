@@ -320,15 +320,16 @@ public:
 };
 
 
-v8wrap::ClassBinding UUIDBind = v8wrap::bindingClass<UUID, v8wrap::RawPtrHolder<UUID>>("UUID")
-                                    .constructor<std::string>()
-                                    .instanceProperty("str_id_", &UUID::str_id_)
-                                    .instanceMethod("getUUID", &UUID::getUUID)
-                                    .instanceMethod("setUUID", &UUID::setUUID)
-                                    .build();
+v8wrap::ClassBinding UUIDBind =
+    v8wrap::bindingClass<UUID, v8wrap::OwnedRawPtrHolder<UUID>, v8wrap::ViewRawPtrHolder<UUID>>("UUID")
+        .constructor<std::string>()
+        .instanceProperty("str_id_", &UUID::str_id_)
+        .instanceMethod("getUUID", &UUID::getUUID)
+        .instanceMethod("setUUID", &UUID::setUUID)
+        .build();
 
 
-v8wrap::ClassBinding ActorBind = v8wrap::bindingClass<Actor, v8wrap::RawPtrHolder<Actor>>("Actor")
+v8wrap::ClassBinding ActorBind = v8wrap::bindingClass<Actor, v8wrap::OwnedRawPtrHolder<Actor>>("Actor")
                                      .disableConstructor()
                                      .instanceProperty("id_", &Actor::id_)
                                      .instanceMethod("getTypeName", &Actor::getTypeName)
@@ -338,7 +339,7 @@ v8wrap::ClassBinding ActorBind = v8wrap::bindingClass<Actor, v8wrap::RawPtrHolde
                                      .build();
 
 v8wrap::ClassBinding PlayerBind =
-    v8wrap::bindingClass<Player, v8wrap::RawPtrHolder<Player>>("Player")
+    v8wrap::bindingClass<Player, v8wrap::OwnedRawPtrHolder<Player>>("Player")
         .customConstructor([](v8wrap::Arguments const& args) -> void* {
             if (args.length() != 1) {
                 return nullptr;
