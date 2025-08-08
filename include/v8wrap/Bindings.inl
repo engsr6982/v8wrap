@@ -222,7 +222,7 @@ JsInstanceMethodCallback bindInstanceOverloadedMethod(Func&&... funcs) {
 // Fn: (C*) -> Ty
 template <typename C, typename Fn>
 JsInstanceGetterCallback bindInstanceGetter(Fn&& fn) {
-    return [f = std::forward<Fn>(fn)](void* inst) -> Local<JsValue> {
+    return [f = std::forward<Fn>(fn)](void* inst, Arguments const& /* args */) -> Local<JsValue> {
         return ConvertToJs(std::invoke(f, static_cast<C*>(inst)));
     };
 }
@@ -231,8 +231,8 @@ JsInstanceGetterCallback bindInstanceGetter(Fn&& fn) {
 template <typename C, typename Fn>
 JsInstanceSetterCallback bindInstanceSetter(Fn&& fn) {
     using Ty = ArgNType<Fn, 1>; // (void* inst, Ty val)
-    return [f = std::forward<Fn>(fn)](void* inst, Local<JsValue> const& value) -> void {
-        std::invoke(f, static_cast<C*>(inst), ConvertToCpp<Ty>(value));
+    return [f = std::forward<Fn>(fn)](void* inst, Arguments const& args) -> void {
+        std::invoke(f, static_cast<C*>(inst), ConvertToCpp<Ty>(args[0]));
     };
 }
 

@@ -53,16 +53,13 @@ class JsArray;
 class Arguments;
 
 // 引用类型
-template <typename T>
-// requires std::is_base_of_v<JsValue, T>
+template <typename>
 class Local;
 
-template <typename T>
-// requires std::is_base_of_v<JsValue, T>
+template <typename>
 class Global;
 
-template <typename T>
-// requires std::is_base_of_v<JsValue, T>
+template <typename>
 class Weak;
 
 
@@ -70,17 +67,10 @@ using JsFunctionCallback = std::function<Local<JsValue>(Arguments const&)>;
 using JsGetterCallback   = std::function<Local<JsValue>()>;
 using JsSetterCallback   = std::function<void(Local<JsValue> const&)>;
 
-// template <typename T>
-using JsInstanceConstructor = std::function<void*(Arguments const& args)>;
-
-// template <typename T>
+using JsInstanceConstructor    = std::function<void*(Arguments const& args)>;
 using JsInstanceMethodCallback = std::function<Local<JsValue>(void*, Arguments const& args)>;
-
-// template <typename T>
-using JsInstanceSetterCallback = std::function<void(void*, Local<JsValue> const& value)>;
-
-// template <typename T>
-using JsInstanceGetterCallback = std::function<Local<JsValue>(void*)>;
+using JsInstanceGetterCallback = std::function<Local<JsValue>(void*, Arguments const& args)>;
+using JsInstanceSetterCallback = std::function<void(void*, Arguments const& args)>;
 
 
 // 绑定相关

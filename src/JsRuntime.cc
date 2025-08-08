@@ -472,7 +472,7 @@ void JsRuntime::implInstanceRegister(v8::Local<v8::FunctionTemplate>& ctor, Inst
                 auto thiz = binding->unwrapInstance(holder, runtime);
 
                 try {
-                    auto val = (prop->mGetter)(thiz);
+                    auto val = (prop->mGetter)(thiz, Arguments{runtime, info});
                     info.GetReturnValue().Set(JsValueHelper::unwrap(val));
                 } catch (JsException const& e) {
                     e.rethrowToRuntime();
@@ -496,7 +496,7 @@ void JsRuntime::implInstanceRegister(v8::Local<v8::FunctionTemplate>& ctor, Inst
                     auto thiz = binding->unwrapInstance(holder, runtime);
 
                     try {
-                        (prop->mSetter)(thiz, JsValueHelper::wrap<JsValue>(info[0]));
+                        (prop->mSetter)(thiz, Arguments{runtime, info});
                     } catch (JsException const& e) {
                         e.rethrowToRuntime();
                     }

@@ -43,10 +43,10 @@ template <typename T>
 concept IsJsInstanceMethodCallback = std::is_invocable_r_v<Local<JsValue>, T, void*, Arguments const&>;
 
 template <typename T>
-concept IsJsInstanceGetterCallback = std::is_invocable_r_v<Local<JsValue>, T, void*>;
+concept IsJsInstanceGetterCallback = std::is_invocable_r_v<Local<JsValue>, T, void*, Arguments const&>;
 
 template <typename T>
-concept IsJsInstanceSetterCallback = std::is_invocable_r_v<void, T, void*, Local<JsValue> const&>;
+concept IsJsInstanceSetterCallback = std::is_invocable_r_v<void, T, void*, Arguments const&>;
 
 
 template <typename T>

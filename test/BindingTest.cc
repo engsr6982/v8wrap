@@ -371,7 +371,7 @@ v8wrap::ClassBinding PlayerBind =
         .instanceProperty(
             "uuid_",
             /* ! Note: Dangerous behavior. Attention should be paid to the lifecycle of nested objects. */
-            [](void* inst) -> v8wrap::Local<v8wrap::JsValue> {
+            [](void* inst, v8wrap::Arguments const& args) -> v8wrap::Local<v8wrap::JsValue> {
                 auto typed = static_cast<Player*>(inst);
                 /*
                  ! Due to the specialization of the TypeConverter below,
@@ -380,11 +380,12 @@ v8wrap::ClassBinding PlayerBind =
                  !  will lead to a crash!
                  */
                 auto& rt = v8wrap::JsRuntimeScope::currentRuntimeChecked();
-                return rt.newInstanceOf(UUIDBind, new UUID(typed->uuid_)); // copy constructor
-                // return rt.newInstanceOfView(UUIDBind, &typed->uuid_, );// TODO: Fix this
+                //! return rt.newInstanceOf(UUIDBind, &typed->uuid_); // !!!dangerous!!!
+                return rt.newInstanceOfView(UUIDBind, &typed->uuid_, args.thiz());
             },
-            [](void* inst, v8wrap::Local<v8wrap::JsValue> const& value) -> void {
+            [](void* inst, v8wrap::Arguments const& args) -> void {
                 auto typed = static_cast<Player*>(inst);
+                auto value = args[0];
                 if (!value.isObject()) {
                     return;
                 }
