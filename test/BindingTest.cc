@@ -373,6 +373,7 @@ v8wrap::ClassBinding PlayerBind =
             /* ! Note: Dangerous behavior. Attention should be paid to the lifecycle of nested objects. */
             [](void* inst) -> v8wrap::Local<v8wrap::JsValue> {
                 auto typed = static_cast<Player*>(inst);
+                // TODO: Fix this
                 /*
                  ! Due to the specialization of the TypeConverter below,
                  !  returning a reference will result in the association of their lifecycles.

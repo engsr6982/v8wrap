@@ -1,0 +1,23 @@
+graph LR
+    subgraph NativeHeap[Native Heap]
+        P[Player instance]
+        U[UUID instance]
+    end
+
+    subgraph JsHeap[JS Heap]
+        JP[JS Player instance]
+        JU[JS UUID instance]
+    end
+
+    JP -- "v8 InternalField (strong)" --> P
+    JU -- "v8 InternalField (strong)" --> U
+    U -- "native member strong" --> P
+    JU -- "getter/setter property" --> JP
+    
+    RT[JsRuntime]
+    RT -- "v8 WeakRef" --> JP
+    
+    %% bug fix: Keep the player alive
+    JU -- "v8 Persistent (strong)" --> JP
+
+    style JU fill:#ffcccc,stroke:#ff0000,stroke-width:2px
