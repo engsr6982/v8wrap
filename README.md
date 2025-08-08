@@ -2,6 +2,11 @@
 
 - [x] JsPlatform.hpp - Js 平台,管理 `JsRuntime` (`v8::Platform`)
 - [x] JsRuntime.hpp - Js 运行时 (`v8::Isolate` + `v8::Global<v8::Context>`)
+  - [x] 资源管理
+  - [x] 绑定类注册
+  - [x] C++构造 Js 类
+  - [x] isInstanceOf 类型判定
+  - [x] 解包获取原生实例（从绑定的类实例获取 Local<JsObject>）
 - [x] JsRuntimeScope.hpp - v8 作用域封装 (`v8::Locker` + `v8::Isolate::Scope` + `v8::HandleScope` + `v8::Context::Scope`)
 - [x] JsException.hpp - v8 异常封装，双向异常转换
 - [x] JsValue.hpp - v8 值封装，双向值转换
