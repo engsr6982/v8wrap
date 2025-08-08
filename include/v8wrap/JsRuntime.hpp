@@ -151,8 +151,8 @@ public:
      *       The Global reference will be released only when this view object is destroyed,
      *       preventing `ownerJs` from being collected until then.
      *
-     * @see 使用示例请参考 `test/BindingTest.cc`（第465行）。
-     *      See `test/BindingTest.cc` (line 465) for usage examples.
+     * @see 使用示例请参考 `test/BindingTest.cc`（PlayerBind）。
+     *      See `test/BindingTest.cc` (PlayerBind) for usage examples.
      */
     Local<JsObject> newInstanceOfView(ClassBinding const& binding, void* instance, Local<JsObject> ownerJs);
 

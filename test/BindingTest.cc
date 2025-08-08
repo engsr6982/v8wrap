@@ -327,25 +327,6 @@ v8wrap::ClassBinding UUIDBind = v8wrap::bindingClass<UUID, v8wrap::RawPtrHolder<
                                     .instanceMethod("setUUID", &UUID::setUUID)
                                     .build();
 
-namespace v8wrap {
-template <>
-struct TypeConverter<UUID> {
-    static Local<JsValue> toJs(UUID const& uuid) {
-        return JsRuntimeScope::currentRuntimeChecked().newInstanceOf(UUIDBind, const_cast<UUID*>(&uuid));
-    }
-
-    static UUID toCpp(Local<JsValue> const& value) {
-        if (!value.isObject()) {
-            return {};
-        }
-        auto inst = JsRuntimeScope::currentRuntimeChecked().getNativeInstanceOf<UUID>(value.asObject());
-        if (!inst) {
-            return {};
-        }
-        return *inst;
-    }
-};
-} // namespace v8wrap
 
 v8wrap::ClassBinding ActorBind = v8wrap::bindingClass<Actor, v8wrap::RawPtrHolder<Actor>>("Actor")
                                      .disableConstructor()
@@ -374,14 +355,16 @@ v8wrap::ClassBinding PlayerBind =
             [](void* inst, v8wrap::Arguments const& args) -> v8wrap::Local<v8wrap::JsValue> {
                 auto typed = static_cast<Player*>(inst);
                 /*
-                 ! Due to the specialization of the TypeConverter below,
-                 !  returning a reference will result in the association of their lifecycles.
-                 ! This is extremely dangerous because the lifecycle of UUID is actually tied to that of Player, which
-                 !  will lead to a crash!
+                 ! For custom types, it is generally not recommended to specialize them into TypeConverter.
+                 ! If specializing into TypeConverter, memory safety must be ensured.
+                 ! Direct use of newInstanceOf is not allowed here, as it will treat members as heap memory and cause
+                    crashes during garbage collection.
+                 ! Therefore, it is necessary to create instances using the view mode here.
+                 ! The introduction of view instances is to ensure safety and avoid semantic fragmentation caused by
+                    returning copies.
                  */
-                auto& rt = v8wrap::JsRuntimeScope::currentRuntimeChecked();
                 //! return rt.newInstanceOf(UUIDBind, &typed->uuid_); // !!!dangerous!!!
-                return rt.newInstanceOfView(UUIDBind, &typed->uuid_, args.thiz());
+                return args.runtime()->newInstanceOfView(UUIDBind, &typed->uuid_, args.thiz());
             },
             [](void* inst, v8wrap::Arguments const& args) -> void {
                 auto typed = static_cast<Player*>(inst);
@@ -389,22 +372,43 @@ v8wrap::ClassBinding PlayerBind =
                 if (!value.isObject()) {
                     return;
                 }
-                auto& rt = v8wrap::JsRuntimeScope::currentRuntimeChecked();
-                if (!rt.isInstanceOf(value.asObject(), UUIDBind)) {
-                    throw v8wrap::JsException{"Not a UUID instance"};
+                if (args.runtime()->isInstanceOf(value.asObject(), UUIDBind)) {
+                    throw v8wrap::JsException(
+                        "Failed to set property, invalid parameter type.",
+                        v8wrap::JsException::Type::TypeError
+                    );
                 }
-                auto uuid = rt.getNativeInstanceOf<UUID>(value.asObject());
-                if (!uuid) {
-                    return;
-                }
+                auto uuid    = args.runtime()->getNativeInstanceOf<UUID>(value.asObject());
                 typed->uuid_ = *uuid;
             }
         )
         .instanceMethod("getTypeName", &Player::getTypeName)
         .instanceMethod("getName", &Player::getName)
         .instanceMethod("setName", &Player::setName)
-        .instanceMethod("getUUID", &Player::getUUID)
-        .instanceMethod("setUUID", &Player::setUUID)
+        .instanceMethod(
+            "getUUID",
+            [](void* inst, v8wrap::Arguments const& args) -> v8wrap::Local<v8wrap::JsValue> {
+                auto  typed = static_cast<Player*>(inst);
+                auto& uuid  = typed->getUUID();
+                return args.runtime()->newInstanceOfView(UUIDBind, const_cast<UUID*>(&uuid), args.thiz());
+            }
+        )
+        .instanceMethod(
+            "setUUID",
+            [](void* inst, v8wrap::Arguments const& args) -> v8wrap::Local<v8wrap::JsValue> {
+                auto typed = static_cast<Player*>(inst);
+                if (args.length() != 1) {
+                    throw v8wrap::JsException("Wrong arguments count", v8wrap::JsException::Type::SyntaxError);
+                }
+                auto runtime = args.runtime();
+                if (!args[0].isObject() || !runtime->isInstanceOf(args[0].asObject(), UUIDBind)) {
+                    throw v8wrap::JsException("Wrong argument type", v8wrap::JsException::Type::TypeError);
+                }
+                auto uuid = args.runtime()->getNativeInstanceOf<UUID>(args[0].asObject());
+                typed->setUUID(*uuid);
+                return {}; // void -> undefined
+            }
+        )
         .extends(ActorBind)
         .build();
 
