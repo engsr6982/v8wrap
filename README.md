@@ -16,20 +16,30 @@
   - [x] `JsFunction` -> `v8::Function`
   - [x] `JsObject` -> `v8::Object`
   - [x] `JsArray` -> `v8::Array`
-  - [ ] ... (TODO)
 - [x] JsReference.hpp - v8 引用封装
   - [x] `Local<T>` -> `v8::Local<T>`
   - [x] `Global<T>` -> `v8::Global<T>`
   - [x] `Weak<T>` -> `v8::Global<T>`
-- [ ] TypeConverter.hpp - 类型转换器 (TODO)
+- [x] TypeConverter.hpp - 类型转换器
   - [x] `bool` -> `JsBoolean`
   - [x] any number -> `JsNumber`
   - [x] `int64_t`/`uint64_t` -> `JsBigInt`
   - [x] any string -> `JsString`
   - [x] any enum -> `JsNumber`(cast to int)
-  - [ ] ... (TODO)
-- [ ] Native.hpp -> C++ 原生类型包装 (TODO)
-- [ ] Bindings.hpp -> C++ 原生类型绑定 (TODO)
+  - [x] wrap type <-> JsValue
+- [x] Native.hpp -> C++ 原生类型包装
+  - [x] Holder C++资源持有
+- [x] Bindings.hpp -> C++ 绑定
+  - [x] 普通函数（重载支持）
+  - [x] std::function（重载支持）
+  - [x] lambda（重载支持）
+  - [x] 可调用对象（重载支持）
+  - [x] 类静态函数（重载支持）
+  - [x] 类静态成员
+  - [x] 类构造函数
+  - [x] 类实例成员
+  - [x] 类实例方法（重载支持）
+  - [x] 类继承（基于 Js 原型链，不支持多继承）
 
 ## 参考项目
 
