@@ -488,6 +488,11 @@ TEST_CASE_METHOD(BindingTestFixture, "Instance binding") {
         auto id = rt->eval("player.getID();");
         REQUIRE(id.isNumber());
         REQUIRE(id.asNumber().getInt32() == 4);
+
+        REQUIRE_NOTHROW(rt->eval("player.setUUID(new UUID('crash'));"));
+        auto player = rt->eval("player;");
+        REQUIRE(player.isObject());
+        REQUIRE(rt->getNativeInstanceOf<Player>(player.asObject())->uuid_.str_id_ == "crash");
     }
 
     SECTION("Verify inheritability") {
