@@ -127,6 +127,10 @@ private:
         std::function<void(void*)> deleter;
     };
 
+    // v8: AlignedPointerInInternalField
+    static constexpr int kInternalFieldCount    = 1;
+    static constexpr int kInternalField_IHolder = 0;
+
     v8::Isolate*            mIsolate{nullptr};
     v8::Global<v8::Context> mContext{};
     std::shared_ptr<void>   mUserData{nullptr};

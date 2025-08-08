@@ -292,6 +292,9 @@ void JsRuntime::implStaticRegister(v8::Local<v8::FunctionTemplate>& ctor, Static
     }
 }
 
+constexpr int kCtorExternal_ClassBinding = 0;
+constexpr int kCtorExternal_JsRuntime    = 1;
+
 v8::Local<v8::FunctionTemplate> JsRuntime::createInstanceClassCtor(ClassBinding const& binding) {
     v8::TryCatch vtry{mIsolate};
 
@@ -300,10 +303,10 @@ v8::Local<v8::FunctionTemplate> JsRuntime::createInstanceClassCtor(ClassBinding 
 
     auto ctx = mContext.Get(mIsolate);
 
-    auto _ = data->Set(ctx, 0, v8::External::New(mIsolate, const_cast<ClassBinding*>(&binding)));
+    (void)data->Set(ctx, kCtorExternal_ClassBinding, v8::External::New(mIsolate, const_cast<ClassBinding*>(&binding)));
     JsException::rethrow(vtry);
 
-    _ = data->Set(ctx, 1, v8::External::New(mIsolate, this));
+    (void)data->Set(ctx, kCtorExternal_JsRuntime, v8::External::New(mIsolate, this));
     JsException::rethrow(vtry);
 
     auto ctor = v8::FunctionTemplate::New(
@@ -312,8 +315,12 @@ v8::Local<v8::FunctionTemplate> JsRuntime::createInstanceClassCtor(ClassBinding 
             auto ctx  = info.GetIsolate()->GetCurrentContext();
             auto data = info.Data().As<v8::Object>();
 
-            auto binding = static_cast<ClassBinding*>(data->Get(ctx, 0).ToLocalChecked().As<v8::External>()->Value());
-            auto runtime = static_cast<JsRuntime*>(data->Get(ctx, 1).ToLocalChecked().As<v8::External>()->Value());
+            auto binding = static_cast<ClassBinding*>(
+                data->Get(ctx, kCtorExternal_ClassBinding).ToLocalChecked().As<v8::External>()->Value()
+            );
+            auto runtime = static_cast<JsRuntime*>(
+                data->Get(ctx, kCtorExternal_JsRuntime).ToLocalChecked().As<v8::External>()->Value()
+            );
 
             auto& ctor = binding->mInstanceBinding.mConstructor;
 
@@ -342,7 +349,7 @@ v8::Local<v8::FunctionTemplate> JsRuntime::createInstanceClassCtor(ClassBinding 
                     typedHolder->mClassBinding = binding;
                 }
 
-                info.This()->SetAlignedPointerInInternalField(0, holder);
+                info.This()->SetAlignedPointerInInternalField(kInternalField_IHolder, holder);
                 runtime->mIsolate->AdjustAmountOfExternalAllocatedMemory(
                     static_cast<int64_t>(binding->mInstanceBinding.mClassSize)
                 );
@@ -364,7 +371,7 @@ v8::Local<v8::FunctionTemplate> JsRuntime::createInstanceClassCtor(ClassBinding 
         },
         data
     );
-    ctor->InstanceTemplate()->SetInternalFieldCount(1);
+    ctor->InstanceTemplate()->SetInternalFieldCount(kInternalFieldCount);
     return ctor;
 }
 
@@ -379,7 +386,7 @@ void JsRuntime::implInstanceRegister(v8::Local<v8::FunctionTemplate>& ctor, Inst
             mIsolate,
             [](v8::FunctionCallbackInfo<v8::Value> const& info) {
                 auto method = static_cast<InstanceBinding::Method*>(info.Data().As<v8::External>()->Value());
-                auto holder = info.This()->GetAlignedPointerFromInternalField(0);
+                auto holder = info.This()->GetAlignedPointerFromInternalField(kInternalField_IHolder);
 
                 auto typedHolder = reinterpret_cast<IHolder*>(holder);
                 auto runtime     = const_cast<JsRuntime*>(typedHolder->mRuntime);
@@ -410,7 +417,7 @@ void JsRuntime::implInstanceRegister(v8::Local<v8::FunctionTemplate>& ctor, Inst
             mIsolate,
             [](v8::FunctionCallbackInfo<v8::Value> const& info) {
                 auto prop   = static_cast<InstanceBinding::Property*>(info.Data().As<v8::External>()->Value());
-                auto holder = info.This()->GetAlignedPointerFromInternalField(0);
+                auto holder = info.This()->GetAlignedPointerFromInternalField(kInternalField_IHolder);
 
                 auto typedHolder = reinterpret_cast<IHolder*>(holder);
                 auto runtime     = const_cast<JsRuntime*>(typedHolder->mRuntime);
@@ -434,7 +441,7 @@ void JsRuntime::implInstanceRegister(v8::Local<v8::FunctionTemplate>& ctor, Inst
                 mIsolate,
                 [](v8::FunctionCallbackInfo<v8::Value> const& info) {
                     auto prop   = static_cast<InstanceBinding::Property*>(info.Data().As<v8::External>()->Value());
-                    auto holder = info.This()->GetAlignedPointerFromInternalField(0);
+                    auto holder = info.This()->GetAlignedPointerFromInternalField(kInternalField_IHolder);
 
                     auto typedHolder = reinterpret_cast<IHolder*>(holder);
                     auto runtime     = const_cast<JsRuntime*>(typedHolder->mRuntime);
@@ -508,7 +515,7 @@ bool JsRuntime::isInstanceOf(Local<JsObject> const& obj, ClassBinding const& bin
 
 void* JsRuntime::getNativeInstanceOf(Local<JsObject> const& obj) const {
     auto v8Obj       = JsValueHelper::unwrap(obj);
-    auto holder      = v8Obj->GetAlignedPointerFromInternalField(0);
+    auto holder      = v8Obj->GetAlignedPointerFromInternalField(kInternalField_IHolder);
     auto typedHolder = reinterpret_cast<IHolder*>(holder);
     if (!isInstanceOf(obj, *typedHolder->mClassBinding)) {
         return nullptr;
