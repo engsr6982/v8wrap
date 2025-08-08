@@ -373,16 +373,15 @@ v8wrap::ClassBinding PlayerBind =
             /* ! Note: Dangerous behavior. Attention should be paid to the lifecycle of nested objects. */
             [](void* inst) -> v8wrap::Local<v8wrap::JsValue> {
                 auto typed = static_cast<Player*>(inst);
-                // TODO: Fix this
                 /*
                  ! Due to the specialization of the TypeConverter below,
                  !  returning a reference will result in the association of their lifecycles.
                  ! This is extremely dangerous because the lifecycle of UUID is actually tied to that of Player, which
                  !  will lead to a crash!
-                 ! The safe way is to copy a copy from here, or ensure the lifecycle of the Player.
                  */
                 auto& rt = v8wrap::JsRuntimeScope::currentRuntimeChecked();
                 return rt.newInstanceOf(UUIDBind, new UUID(typed->uuid_)); // copy constructor
+                // return rt.newInstanceOfView(UUIDBind, &typed->uuid_, );// TODO: Fix this
             },
             [](void* inst, v8wrap::Local<v8wrap::JsValue> const& value) -> void {
                 auto typed = static_cast<Player*>(inst);
