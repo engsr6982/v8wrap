@@ -38,4 +38,21 @@ A non-intrusive, easy-to-use V8 binding library for embedded scenarios, supporti
   - [x] any string -> `JsString`
   - [x] any enum -> `JsNumber` (cast to int)
   - [x] wrap type <-> JsValue
-- [x] ## Bindings.hpp – C++ bindings
+- [x] Bindings.hpp – C++ bindings
+  - [x] Regular functions (overload supported)
+  - [x] `std::function` (overload supported)
+  - [x] Lambda (overload supported)
+  - [x] Callable objects (overload supported)
+  - [x] Class static functions (overload supported)
+  - [x] Class static members
+  - [x] Class constructors
+  - [x] Class instance members
+  - [x] Class instance methods (overload supported)
+  - [x] Class inheritance (based on JavaScript prototype chain, no multiple inheritance support)
+
+## References
+
+- [v8pp](https://github.com/pmed/v8pp)
+- [ScriptX](https://github.com/Tencent/ScriptX)
+- [quickjspp](https://github.com/ftk/quickjspp)
+- [puerts_node](https://github.com/puerts/puerts_node)
