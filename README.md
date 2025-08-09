@@ -1,5 +1,11 @@
 # v8wrap - v8 封装库
 
+- [中文](README.md) | [English](README_EN.md)
+
+一个面向嵌入场景的 v8 绑定库，无侵入性，简单易用，支持 C++20，运行时友好。
+
+## 功能
+
 - [x] JsPlatform.hpp - Js 平台,管理 `JsRuntime` (`v8::Platform`)
 - [x] JsRuntime.hpp - Js 运行时 (`v8::Isolate` + `v8::Global<v8::Context>`)
   - [x] 资源管理
@@ -32,8 +38,6 @@
   - [x] any string -> `JsString`
   - [x] any enum -> `JsNumber`(cast to int)
   - [x] wrap type <-> JsValue
-- [x] Native.hpp -> C++ 原生类型包装
-  - [x] Holder C++资源持有
 - [x] Bindings.hpp -> C++ 绑定
   - [x] 普通函数（重载支持）
   - [x] std::function（重载支持）
