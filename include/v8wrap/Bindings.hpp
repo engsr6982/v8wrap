@@ -1,6 +1,5 @@
 #pragma once
 #include "v8wrap/Concepts.hpp"
-#include "v8wrap/Native.hpp"
 #include "v8wrap/Types.hpp"
 #include <cstddef>
 #include <stdexcept>
@@ -103,6 +102,36 @@ struct InstanceBinding {
 };
 
 
+struct WrappedResource final {
+    using ResGetter  = std::function<void*(void* resource)>; // return instance (T* -> void*)
+    using ResDeleter = std::function<void(void* resource)>;
+
+private:
+    void*            resource{nullptr};
+    ResGetter const  getter{nullptr};
+    ResDeleter const deleter{nullptr};
+
+    // internal use only
+    ClassBinding const* binding{nullptr};
+    JsRuntime const*    runtime{nullptr};
+    bool const          constructFromJs{false};
+    friend class JsRuntime;
+
+public:
+    inline void* operator()() const { return getter(resource); }
+
+    V8WRAP_DISALLOW_COPY(WrappedResource);
+    explicit WrappedResource() = delete;
+    explicit WrappedResource(void* resource, ResGetter getter, ResDeleter deleter);
+    ~WrappedResource(); // Call the deleter and pass in the resource.
+
+    template <typename... Args>
+        requires std::constructible_from<WrappedResource, Args...>
+    static inline std::unique_ptr<WrappedResource> make(Args&&... args) {
+        return std::make_unique<WrappedResource>(std::forward<Args>(args)...);
+    }
+};
+
 class ClassBinding {
 public:
     std::string const     mClassName;
@@ -112,50 +141,28 @@ public:
 
     [[nodiscard]] bool hasInstanceConstructor() const;
 
-    // For storage needs, the function erasure Holder is used here.
-    using OwnedHolderCtor    = std::function<void*(void* rawInstance)>;
-    using OwnedHolderGetter  = std::function<void*(void* holder, JsRuntime*)>;
-    using OwnedHolderDeleter = std::function<void(void* holder)>;
-    using ViewHolderCtor     = OwnedHolderCtor;
-    using ViewHolderGetter   = OwnedHolderGetter;
-    using ViewHolderDeleter  = OwnedHolderDeleter;
+    // 由于采用 void* 提升了运行时的灵活性，但缺少了类型信息。
+    // delete void* 是不安全的，所以需要此辅助方法，以生成合理的 deleter。
+    // 此回调仅在 JavaScript new 时调用，用于包装 JsInstanceConstructor 返回的实例 (T*)
+    // The use of void* enhances runtime flexibility but lacks type information.
+    // Deleting a void* is unsafe, so this helper method is needed to generate a reasonable deleter.
+    // This callback is only invoked when using JavaScript's `new` operator, and it is used to wrap the instance (T*)
+    //  returned by JsInstanceConstructor.
+    using TypedWrappedResourceFactory = std::function<std::unique_ptr<WrappedResource>(void* instance)>;
+    TypedWrappedResourceFactory const mJsNewInstanceWrapFactory{nullptr};
 
-    OwnedHolderCtor const    mOwnedHolderCtor{nullptr};    // required
-    OwnedHolderGetter const  mOwnedHolderGetter{nullptr};  // required
-    OwnedHolderDeleter const mOwnedHolderDeleter{nullptr}; // required
-    ViewHolderCtor const     mViewHolderCtor{nullptr};     // optional(When not using the relevant API)
-    ViewHolderGetter const   mViewHolderGetter{nullptr};   // optional(When not using the relevant API)
-    ViewHolderDeleter const  mViewHolderDeleter{nullptr};  // optional(When not using the relevant API)
-
-    [[nodiscard]] inline bool hasViewHelperFunc() const {
-        return mViewHolderCtor != nullptr && mViewHolderGetter != nullptr;
-    }
-
-    [[nodiscard]] inline void* wrapOwned(void* rawInstance) const { return mOwnedHolderCtor(rawInstance); }
-    [[nodiscard]] inline void* extractOwned(void* holder, JsRuntime* rt) const {
-        return mOwnedHolderGetter(holder, rt);
-    }
-    inline void freeOwned(void* holder) const { mOwnedHolderDeleter(holder); }
-
-    [[nodiscard]] inline void* wrapView(void* rawInstance) const { return mViewHolderCtor(rawInstance); }
-    [[nodiscard]] inline void* extractView(void* holder, JsRuntime* rt) const { return mViewHolderGetter(holder, rt); }
-    inline void                freeView(void* holder) const { mViewHolderDeleter(holder); }
+    [[nodiscard]] inline auto wrap(void* instance) const { return mJsNewInstanceWrapFactory(instance); }
 
 private:
     explicit ClassBinding(
-        std::string         name,
-        StaticBinding       static_,
-        InstanceBinding     instance,
-        ClassBinding const* parent,
-        OwnedHolderCtor     ownedHolderCtor,
-        OwnedHolderGetter   ownedHolderGetter,
-        OwnedHolderDeleter  ownedHolderDeleter,
-        ViewHolderCtor      viewHolderCtor,
-        ViewHolderGetter    viewHolderGetter,
-        ViewHolderDeleter   viewHolderDeleter
+        std::string                 name,
+        StaticBinding               static_,
+        InstanceBinding             instance,
+        ClassBinding const*         parent,
+        TypedWrappedResourceFactory factory
     );
 
-    template <typename, typename, typename>
+    template <typename>
     friend struct ClassBindingBuilder;
 };
 
@@ -166,22 +173,8 @@ template <>
 constexpr size_t size_of_v<void> = 0;
 
 
-template <typename Class, typename OH = void, typename VH = void>
+template <typename Class>
 struct ClassBindingBuilder {
-    // 确保 C 与 H 一致：要么都是 void（用于静态类），要么都不是 void（用于实例类）
-    // Ensure C and H are either both void (for static class) or both non-void (for instance class)
-    static_assert(
-        std::is_void_v<Class> == std::is_void_v<OH>,
-        "C and H must both be void (for static class) or both non-void (for instance class)"
-    );
-
-    // 实例类要求 H 满足 Holder<H, C> 的概念约束
-    // Instance classes require H to satisfy the Holder<H, C> concept
-    static_assert(
-        std::is_void_v<Class> || OwnedHolder<OH, Class>,
-        "For instance class, H must satisfy Holder<H, C> concept"
-    );
-
 private:
     std::string                            mClassName;
     std::vector<StaticBinding::Property>   mStaticProperty;
@@ -190,7 +183,7 @@ private:
     std::vector<InstanceBinding::Property> mInstanceProperty;
     std::vector<InstanceBinding::Method>   mInstanceFunctions;
     ClassBinding const*                    mExtends         = nullptr;
-    bool const                             mIsInstanceClass = !std::is_void_v<Class> && !std::is_void_v<OH>;
+    bool const                             mIsInstanceClass = !std::is_void_v<Class>;
 
 public:
     explicit ClassBindingBuilder(std::string className) : mClassName(std::move(className)) {}
@@ -198,7 +191,7 @@ public:
     // 注册静态方法（已包装的 JsFunctionCallback） / Register static function (already wrapped)
     template <typename Fn>
         requires(IsJsFunctionCallback<Fn>)
-    ClassBindingBuilder<Class, OH, VH>& function(std::string name, Fn&& fn) {
+    ClassBindingBuilder<Class>& function(std::string name, Fn&& fn) {
         mStaticFunctions.emplace_back(std::move(name), std::forward<Fn>(fn));
         return *this;
     }
@@ -206,7 +199,7 @@ public:
     // 注册静态方法（自动包装） / Register static function (wrap C++ callable)
     template <typename Fn>
         requires(!IsJsFunctionCallback<Fn>)
-    ClassBindingBuilder<Class, OH, VH>& function(std::string name, Fn&& fn) {
+    ClassBindingBuilder<Class>& function(std::string name, Fn&& fn) {
         mStaticFunctions.emplace_back(std::move(name), internal::bindStaticFunction(std::forward<Fn>(fn)));
         return *this;
     }
@@ -214,21 +207,20 @@ public:
     // 注册重载静态方法 / Register overloaded static functions
     template <typename... Fn>
         requires(sizeof...(Fn) > 1 && (!IsJsFunctionCallback<Fn> && ...))
-    ClassBindingBuilder<Class, OH, VH>& function(std::string name, Fn&&... fn) {
+    ClassBindingBuilder<Class>& function(std::string name, Fn&&... fn) {
         mStaticFunctions.emplace_back(std::move(name), internal::bindStaticOverloadedFunction(std::forward<Fn>(fn)...));
         return *this;
     }
 
     // 注册静态属性（回调形式）/ Static property with raw callback
-    ClassBindingBuilder<Class, OH, VH>&
-    property(std::string name, JsGetterCallback getter, JsSetterCallback setter = nullptr) {
+    ClassBindingBuilder<Class>& property(std::string name, JsGetterCallback getter, JsSetterCallback setter = nullptr) {
         mStaticProperty.emplace_back(std::move(name), std::move(getter), std::move(setter));
         return *this;
     }
 
     // 静态属性（变量指针）/ Static property from global/static variable pointer
     template <typename Ty>
-    ClassBindingBuilder<Class, OH, VH>& property(std::string name, Ty* member) {
+    ClassBindingBuilder<Class>& property(std::string name, Ty* member) {
         auto gs = internal::bindStaticProperty<Ty>(member);
         mStaticProperty.emplace_back(std::move(name), std::move(gs.first), std::move(gs.second));
         return *this;
@@ -242,7 +234,7 @@ public:
      */
     template <typename... Args>
         requires(!std::is_void_v<Class>)
-    ClassBindingBuilder<Class, OH, VH>& constructor() {
+    ClassBindingBuilder<Class>& constructor() {
         static_assert(
             !std::is_aggregate_v<Class> && std::is_constructible_v<Class, Args...>,
             "Constructor must be callable with the specified arguments"
@@ -258,7 +250,7 @@ public:
      */
     template <typename T = Class>
         requires(!std::is_void_v<T>)
-    ClassBindingBuilder<Class, OH, VH>& customConstructor(JsInstanceConstructor ctor) {
+    ClassBindingBuilder<Class>& customConstructor(JsInstanceConstructor ctor) {
         if (mInstanceConstructor) throw std::logic_error("Constructor has already been registered!");
         mInstanceConstructor = std::move(ctor);
         return *this;
@@ -270,7 +262,7 @@ public:
      */
     template <typename T = Class>
         requires(!std::is_void_v<T>)
-    ClassBindingBuilder<Class, OH, VH>& disableConstructor() {
+    ClassBindingBuilder<Class>& disableConstructor() {
         if (mInstanceConstructor) throw std::logic_error("Constructor has already been registered!");
         mInstanceConstructor = [](Arguments const&) { return nullptr; };
         return *this;
@@ -279,7 +271,7 @@ public:
     // 注册实例方法（已包装）/ Instance method with JsInstanceMethodCallback
     template <typename Fn>
         requires(!std::is_void_v<Class> && IsJsInstanceMethodCallback<Fn>)
-    ClassBindingBuilder<Class, OH, VH>& instanceMethod(std::string name, Fn&& fn) {
+    ClassBindingBuilder<Class>& instanceMethod(std::string name, Fn&& fn) {
         mInstanceFunctions.emplace_back(std::move(name), std::forward<Fn>(fn));
         return *this;
     }
@@ -287,7 +279,7 @@ public:
     // 实例方法（自动包装）/ Instance method with automatic binding
     template <typename Fn>
         requires(!std::is_void_v<Class> && !IsJsInstanceMethodCallback<Fn> && std::is_member_function_pointer_v<Fn>)
-    ClassBindingBuilder<Class, OH, VH>& instanceMethod(std::string name, Fn&& fn) {
+    ClassBindingBuilder<Class>& instanceMethod(std::string name, Fn&& fn) {
         mInstanceFunctions.emplace_back(std::move(name), internal::bindInstanceMethod<Class>(std::forward<Fn>(fn)));
         return *this;
     }
@@ -299,7 +291,7 @@ public:
             && (sizeof...(Fn) > 1 && (!IsJsInstanceMethodCallback<Fn> && ...)
                 && (std::is_member_function_pointer_v<Fn> && ...))
         )
-    ClassBindingBuilder<Class, OH, VH>& instanceMethod(std::string name, Fn&&... fn) {
+    ClassBindingBuilder<Class>& instanceMethod(std::string name, Fn&&... fn) {
         mInstanceFunctions.emplace_back(
             std::move(name),
             internal::bindInstanceOverloadedMethod<Class>(std::forward<Fn>(fn)...)
@@ -308,7 +300,7 @@ public:
     }
 
     // 实例属性（回调）/ Instance property with callbacks
-    ClassBindingBuilder<Class, OH, VH>&
+    ClassBindingBuilder<Class>&
     instanceProperty(std::string name, JsInstanceGetterCallback getter, JsInstanceSetterCallback setter = nullptr) {
         static_assert(!std::is_void_v<Class>, "Only instance class can have instanceProperty");
         mInstanceProperty.emplace_back(std::move(name), std::move(getter), std::move(setter));
@@ -318,14 +310,14 @@ public:
     // 实例属性（成员变量）/ Instance property from T C::* member
     template <typename Member>
         requires(!std::is_void_v<Class> && std::is_member_object_pointer_v<Member>)
-    ClassBindingBuilder<Class, OH, VH>& instanceProperty(std::string name, Member member) {
+    ClassBindingBuilder<Class>& instanceProperty(std::string name, Member member) {
         auto gs = internal::bindInstanceProperty<Class>(std::forward<Member>(member));
         mInstanceProperty.emplace_back(std::move(name), std::move(gs.first), std::move(gs.second));
         return *this;
     }
 
     // 设置继承关系 / Set base class
-    ClassBindingBuilder<Class, OH, VH>& extends(ClassBinding const& parent) {
+    ClassBindingBuilder<Class>& extends(ClassBinding const& parent) {
         static_assert(!std::is_void_v<Class>, "Only instance classes can set up inheritance.");
         mExtends = &parent;
         return *this;
@@ -336,54 +328,31 @@ public:
             throw std::logic_error("Instance class must have a constructor!");
         }
 
-        ClassBinding::OwnedHolderCtor    ownedCtor    = nullptr;
-        ClassBinding::OwnedHolderGetter  ownedGetter  = nullptr;
-        ClassBinding::OwnedHolderDeleter ownedDeleter = nullptr;
-        ClassBinding::ViewHolderCtor     viewCtor     = nullptr;
-        ClassBinding::ViewHolderGetter   viewGetter   = nullptr;
-        ClassBinding::ViewHolderDeleter  viewDeleter  = nullptr;
-
-        if constexpr (!std::is_void_v<Class> && !std::is_void_v<OH>) {
-            ownedCtor = [](void* instance) -> void* {
-                auto typed  = static_cast<Class*>(instance);
-                auto holder = new OH(typed); // create holder
-                return static_cast<void*>(holder);
+        ClassBinding::TypedWrappedResourceFactory factory = nullptr;
+        if constexpr (!std::is_void_v<Class>) {
+            factory = [](void* instance) -> std::unique_ptr<WrappedResource> {
+                return WrappedResource::make(
+                    instance,
+                    [](void* res) -> void* { return res; },
+                    [](void* res) -> void { delete static_cast<Class*>(res); }
+                );
             };
-            ownedGetter = [](void* holder, JsRuntime* rt) -> void* { return static_cast<OH*>(holder)->operator()(rt); };
-            ownedDeleter = [](void* holder) { delete static_cast<OH*>(holder); };
-            if constexpr (!std::is_void_v<VH>) {
-                viewCtor = [](void* instance) -> void* {
-                    auto typed  = static_cast<Class*>(instance);
-                    auto holder = new VH(typed); // create holder
-                    return static_cast<void*>(holder);
-                };
-                viewGetter = [](void* holder, JsRuntime* rt) -> void* {
-                    return static_cast<VH*>(holder)->operator()(rt);
-                };
-                viewDeleter = [](void* holder) { delete static_cast<VH*>(holder); };
-            }
         }
-
 
         return ClassBinding{
             std::move(mClassName),
             StaticBinding{std::move(mStaticProperty), std::move(mStaticFunctions)},
             InstanceBinding{std::move(mInstanceConstructor), std::move(mInstanceProperty), std::move(mInstanceFunctions), size_of_v<Class>},
             mExtends,
-            std::move(ownedCtor),
-            std::move(ownedGetter),
-            std::move(ownedDeleter),
-            std::move(viewCtor),
-            std::move(viewGetter),
-            std::move(viewDeleter),
+            std::move(factory)
         };
     }
 };
 
 
-template <typename C, typename H = void, typename V = void>
-inline ClassBindingBuilder<C, H, V> bindingClass(std::string className) {
-    return ClassBindingBuilder<C, H, V>(std::move(className));
+template <typename C>
+inline ClassBindingBuilder<C> bindingClass(std::string className) {
+    return ClassBindingBuilder<C>(std::move(className));
 }
 
 

@@ -8,7 +8,6 @@
 #include "v8wrap/JsRuntime.hpp"
 #include "v8wrap/JsRuntimeScope.hpp"
 #include "v8wrap/JsValue.hpp"
-#include "v8wrap/Native.hpp"
 #include "v8wrap/TypeConverter.hpp"
 #include "v8wrap/Types.hpp"
 #include <catch2/catch_test_macros.hpp>
@@ -320,16 +319,15 @@ public:
 };
 
 
-v8wrap::ClassBinding UUIDBind =
-    v8wrap::bindingClass<UUID, v8wrap::OwnedRawPtrHolder<UUID>, v8wrap::ViewRawPtrHolder<UUID>>("UUID")
-        .constructor<std::string>()
-        .instanceProperty("str_id_", &UUID::str_id_)
-        .instanceMethod("getUUID", &UUID::getUUID)
-        .instanceMethod("setUUID", &UUID::setUUID)
-        .build();
+v8wrap::ClassBinding UUIDBind = v8wrap::bindingClass<UUID>("UUID")
+                                    .constructor<std::string>()
+                                    .instanceProperty("str_id_", &UUID::str_id_)
+                                    .instanceMethod("getUUID", &UUID::getUUID)
+                                    .instanceMethod("setUUID", &UUID::setUUID)
+                                    .build();
 
 
-v8wrap::ClassBinding ActorBind = v8wrap::bindingClass<Actor, v8wrap::OwnedRawPtrHolder<Actor>>("Actor")
+v8wrap::ClassBinding ActorBind = v8wrap::bindingClass<Actor>("Actor")
                                      .disableConstructor()
                                      .instanceProperty("id_", &Actor::id_)
                                      .instanceMethod("getTypeName", &Actor::getTypeName)
@@ -339,7 +337,7 @@ v8wrap::ClassBinding ActorBind = v8wrap::bindingClass<Actor, v8wrap::OwnedRawPtr
                                      .build();
 
 v8wrap::ClassBinding PlayerBind =
-    v8wrap::bindingClass<Player, v8wrap::OwnedRawPtrHolder<Player>>("Player")
+    v8wrap::bindingClass<Player>("Player")
         .customConstructor([](v8wrap::Arguments const& args) -> void* {
             if (args.length() != 1) {
                 return nullptr;
@@ -444,7 +442,7 @@ TEST_CASE_METHOD(BindingTestFixture, "Instance binding") {
         // C++ side construction
         auto fn = v8wrap::JsFunction::newFunction([](v8wrap::Arguments const& args) -> v8wrap::Local<v8wrap::JsValue> {
             REQUIRE(args.length() == 0);
-            return v8wrap::JsRuntimeScope::currentRuntimeChecked().newInstanceOf(ActorBind, new Actor());
+            return v8wrap::JsRuntimeScope::currentRuntimeChecked().newInstanceOfRaw(ActorBind, new Actor());
         });
         rt->setVauleToGlobalThis(v8wrap::JsString::newString("getActor"), fn);
         auto actor = rt->eval("getActor();");

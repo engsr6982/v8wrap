@@ -43,28 +43,29 @@ InstanceBinding::InstanceBinding(
   mClassSize(classSize) {}
 
 
+WrappedResource::WrappedResource(void* resource, ResGetter getter, ResDeleter deleter)
+: resource(resource),
+  getter(std::move(getter)),
+  deleter(std::move(deleter)) {}
+WrappedResource::~WrappedResource() {
+    if (deleter) {
+        deleter(resource);
+    }
+}
+
+
 ClassBinding::ClassBinding(
-    std::string         name,
-    StaticBinding       static_,
-    InstanceBinding     instance,
-    ClassBinding const* parent,
-    OwnedHolderCtor     ownedHolderCtor,
-    OwnedHolderGetter   ownedHolderGetter,
-    OwnedHolderDeleter  ownedHolderDeleter,
-    ViewHolderCtor      viewHolderCtor,
-    ViewHolderGetter    viewHolderGetter,
-    ViewHolderDeleter   viewHolderDeleter
+    std::string                 name,
+    StaticBinding               static_,
+    InstanceBinding             instance,
+    ClassBinding const*         parent,
+    TypedWrappedResourceFactory factory
 )
 : mClassName(std::move(name)),
   mStaticBinding(std::move(static_)),
   mInstanceBinding(std::move(instance)),
   mExtends(parent),
-  mOwnedHolderCtor(std::move(ownedHolderCtor)),
-  mOwnedHolderGetter(std::move(ownedHolderGetter)),
-  mOwnedHolderDeleter(std::move(ownedHolderDeleter)),
-  mViewHolderCtor(std::move(viewHolderCtor)),
-  mViewHolderGetter(std::move(viewHolderGetter)),
-  mViewHolderDeleter(std::move(viewHolderDeleter)) {}
+  mJsNewInstanceWrapFactory(std::move(factory)) {}
 
 bool ClassBinding::hasInstanceConstructor() const { return mInstanceBinding.mConstructor != nullptr; }
 

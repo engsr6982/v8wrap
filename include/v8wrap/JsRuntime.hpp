@@ -97,64 +97,55 @@ public:
      */
     void registerBindingClass(ClassBinding const& binding);
 
-    /**
-     * 为C++实例创建JavaScript包装器。
-     * Creates a JavaScript wrapper for a C++ instance.
-     *
-     * @param binding 类绑定的元数据 / Class binding metadata.
-     * @param instance 要包装的C++实例指针 / Pointer to the C++ instance to be wrapped.
-     * @return 新创建的JavaScript对象的本地句柄 / Local handle to the newly created JavaScript object.
-     *
-     * @warning C++实例必须分配在堆上（使用 `new` 操作符）。
-     *          栈分配的实例会导致悬垂引用和 GC 崩溃。
-     *          The C++ instance **must** be allocated on the heap (using `new`).
-     *          Stack-allocated instances will cause dangling references and GC crashes.
-     *
-     * @note 此重载创建的实例会使用绑定时提供的 `Holder` 存储资源。
-     *       是否在 GC 时释放实例由 `Holder` 控制。
-     *       The instance created by this overload will use the `Holder` provided by the binding to manage resources.
-     *       Whether the instance is released during GC is determined by the `Holder`.
-     */
-    Local<JsObject> newInstanceOf(ClassBinding const& binding, void* instance);
 
     /**
-     * 通过类名为C++实例创建JavaScript包装器。
-     * Creates a JavaScript wrapper for a C++ instance using the class name.
-     *
-     * @param className 要实例化的类名 / Name of the class to instantiate.
-     * @param instance 要包装的C++实例指针 / Pointer to the C++ instance to be wrapped.
-     * @return 新创建的JavaScript对象的本地句柄 / Local handle to the newly created JavaScript object.
-     *
-     * @warning 内存要求与 `newInstanceOf(ClassBinding const&, void*)` 相同。
-     *          The memory requirements are the same as `newInstanceOf(ClassBinding const&, void*)`.
-     * @see newInstanceOf(ClassBinding const&, void*)
+     * 创建一个新的 JavaScript 类实例
+     * Creates a new JavaScript class instance.
      */
-    Local<JsObject> newInstanceOf(std::string const& className, void* instance);
+    Local<JsObject> newInstance(ClassBinding const& bind, std::unique_ptr<WrappedResource>&& wrappedResource);
 
     /**
-     * 为C++实例创建JavaScript视图，该视图会保持对其所有者JavaScript对象的强引用。
-     * Creates a JavaScript view of a C++ instance that maintains a strong reference to its owner JavaScript object.
-     *
-     * 通常用于需要与父/所有者对象保持关联的成员对象，以防止过早的垃圾回收。
-     * Typically used for member objects that must maintain association with their parent/owner object to prevent
-     * premature GC.
-     *
-     * @param binding 类绑定的元数据 / Class binding metadata.
-     * @param instance 要包装的C++实例指针 / Pointer to the C++ instance to be wrapped.
-     * @param ownerJs 持有该实例的所有者JavaScript对象 / Owner JavaScript object that holds this instance.
-     * @return 新创建的JavaScript对象的本地句柄 / Local handle to the newly created JavaScript object.
-     *
-     * @note 内部会创建对 `ownerJs` 的 Global 引用，以防止其被 GC。
-     *       Internally, a Global reference to `ownerJs` is created to prevent it from being GC'ed.
-     *
-     * @note 该视图对象销毁时，Global 引用才会被释放，在此之前会阻止 `ownerJs` 被回收。
-     *       The Global reference will be released only when this view object is destroyed,
-     *       preventing `ownerJs` from being collected until then.
-     *
-     * @see 使用示例请参考 `test/BindingTest.cc`（PlayerBind）。
-     *      See `test/BindingTest.cc` (PlayerBind) for usage examples.
+     * 创建一个新的 JavaScript 类实例
+     * @warning C++实例必须分配在堆上(使用 `new` 操作符), 栈分配的实例会导致悬垂引用和 GC 崩溃。
+     * @note v8wrap 会接管实例的生命周期，GC 时自动销毁
      */
-    Local<JsObject> newInstanceOfView(ClassBinding const& binding, void* instance, Local<JsObject> ownerJs);
+    template <typename T>
+    Local<JsObject> newInstanceOfRaw(ClassBinding const& bind, T* instance);
+
+    /**
+     * 创建一个新的 JavaScript 类实例
+     * @note v8wrap 不接管实例的生命周期，由外部管理实例的生命周期 (不自动销毁)
+     */
+    template <typename T>
+    Local<JsObject> newInstanceOfView(ClassBinding const& bind, T* instance);
+
+    /**
+     * 创建一个新的 JavaScript 类实例
+     * @note v8wrap 不接管实例的生命周期，对子资源创建 Global 引用关联生命周期(常见于对类成员创建Js实例，防止主实例 GC)
+     */
+    template <typename T>
+    Local<JsObject> newInstanceOfView(ClassBinding const& bind, T* instance, Local<JsObject> const& ownerJs);
+
+    /**
+     * 创建一个新的 JavaScript 类实例
+     * @note v8wrap 接管实例的生命周期，GC 时自动销毁
+     */
+    template <typename T>
+    Local<JsObject> newInstanceOfUnique(ClassBinding const& bind, std::unique_ptr<T>&& instance);
+
+    /**
+     * 创建一个新的 JavaScript 类实例
+     * @note v8wrap 共享对此实例的引用，仅在 Gc 时重置引用
+     */
+    template <typename T>
+    Local<JsObject> newInstanceOfShared(ClassBinding const& bind, std::shared_ptr<T>&& instance);
+
+    /**
+     * 创建一个新的 JavaScript 类实例
+     * @note v8wrap 仅在运行时尝试获取资源，如果获取不到资源则返回 null
+     */
+    template <typename T>
+    Local<JsObject> newInstanceOfWeak(ClassBinding const& bind, std::weak_ptr<T>&& instance);
 
     [[nodiscard]] bool isInstanceOf(Local<JsObject> const& obj, ClassBinding const& binding) const;
 
@@ -184,8 +175,8 @@ private:
     };
 
     // v8: AlignedPointerInInternalField
-    static constexpr int kInternalFieldCount    = 1;
-    static constexpr int kInternalField_IHolder = 0;
+    static constexpr int kInternalFieldCount            = 1;
+    static constexpr int kInternalField_WrappedResource = 0;
 
     v8::Isolate*            mIsolate{nullptr};
     v8::Global<v8::Context> mContext{};
@@ -197,13 +188,6 @@ private:
 
     // This symbol is used to mark the construction of objects from C++ (with special logic).
     v8::Global<v8::Symbol> mConstructorSymbol{};
-    // Special behavior, used to mark that this construction belongs to view construction (holding only).
-    // Correspondingly, during garbage collection (gc), the resource will not be destroyed, because its lifecycle is
-    //  owned by the class that holds this resource (such as a class member).
-    // In this scenario, a Global will be used to force a reference to the parent class instance, so as to avoid
-    //  dangling references of the property.
-    v8::Global<v8::Symbol> mViewConstructorSymbol{};
-
 
     std::unordered_map<ManagedResource*, v8::Global<v8::Value>>               mManagedResources;
     std::unordered_map<std::string, ClassBinding const*>                      mRegisteredBindings;
