@@ -1,18 +1,13 @@
 add_rules("mode.debug", "mode.release")
-set_project("v8wrap")
-set_version("0.1.0")
 
 if has_config("test") then
     add_requires("catch2 v3.8.1")
 end
 
 if is_plat("windows") then
-    if not has_config("vs_runtime") then
+    if not has_config("vs_runtime") and has_config("test") then
         set_runtimes("MT")
     end
-    -- set_toolchains("clang-cl")
-elseif is_plat("linux") then 
-    set_toolchains("clang")
 end
 
 option("v8_include_dir")
@@ -24,6 +19,7 @@ option_end()
 option("test")
     set_default(false)
     set_showmenu(true)
+    set_description("Build test cases")
 option_end()
 
 option("v8_static_lib")
@@ -33,5 +29,49 @@ option("v8_static_lib")
 option_end()
 
 
-includes("xmake/v8wrap.lua")
-includes("xmake/test.lua")
+target("v8wrap")
+    set_kind("static")
+    add_files("$(projectdir)/src/**.cc")
+    add_includedirs("$(projectdir)/src", "$(projectdir)/include")
+    add_headerfiles("$(projectdir)/include/(v8wrap/**.hpp)")
+    set_languages("cxx20")
+    set_symbols("debug")
+
+    if has_config("test") then 
+        set_kind("binary")
+        add_packages("catch2")
+        add_files("test/**.cc")
+        add_syslinks("winmm", "advapi32", "dbghelp") -- add required system libraries
+        add_links(get_config("v8_static_lib"))
+    else 
+        set_kind("static")
+    end
+
+    if is_plat("windows") then 
+        add_cxflags("/utf-8", "/W4", "/sdl")
+    elseif is_plat("linux") then
+        add_cxflags("-fPIC", "-stdlib=libc++", {force = true})
+        add_syslinks("dl", "pthread")
+    end
+
+    if has_config("v8_include_dir") then
+        local v8_inc = get_config("v8_include_dir")
+        if v8_inc ~= "" and os.isdir(v8_inc) then
+            add_includedirs(v8_inc)
+            print("V8 include path added: " .. v8_inc)
+        end
+    end
+
+    if is_mode("debug") then
+        add_defines("V8WRAP_DEBUG")
+    end
+
+    after_build(function (target)
+        local binDir = os.projectdir() .. "/bin"
+        if not os.isdir(binDir) then
+            os.mkdir(binDir)
+        end
+        local test = target:targetfile()
+        os.cp(test, binDir)
+    end)
+target_end()
