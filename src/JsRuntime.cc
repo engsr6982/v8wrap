@@ -402,6 +402,10 @@ void JsRuntime::implInstanceRegister(v8::Local<v8::FunctionTemplate>& ctor, Inst
                 auto typed   = static_cast<WrappedResource*>(wrapped);
                 auto runtime = const_cast<JsRuntime*>(typed->runtime);
                 auto thiz    = (*typed)(); // operator()()
+                if (thiz == nullptr) {
+                    info.GetReturnValue().SetNull(); // object has been destroyed
+                    return;
+                }
                 try {
                     auto val = (method->mCallback)(thiz, Arguments{runtime, info});
                     info.GetReturnValue().Set(JsValueHelper::unwrap(val));
@@ -430,6 +434,10 @@ void JsRuntime::implInstanceRegister(v8::Local<v8::FunctionTemplate>& ctor, Inst
                 auto typed   = static_cast<WrappedResource*>(wrapped);
                 auto runtime = const_cast<JsRuntime*>(typed->runtime);
                 auto thiz    = (*typed)(); // operator()()
+                if (thiz == nullptr) {
+                    info.GetReturnValue().SetNull(); // object has been destroyed
+                    return;
+                }
                 try {
                     auto val = (prop->mGetter)(thiz, Arguments{runtime, info});
                     info.GetReturnValue().Set(JsValueHelper::unwrap(val));
@@ -451,6 +459,10 @@ void JsRuntime::implInstanceRegister(v8::Local<v8::FunctionTemplate>& ctor, Inst
                     auto typed   = static_cast<WrappedResource*>(wrapped);
                     auto runtime = const_cast<JsRuntime*>(typed->runtime);
                     auto thiz    = (*typed)(); // operator()()
+                    if (thiz == nullptr) {
+                        info.GetReturnValue().SetNull(); // object has been destroyed
+                        return;
+                    }
                     try {
                         (prop->mSetter)(thiz, Arguments{runtime, info});
                     } catch (JsException const& e) {
