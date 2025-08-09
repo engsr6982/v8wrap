@@ -265,8 +265,6 @@ TEST_CASE_METHOD(BindingTestFixture, "Static binding") {
 }
 
 
-// TODO: Test instance binding
-// TODO: Test inheritance
 class Actor {
     static int genID() {
         static int id = 0;

@@ -79,8 +79,6 @@ void JsRuntime::destroy() {
             ctor.Reset();
         }
 
-        // TODO: implement
-
         mConstructorSymbol.Reset();
         mJsClassConstructor.clear();
         mRegisteredBindings.clear();
