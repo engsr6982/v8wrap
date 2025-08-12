@@ -103,8 +103,8 @@ struct InstanceBinding {
 
 
 struct WrappedResource final {
-    using ResGetter  = std::function<void*(void* resource)>; // return instance (T* -> void*)
-    using ResDeleter = std::function<void(void* resource)>;
+    using ResGetter  = void* (*)(void* resource); // return instance (T* -> void*)
+    using ResDeleter = void (*)(void* resource);
 
 private:
     void*            resource{nullptr};
@@ -148,7 +148,7 @@ public:
     // Deleting a void* is unsafe, so this helper method is needed to generate a reasonable deleter.
     // This callback is only invoked when using JavaScript's `new` operator, and it is used to wrap the instance (T*)
     //  returned by JsInstanceConstructor.
-    using TypedWrappedResourceFactory = std::function<std::unique_ptr<WrappedResource>(void* instance)>;
+    using TypedWrappedResourceFactory = std::unique_ptr<WrappedResource> (*)(void* instance);
     TypedWrappedResourceFactory const mJsNewInstanceWrapFactory{nullptr};
 
     [[nodiscard]] inline auto wrap(void* instance) const { return mJsNewInstanceWrapFactory(instance); }
@@ -344,7 +344,7 @@ public:
             StaticBinding{std::move(mStaticProperty), std::move(mStaticFunctions)},
             InstanceBinding{std::move(mInstanceConstructor), std::move(mInstanceProperty), std::move(mInstanceFunctions), size_of_v<Class>},
             mExtends,
-            std::move(factory)
+            factory
         };
     }
 };
