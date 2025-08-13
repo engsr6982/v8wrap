@@ -158,7 +158,6 @@ void JsRuntime::addManagedResource(void* resource, v8::Local<v8::Value> value, s
                 data.SetSecondPassCallback([](v8::WeakCallbackInfo<void> const& data) {
                     auto       managed = static_cast<ManagedResource*>(data.GetParameter());
                     v8::Locker locker(managed->runtime->mIsolate);
-                    managed->deleter(managed->resource);
                     delete managed;
                 });
             }
