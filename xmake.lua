@@ -33,13 +33,9 @@ target("v8wrap")
     set_kind("static")
     add_files("src/**.cc")
     add_includedirs("src")
-    add_headerfiles("src/(v8wrap/**.h)")
+    add_headerfiles("src/(v8wrap/**.h)", "src/(v8wrap/**.inl)")
     set_languages("cxx20")
     set_symbols("debug")
-
-    if is_plat("windows") then 
-        add_cxxflags("/Zc:__cplusplus", {force = true})
-    end
 
     if has_config("test") then 
         set_kind("binary")
@@ -47,12 +43,11 @@ target("v8wrap")
         add_files("test/**.cc")
         add_syslinks("winmm", "advapi32", "dbghelp") -- add required system libraries
         add_links(get_config("v8_static_lib"))
-    else 
-        set_kind("static")
     end
 
     if is_plat("windows") then 
         add_cxflags("/utf-8", "/W4", "/sdl")
+        add_cxxflags("/Zc:__cplusplus", {force = true})
     elseif is_plat("linux") then
         add_cxflags("-fPIC", "-stdlib=libc++", {force = true})
         add_syslinks("dl", "pthread")
