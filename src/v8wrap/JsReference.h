@@ -1,8 +1,8 @@
 #pragma once
-#include "v8wrap/Concepts.hpp"
-#include "v8wrap/Global.hpp"
-#include "v8wrap/Types.hpp"
-#include "v8wrap/internal/V8TypeAlias.hpp"
+#include "v8wrap/Concepts.h"
+#include "v8wrap/Global.h"
+#include "v8wrap/Types.h"
+#include "v8wrap/internal/V8TypeAlias.h"
 #include <cstdint>
 #include <string>
 #include <type_traits>
@@ -30,7 +30,7 @@ public:                                                                         
     bool            operator==(Local<JsValue> const& other) const;                                                     \
                                                                                                                        \
 private:                                                                                                               \
-    friend struct JsValueHelper;                                                                                            \
+    friend struct JsValueHelper;                                                                                       \
     friend class JsException;                                                                                          \
     friend class VALUE;                                                                                                \
     template <typename>                                                                                                \
@@ -43,8 +43,8 @@ private:                                                                        
 #define SPECALIZATION_AS_VALUE(VALUE)                                                                                  \
 public:                                                                                                                \
     Local<JsValue> asValue() const;                                                                                    \
-    operator Local<JsValue>() const { return asValue(); }                                                              \
-    bool operator==(Local<VALUE> const& other) const { return operator==(other.asValue()); }
+                   operator Local<JsValue>() const { return asValue(); }                                               \
+    bool           operator==(Local<VALUE> const& other) const { return operator==(other.asValue()); }
 
 #define SPECALIZATION_V8_LOCAL_TYPE(VALUE)                                                                             \
 private:                                                                                                               \

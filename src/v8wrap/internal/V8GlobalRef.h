@@ -1,9 +1,9 @@
 #pragma once
-#include "V8TypeAlias.hpp"
-#include "v8wrap/Global.hpp"
-#include "v8wrap/JsReference.hpp"
-#include "v8wrap/JsRuntime.hpp"
-#include "v8wrap/Types.hpp"
+#include "V8TypeAlias.h"
+#include "v8wrap/Global.h"
+#include "v8wrap/JsReference.h"
+#include "v8wrap/JsRuntime.h"
+#include "v8wrap/Types.h"
 
 
 namespace v8wrap::internal {

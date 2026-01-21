@@ -1,5 +1,5 @@
 #pragma once
-#include "Global.hpp"
+#include "Global.h"
 
 V8_WRAP_WARNING_GUARD_BEGIN
 #include <v8-context.h>

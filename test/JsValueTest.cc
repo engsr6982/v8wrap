@@ -1,10 +1,10 @@
-#include "v8wrap/JsValue.hpp"
+#include "v8wrap/JsValue.h"
 #include "catch2/catch_test_macros.hpp"
-#include "v8wrap/JsException.hpp"
-#include "v8wrap/JsPlatform.hpp"
-#include "v8wrap/JsRuntime.hpp"
-#include "v8wrap/JsRuntimeScope.hpp"
-#include "v8wrap/Types.hpp"
+#include "v8wrap/JsException.h"
+#include "v8wrap/JsPlatform.h"
+#include "v8wrap/JsRuntime.h"
+#include "v8wrap/JsRuntimeScope.h"
+#include "v8wrap/Types.h"
 #include <cstddef>
 #include <iostream>
 

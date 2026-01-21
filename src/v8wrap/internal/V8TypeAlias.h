@@ -1,6 +1,6 @@
 #pragma once
-#include "v8wrap/Global.hpp"
-#include "v8wrap/Types.hpp"
+#include "v8wrap/Global.h"
+#include "v8wrap/Types.h"
 
 V8_WRAP_WARNING_GUARD_BEGIN
 #include <v8-function.h>

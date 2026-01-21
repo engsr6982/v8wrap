@@ -1,7 +1,7 @@
 #pragma once
-#include "JsRuntime.hpp"
+#include "JsRuntime.h"
 #include "v8-object.h"
-#include "v8wrap/Types.hpp"
+#include "v8wrap/Types.h"
 
 
 namespace v8wrap {

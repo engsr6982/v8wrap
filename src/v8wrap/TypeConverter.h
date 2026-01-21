@@ -1,7 +1,7 @@
 #pragma once
-#include "v8wrap/Concepts.hpp"
-#include "v8wrap/JsReference.hpp"
-#include "v8wrap/JsValue.hpp"
+#include "v8wrap/Concepts.h"
+#include "v8wrap/JsReference.h"
+#include "v8wrap/JsValue.h"
 #include <string>
 #include <type_traits>
 

@@ -1,11 +1,12 @@
-#include "v8wrap/JsException.hpp"
+#include "v8wrap/JsException.h"
 #include "catch2/catch_test_macros.hpp"
 #include "catch2/matchers/catch_matchers.hpp"
 #include "catch2/matchers/catch_matchers_exception.hpp"
-#include "v8wrap/JsPlatform.hpp"
-#include "v8wrap/JsRuntime.hpp"
-#include "v8wrap/JsRuntimeScope.hpp"
-#include "v8wrap/JsValue.hpp"
+
+#include "v8wrap/JsPlatform.h"
+#include "v8wrap/JsRuntime.h"
+#include "v8wrap/JsRuntimeScope.h"
+#include "v8wrap/JsValue.h"
 
 
 using Catch::Matchers::MessageMatches;

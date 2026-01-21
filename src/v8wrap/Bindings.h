@@ -1,6 +1,6 @@
 #pragma once
-#include "v8wrap/Concepts.hpp"
-#include "v8wrap/Types.hpp"
+#include "v8wrap/Concepts.h"
+#include "v8wrap/Types.h"
 #include <cstddef>
 #include <stdexcept>
 #include <type_traits>
@@ -342,7 +342,12 @@ public:
         return ClassBinding{
             std::move(mClassName),
             StaticBinding{std::move(mStaticProperty), std::move(mStaticFunctions)},
-            InstanceBinding{std::move(mInstanceConstructor), std::move(mInstanceProperty), std::move(mInstanceFunctions), size_of_v<Class>},
+            InstanceBinding{
+                          std::move(mInstanceConstructor),
+                          std::move(mInstanceProperty),
+                          std::move(mInstanceFunctions),
+                          size_of_v<Class>
+            },
             mExtends,
             factory
         };

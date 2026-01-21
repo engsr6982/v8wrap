@@ -1,7 +1,7 @@
-#include "v8wrap/TypeConverter.hpp"
+#include "v8wrap/TypeConverter.h"
 #include "catch2/catch_test_macros.hpp"
-#include "v8wrap/JsRuntime.hpp"
-#include "v8wrap/JsRuntimeScope.hpp"
+#include "v8wrap/JsRuntime.h"
+#include "v8wrap/JsRuntimeScope.h"
 #include <string>
 
 

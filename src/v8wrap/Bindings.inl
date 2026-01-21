@@ -1,10 +1,10 @@
 #pragma once
-#include "v8wrap/Concepts.hpp"
-#include "v8wrap/Global.hpp"
-#include "v8wrap/JsException.hpp"
-#include "v8wrap/JsValue.hpp"
-#include "v8wrap/TypeConverter.hpp"
-#include "v8wrap/Types.hpp"
+#include "v8wrap/Concepts.h"
+#include "v8wrap/Global.h"
+#include "v8wrap/JsException.h"
+#include "v8wrap/JsValue.h"
+#include "v8wrap/TypeConverter.h"
+#include "v8wrap/Types.h"
 #include <array>
 #include <cstddef>
 #include <tuple>

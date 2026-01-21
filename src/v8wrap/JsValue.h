@@ -1,8 +1,8 @@
 #pragma once
-#include "Types.hpp"
-#include "v8wrap/Concepts.hpp"
-#include "v8wrap/Global.hpp"
-#include "v8wrap/internal/V8TypeAlias.hpp"
+#include "Types.h"
+#include "v8wrap/Concepts.h"
+#include "v8wrap/Global.h"
+#include "v8wrap/internal/V8TypeAlias.h"
 #include <cstddef>
 #include <string>
 #include <string_view>

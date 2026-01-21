@@ -1,6 +1,6 @@
 #pragma once
-#include "v8wrap/Global.hpp"
-#include "v8wrap/Types.hpp"
+#include "v8wrap/Global.h"
+#include "v8wrap/Types.h"
 #include <memory>
 #include <mutex>
 #include <vector>

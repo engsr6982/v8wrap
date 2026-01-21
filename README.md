@@ -6,16 +6,16 @@
 
 ## 功能
 
-- [x] JsPlatform.hpp - Js 平台,管理 `JsRuntime` (`v8::Platform`)
-- [x] JsRuntime.hpp - Js 运行时 (`v8::Isolate` + `v8::Global<v8::Context>`)
+- [x] JsPlatform.h - Js 平台,管理 `JsRuntime` (`v8::Platform`)
+- [x] JsRuntime.h - Js 运行时 (`v8::Isolate` + `v8::Global<v8::Context>`)
   - [x] 资源管理
   - [x] 绑定类注册
   - [x] C++构造 Js 类
   - [x] isInstanceOf 类型判定
   - [x] 解包获取原生实例（从绑定的类实例获取 Local<JsObject>）
-- [x] JsRuntimeScope.hpp - v8 作用域封装 (`v8::Locker` + `v8::Isolate::Scope` + `v8::HandleScope` + `v8::Context::Scope`)
-- [x] JsException.hpp - v8 异常封装，双向异常转换
-- [x] JsValue.hpp - v8 值封装，双向值转换
+- [x] JsRuntimeScope.h - v8 作用域封装 (`v8::Locker` + `v8::Isolate::Scope` + `v8::HandleScope` + `v8::Context::Scope`)
+- [x] JsException.h - v8 异常封装，双向异常转换
+- [x] JsValue.h - v8 值封装，双向值转换
   - [x] `JsValue` -> `v8::Value`
   - [x] `JsNull` -> `v8::Primitive`
   - [x] `JsUndefined` -> `v8::Primitive`
@@ -27,18 +27,18 @@
   - [x] `JsFunction` -> `v8::Function`
   - [x] `JsObject` -> `v8::Object`
   - [x] `JsArray` -> `v8::Array`
-- [x] JsReference.hpp - v8 引用封装
+- [x] JsReference.h - v8 引用封装
   - [x] `Local<T>` -> `v8::Local<T>`
   - [x] `Global<T>` -> `v8::Global<T>`
   - [x] `Weak<T>` -> `v8::Global<T>`
-- [x] TypeConverter.hpp - 类型转换器
+- [x] TypeConverter.h - 类型转换器
   - [x] `bool` -> `JsBoolean`
   - [x] any number -> `JsNumber`
   - [x] `int64_t`/`uint64_t` -> `JsBigInt`
   - [x] any string -> `JsString`
   - [x] any enum -> `JsNumber`(cast to int)
   - [x] wrap type <-> JsValue
-- [x] Bindings.hpp -> C++ 绑定
+- [x] Bindings.h -> C++ 绑定
   - [x] 普通函数（重载支持）
   - [x] std::function（重载支持）
   - [x] lambda（重载支持）

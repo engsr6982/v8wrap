@@ -1,5 +1,5 @@
-#include "v8wrap/JsRuntimeScope.hpp"
-#include "v8wrap/JsRuntime.hpp"
+#include "v8wrap/JsRuntimeScope.h"
+#include "v8wrap/JsRuntime.h"
 #include <stdexcept>
 
 namespace v8wrap {

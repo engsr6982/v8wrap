@@ -1,7 +1,7 @@
-#include "v8wrap/JsReference.hpp"
-#include "v8wrap/JsException.hpp"
-#include "v8wrap/JsRuntimeScope.hpp"
-#include "v8wrap/JsValue.hpp"
+#include "v8wrap/JsReference.h"
+#include "v8wrap/JsException.h"
+#include "v8wrap/JsRuntimeScope.h"
+#include "v8wrap/JsValue.h"
 #include <algorithm>
 #include <cassert>
 

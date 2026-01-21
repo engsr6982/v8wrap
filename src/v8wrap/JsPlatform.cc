@@ -1,5 +1,5 @@
-#include "v8wrap/JsPlatform.hpp"
-#include "v8wrap/JsRuntime.hpp"
+#include "v8wrap/JsPlatform.h"
+#include "v8wrap/JsRuntime.h"
 #include <memory>
 #include <mutex>
 #include <vector>

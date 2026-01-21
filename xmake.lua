@@ -31,9 +31,9 @@ option_end()
 
 target("v8wrap")
     set_kind("static")
-    add_files("$(projectdir)/src/**.cc")
-    add_includedirs("$(projectdir)/src", "$(projectdir)/include")
-    add_headerfiles("$(projectdir)/include/(v8wrap/**.hpp)")
+    add_files("src/**.cc")
+    add_includedirs("src")
+    add_headerfiles("src/(v8wrap/**.h)")
     set_languages("cxx20")
     set_symbols("debug")
 

@@ -1,15 +1,15 @@
 #include "catch2/catch_test_macros.hpp"
 #include "catch2/matchers/catch_matchers.hpp"
 #include "catch2/matchers/catch_matchers_exception.hpp"
-#include "v8wrap/Bindings.hpp"
-#include "v8wrap/JsException.hpp"
-#include "v8wrap/JsPlatform.hpp"
-#include "v8wrap/JsReference.hpp"
-#include "v8wrap/JsRuntime.hpp"
-#include "v8wrap/JsRuntimeScope.hpp"
-#include "v8wrap/JsValue.hpp"
-#include "v8wrap/TypeConverter.hpp"
-#include "v8wrap/Types.hpp"
+#include "v8wrap/Bindings.h"
+#include "v8wrap/JsException.h"
+#include "v8wrap/JsPlatform.h"
+#include "v8wrap/JsReference.h"
+#include "v8wrap/JsRuntime.h"
+#include "v8wrap/JsRuntimeScope.h"
+#include "v8wrap/JsValue.h"
+#include "v8wrap/TypeConverter.h"
+#include "v8wrap/Types.h"
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
 #include <iostream>
@@ -233,8 +233,10 @@ TEST_CASE_METHOD(BindingTestFixture, "Static binding") {
         REQUIRE_THROWS_MATCHES(
             rt->eval("Test.readOnly = 514;"),
             v8wrap::JsException,
-            Catch::Matchers::ExceptionMessageMatcher("Uncaught TypeError: Native property have only one getter, and "
-                                                     "you cannot modify native property without getters")
+            Catch::Matchers::ExceptionMessageMatcher(
+                "Uncaught TypeError: Native property have only one getter, and "
+                "you cannot modify native property without getters"
+            )
         );
         REQUIRE(Test::readOnly == 114); // Test::readOnly is not modified
 

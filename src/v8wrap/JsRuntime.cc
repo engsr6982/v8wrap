@@ -1,10 +1,10 @@
-#include "v8wrap/JsRuntime.hpp"
-#include "v8wrap/Bindings.hpp"
-#include "v8wrap/JsException.hpp"
-#include "v8wrap/JsPlatform.hpp"
-#include "v8wrap/JsReference.hpp"
-#include "v8wrap/JsRuntimeScope.hpp"
-#include "v8wrap/JsValue.hpp"
+#include "v8wrap/JsRuntime.h"
+#include "v8wrap/Bindings.h"
+#include "v8wrap/JsException.h"
+#include "v8wrap/JsPlatform.h"
+#include "v8wrap/JsReference.h"
+#include "v8wrap/JsRuntimeScope.h"
+#include "v8wrap/JsValue.h"
 #include <cassert>
 #include <fstream>
 #include <optional>

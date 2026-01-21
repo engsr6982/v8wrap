@@ -1,4 +1,4 @@
-#include "v8wrap/Bindings.hpp"
+#include "v8wrap/Bindings.h"
 
 
 namespace v8wrap {
