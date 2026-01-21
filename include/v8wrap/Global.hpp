@@ -29,13 +29,14 @@ namespace v8wrap {
 // #define V8WRAP_SKIP_CHECK_V8_VERSION
 
 #ifndef V8WRAP_SKIP_CHECK_V8_VERSION
-static_assert(
-    !((V8_MAJOR_VERSION < V8WRAP_SUPPORTED_MIN_V8_MAJOR_VERSION)
-      || (V8_MINOR_VERSION < V8WRAP_SUPPORTED_MIN_V8_MINOR_VERSION)),
-    "v8wrap requires at least V8 version 12.4"
-);
+inline constexpr bool V8Wrap_RequireMinV8Version =
+    // major version 领先
+    (V8_MAJOR_VERSION > V8WRAP_SUPPORTED_MIN_V8_MAJOR_VERSION) ||
+    // major version 相等，minor version 领先
+    (V8_MAJOR_VERSION == V8WRAP_SUPPORTED_MIN_V8_MAJOR_VERSION
+     && V8_MINOR_VERSION >= V8WRAP_SUPPORTED_MIN_V8_MINOR_VERSION);
+static_assert(V8Wrap_RequireMinV8Version, "v8wrap requires at least V8 version 12.4");
 #endif
-
 
 #if defined(_MSC_VER)
 #define V8_WRAP_WARNING_GUARD_BEGIN                                                                                    \
