@@ -4,13 +4,13 @@
 namespace v8wrap {
 
 
-StaticBinding::Property::Property(std::string name, JsGetterCallback getter, JsSetterCallback setter)
+StaticBinding::Property::Property(std::string name, GetterCallback getter, SetterCallback setter)
 : mName(std::move(name)),
   mGetter(std::move(getter)),
   mSetter(std::move(setter)) {}
 
 
-StaticBinding::Function::Function(std::string name, JsFunctionCallback callback)
+StaticBinding::Function::Function(std::string name, FunctionCallback callback)
 : mName(std::move(name)),
   mCallback(std::move(callback)) {}
 
@@ -20,19 +20,19 @@ StaticBinding::StaticBinding(std::vector<Property> property, std::vector<Functio
   mFunctions(std::move(functions)) {}
 
 
-InstanceBinding::Property::Property(std::string name, JsInstanceGetterCallback getter, JsInstanceSetterCallback setter)
+InstanceBinding::Property::Property(std::string name, InstanceGetterCallback getter, InstanceSetterCallback setter)
 : mName(std::move(name)),
   mGetter(std::move(getter)),
   mSetter(std::move(setter)) {}
 
 
-InstanceBinding::Method::Method(std::string name, JsInstanceMethodCallback callback)
+InstanceBinding::Method::Method(std::string name, InstanceMethodCallback callback)
 : mName(std::move(name)),
   mCallback(std::move(callback)) {}
 
 
 InstanceBinding::InstanceBinding(
-    JsInstanceConstructor constructor,
+    InstanceConstructor   constructor,
     std::vector<Property> property,
     std::vector<Method>   functions,
     size_t                classSize

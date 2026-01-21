@@ -12,32 +12,32 @@ A non-intrusive, easy-to-use V8 binding library for embedded scenarios, supporti
   - [x] Registered bound classes
   - [x] Construct JavaScript classes from C++
   - [x] `isInstanceOf` type checking
-  - [x] Unwrap native instances (obtain `Local<JsObject>` from a bound class instance)
+  - [x] Unwrap native instances (obtain `Local<Object>` from a bound class instance)
 - [x] JsRuntimeScope.h – V8 scope encapsulation (`v8::Locker` + `v8::Isolate::Scope` + `v8::HandleScope` + `v8::Context::Scope`)
 - [x] JsException.h – V8 exception wrapper, bi-directional exception conversion
-- [x] JsValue.h – V8 value wrapper, bi-directional value conversion
-  - [x] `JsValue` -> `v8::Value`
-  - [x] `JsNull` -> `v8::Primitive`
-  - [x] `JsUndefined` -> `v8::Primitive`
-  - [x] `JsBoolean` -> `v8::Boolean`
-  - [x] `JsNumber` -> `v8::Number`
-  - [x] `JsBigInt` -> `v8::BigInt`
-  - [x] `JsString` -> `v8::String`
-  - [x] `JsSymbol` -> `v8::Symbol`
-  - [x] `JsFunction` -> `v8::Function`
-  - [x] `JsObject` -> `v8::Object`
-  - [x] `JsArray` -> `v8::Array`
+- [x] Value.h – V8 value wrapper, bi-directional value conversion
+  - [x] `Value` -> `v8::Value`
+  - [x] `Null` -> `v8::Primitive`
+  - [x] `Undefined` -> `v8::Primitive`
+  - [x] `Boolean` -> `v8::Boolean`
+  - [x] `Number` -> `v8::Number`
+  - [x] `BigInt` -> `v8::BigInt`
+  - [x] `String` -> `v8::String`
+  - [x] `Symbol` -> `v8::Symbol`
+  - [x] `Function` -> `v8::Function`
+  - [x] `Object` -> `v8::Object`
+  - [x] `Array` -> `v8::Array`
 - [x] Reference.h – V8 reference wrapper
   - [x] `Local<T>` -> `v8::Local<T>`
   - [x] `Global<T>` -> `v8::Global<T>`
   - [x] `Weak<T>` -> `v8::Global<T>`
 - [x] TypeConverter.h – Type converter
-  - [x] `bool` -> `JsBoolean`
-  - [x] any number -> `JsNumber`
-  - [x] `int64_t` / `uint64_t` -> `JsBigInt`
-  - [x] any string -> `JsString`
-  - [x] any enum -> `JsNumber` (cast to int)
-  - [x] wrap type <-> JsValue
+  - [x] `bool` -> `Boolean`
+  - [x] any number -> `Number`
+  - [x] `int64_t` / `uint64_t` -> `BigInt`
+  - [x] any string -> `String`
+  - [x] any enum -> `Number` (cast to int)
+  - [x] wrap type <-> Value
 - [x] Bindings.h – C++ bindings
   - [x] Regular functions (overload supported)
   - [x] `std::function` (overload supported)

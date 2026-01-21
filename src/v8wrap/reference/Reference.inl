@@ -11,31 +11,31 @@ namespace v8wrap {
 
 template <typename T>
     requires IsWrappedV8Type<T>
-Local<T> Local<JsValue>::as() const {
-    if constexpr (std::is_same_v<T, JsValue>) {
+Local<T> Local<Value>::as() const {
+    if constexpr (std::is_same_v<T, Value>) {
         return asValue();
-    } else if constexpr (std::is_same_v<T, JsNull>) {
+    } else if constexpr (std::is_same_v<T, Null>) {
         return asNull();
-    } else if constexpr (std::is_same_v<T, JsUndefined>) {
+    } else if constexpr (std::is_same_v<T, Undefined>) {
         return asUndefined();
-    } else if constexpr (std::is_same_v<T, JsBoolean>) {
+    } else if constexpr (std::is_same_v<T, Boolean>) {
         return asBoolean();
-    } else if constexpr (std::is_same_v<T, JsNumber>) {
+    } else if constexpr (std::is_same_v<T, Number>) {
         return asNumber();
-    } else if constexpr (std::is_same_v<T, JsBigInt>) {
+    } else if constexpr (std::is_same_v<T, BigInt>) {
         return asBigInt();
-    } else if constexpr (std::is_same_v<T, JsString>) {
+    } else if constexpr (std::is_same_v<T, String>) {
         return asString();
-    } else if constexpr (std::is_same_v<T, JsSymbol>) {
+    } else if constexpr (std::is_same_v<T, Symbol>) {
         return asSymbol();
-    } else if constexpr (std::is_same_v<T, JsFunction>) {
+    } else if constexpr (std::is_same_v<T, Function>) {
         return asFunction();
-    } else if constexpr (std::is_same_v<T, JsObject>) {
+    } else if constexpr (std::is_same_v<T, Object>) {
         return asObject();
-    } else if constexpr (std::is_same_v<T, JsArray>) {
+    } else if constexpr (std::is_same_v<T, Array>) {
         return asArray();
     }
-    throw JsException("Unable to convert Local<JsValue> to T, forgot to add if branch?");
+    throw JsException("Unable to convert Local<Value> to T, forgot to add if branch?");
 }
 
 
@@ -72,7 +72,7 @@ Local<T> Global<T>::get() const {
 }
 
 template <typename T>
-Local<JsValue> Global<T>::getValue() const {
+Local<Value> Global<T>::getValue() const {
     return impl.getValue();
 }
 
@@ -128,7 +128,7 @@ Local<T> Weak<T>::get() const {
 }
 
 template <typename T>
-Local<JsValue> Weak<T>::getValue() const {
+Local<Value> Weak<T>::getValue() const {
     return impl.getValue();
 }
 

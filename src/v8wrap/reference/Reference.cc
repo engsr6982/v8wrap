@@ -15,75 +15,75 @@ V8_WRAP_WARNING_GUARD_END
 namespace v8wrap {
 
 
-// Local<JsValue>
-Local<JsValue>::Local() noexcept : val(JsUndefined::newUndefined().val){}; // default constructor
-bool Local<JsValue>::isNull() const { return val->IsNull(); }
-bool Local<JsValue>::isUndefined() const { return val->IsUndefined(); }
-bool Local<JsValue>::isNullOrUndefined() const { return val->IsNullOrUndefined(); }
-bool Local<JsValue>::isBoolean() const { return !isNullOrUndefined() && val->IsBoolean(); }
-bool Local<JsValue>::isNumber() const { return !isNullOrUndefined() && val->IsNumber(); }
-bool Local<JsValue>::isBigInt() const { return !isNullOrUndefined() && val->IsBigInt(); }
-bool Local<JsValue>::isString() const { return !isNullOrUndefined() && val->IsString(); }
-bool Local<JsValue>::isSymbol() const { return !isNullOrUndefined() && val->IsSymbol(); }
-bool Local<JsValue>::isObject() const { return !isNullOrUndefined() && val->IsObject(); }
-bool Local<JsValue>::isArray() const { return !isNullOrUndefined() && val->IsArray(); }
-bool Local<JsValue>::isFunction() const { return !isNullOrUndefined() && val->IsFunction(); }
+// Local<Value>
+Local<Value>::Local() noexcept : val(Undefined::newUndefined().val){}; // default constructor
+bool Local<Value>::isNull() const { return val->IsNull(); }
+bool Local<Value>::isUndefined() const { return val->IsUndefined(); }
+bool Local<Value>::isNullOrUndefined() const { return val->IsNullOrUndefined(); }
+bool Local<Value>::isBoolean() const { return !isNullOrUndefined() && val->IsBoolean(); }
+bool Local<Value>::isNumber() const { return !isNullOrUndefined() && val->IsNumber(); }
+bool Local<Value>::isBigInt() const { return !isNullOrUndefined() && val->IsBigInt(); }
+bool Local<Value>::isString() const { return !isNullOrUndefined() && val->IsString(); }
+bool Local<Value>::isSymbol() const { return !isNullOrUndefined() && val->IsSymbol(); }
+bool Local<Value>::isObject() const { return !isNullOrUndefined() && val->IsObject(); }
+bool Local<Value>::isArray() const { return !isNullOrUndefined() && val->IsArray(); }
+bool Local<Value>::isFunction() const { return !isNullOrUndefined() && val->IsFunction(); }
 
-Local<JsValue> Local<JsValue>::asValue() const { return *this; }
-Local<JsNull>  Local<JsValue>::asNull() const {
-    if (isNull()) return Local<JsNull>{val.As<v8::Primitive>()};
-    throw JsException("cannot convert to JsNull");
+Local<Value> Local<Value>::asValue() const { return *this; }
+Local<Null>  Local<Value>::asNull() const {
+    if (isNull()) return Local<Null>{val.As<v8::Primitive>()};
+    throw JsException("cannot convert to Null");
 }
-Local<JsUndefined> Local<JsValue>::asUndefined() const {
-    if (isUndefined()) return Local<JsUndefined>{val.As<v8::Primitive>()};
-    throw JsException("cannot convert to JsUndefined");
+Local<Undefined> Local<Value>::asUndefined() const {
+    if (isUndefined()) return Local<Undefined>{val.As<v8::Primitive>()};
+    throw JsException("cannot convert to Undefined");
 }
-Local<JsBoolean> Local<JsValue>::asBoolean() const {
-    if (isBoolean()) return Local<JsBoolean>{val.As<v8::Boolean>()};
-    throw JsException("cannot convert to JsBoolean");
+Local<Boolean> Local<Value>::asBoolean() const {
+    if (isBoolean()) return Local<Boolean>{val.As<v8::Boolean>()};
+    throw JsException("cannot convert to Boolean");
 }
-Local<JsNumber> Local<JsValue>::asNumber() const {
-    if (isNumber()) return Local<JsNumber>{val.As<v8::Number>()};
-    throw JsException("cannot convert to JsNumber");
+Local<Number> Local<Value>::asNumber() const {
+    if (isNumber()) return Local<Number>{val.As<v8::Number>()};
+    throw JsException("cannot convert to Number");
 }
-Local<JsBigInt> Local<JsValue>::asBigInt() const {
-    if (isBigInt()) return Local<JsBigInt>{val.As<v8::BigInt>()};
-    throw JsException("cannot convert to JsBigInt");
+Local<BigInt> Local<Value>::asBigInt() const {
+    if (isBigInt()) return Local<BigInt>{val.As<v8::BigInt>()};
+    throw JsException("cannot convert to BigInt");
 }
-Local<JsString> Local<JsValue>::asString() const {
-    if (isString()) return Local<JsString>{val.As<v8::String>()};
-    throw JsException("cannot convert to JsString");
+Local<String> Local<Value>::asString() const {
+    if (isString()) return Local<String>{val.As<v8::String>()};
+    throw JsException("cannot convert to String");
 }
-Local<JsSymbol> Local<JsValue>::asSymbol() const {
-    if (isSymbol()) return Local<JsSymbol>{val.As<v8::Symbol>()};
-    throw JsException("cannot convert to JsSymbol");
+Local<Symbol> Local<Value>::asSymbol() const {
+    if (isSymbol()) return Local<Symbol>{val.As<v8::Symbol>()};
+    throw JsException("cannot convert to Symbol");
 }
-Local<JsObject> Local<JsValue>::asObject() const {
-    if (isObject()) return Local<JsObject>{val.As<v8::Object>()};
-    throw JsException("cannot convert to JsObject");
+Local<Object> Local<Value>::asObject() const {
+    if (isObject()) return Local<Object>{val.As<v8::Object>()};
+    throw JsException("cannot convert to Object");
 }
-Local<JsArray> Local<JsValue>::asArray() const {
-    if (isArray()) return Local<JsArray>{val.As<v8::Array>()};
-    throw JsException("cannot convert to JsArray");
+Local<Array> Local<Value>::asArray() const {
+    if (isArray()) return Local<Array>{val.As<v8::Array>()};
+    throw JsException("cannot convert to Array");
 }
-Local<JsFunction> Local<JsValue>::asFunction() const {
-    if (isFunction()) return Local<JsFunction>{val.As<v8::Function>()};
-    throw JsException("cannot convert to JsFunction");
+Local<Function> Local<Value>::asFunction() const {
+    if (isFunction()) return Local<Function>{val.As<v8::Function>()};
+    throw JsException("cannot convert to Function");
 }
 
-void Local<JsValue>::clear() { val.Clear(); }
+void Local<Value>::clear() { val.Clear(); }
 
-JsValueType Local<JsValue>::getType() const {
-    if (isNull()) return JsValueType::Null;
-    if (isUndefined()) return JsValueType::Undefined;
-    if (isBoolean()) return JsValueType::Boolean;
-    if (isNumber()) return JsValueType::Number;
-    if (isBigInt()) return JsValueType::BigInt;
-    if (isString()) return JsValueType::String;
-    if (isSymbol()) return JsValueType::Symbol;
-    if (isObject()) return JsValueType::Object;
-    if (isArray()) return JsValueType::Array;
-    if (isFunction()) return JsValueType::Function;
+ValueType Local<Value>::getType() const {
+    if (isNull()) return ValueType::Null;
+    if (isUndefined()) return ValueType::Undefined;
+    if (isBoolean()) return ValueType::Boolean;
+    if (isNumber()) return ValueType::Number;
+    if (isBigInt()) return ValueType::BigInt;
+    if (isString()) return ValueType::String;
+    if (isSymbol()) return ValueType::Symbol;
+    if (isObject()) return ValueType::Object;
+    if (isArray()) return ValueType::Array;
+    if (isFunction()) return ValueType::Function;
     throw JsException("Unknown type, did you forget to add if branch?");
 }
 
@@ -105,18 +105,18 @@ JsValueType Local<JsValue>::getType() const {
         }                                                                                                              \
         return *this;                                                                                                  \
     }                                                                                                                  \
-    Local<JsString> Local<VALUE>::toString() {                                                                         \
-        if (asValue().isNull()) return JsString::newString("null");                                                    \
-        if (asValue().isUndefined()) return JsString::newString("undefined");                                          \
+    Local<String> Local<VALUE>::toString() {                                                                           \
+        if (asValue().isNull()) return String::newString("null");                                                      \
+        if (asValue().isUndefined()) return String::newString("undefined");                                            \
         auto&& [isolate, ctx] = JsRuntimeScope::currentIsolateAndContextChecked();                                     \
         v8::TryCatch vtry{isolate};                                                                                    \
         auto         maybe = val->ToString(ctx);                                                                       \
-        return Local<JsString>{maybe.ToLocalChecked()};                                                                \
+        return Local<String>{maybe.ToLocalChecked()};                                                                  \
     }                                                                                                                  \
-    bool Local<VALUE>::operator==(Local<JsValue> const& other) const { return val->StrictEquals(other.val); }
+    bool Local<VALUE>::operator==(Local<Value> const& other) const { return val->StrictEquals(other.val); }
 
 #define IMPL_SPECALIZATION_AS_VALUE(VALUE)                                                                             \
-    Local<JsValue> Local<VALUE>::asValue() const { return Local<JsValue>{val.As<v8::Value>()}; }
+    Local<Value> Local<VALUE>::asValue() const { return Local<Value>{val.As<v8::Value>()}; }
 
 #define IMPL_SPECALIZATION_V8_LOCAL_TYPE(VALUE)                                                                        \
     Local<VALUE>::Local(v8::Local<Type> v8Type) : val{v8Type} {                                                        \
@@ -124,42 +124,42 @@ JsValueType Local<JsValue>::getType() const {
     }
 
 
-IMPL_SPECIALIZATION_LOCAL(JsValue)
-IMPL_SPECALIZATION_V8_LOCAL_TYPE(JsValue)
+IMPL_SPECIALIZATION_LOCAL(Value)
+IMPL_SPECALIZATION_V8_LOCAL_TYPE(Value)
 
-IMPL_SPECIALIZATION_LOCAL(JsNull);
-IMPL_SPECALIZATION_AS_VALUE(JsNull);
-IMPL_SPECALIZATION_V8_LOCAL_TYPE(JsNull);
+IMPL_SPECIALIZATION_LOCAL(Null);
+IMPL_SPECALIZATION_AS_VALUE(Null);
+IMPL_SPECALIZATION_V8_LOCAL_TYPE(Null);
 
-IMPL_SPECIALIZATION_LOCAL(JsUndefined);
-IMPL_SPECALIZATION_AS_VALUE(JsUndefined);
-IMPL_SPECALIZATION_V8_LOCAL_TYPE(JsUndefined);
+IMPL_SPECIALIZATION_LOCAL(Undefined);
+IMPL_SPECALIZATION_AS_VALUE(Undefined);
+IMPL_SPECALIZATION_V8_LOCAL_TYPE(Undefined);
 
-IMPL_SPECIALIZATION_LOCAL(JsBoolean);
-IMPL_SPECALIZATION_AS_VALUE(JsBoolean);
-IMPL_SPECALIZATION_V8_LOCAL_TYPE(JsBoolean);
-bool Local<JsBoolean>::getValue() const { return val->Value(); }
+IMPL_SPECIALIZATION_LOCAL(Boolean);
+IMPL_SPECALIZATION_AS_VALUE(Boolean);
+IMPL_SPECALIZATION_V8_LOCAL_TYPE(Boolean);
+bool Local<Boolean>::getValue() const { return val->Value(); }
 
-IMPL_SPECIALIZATION_LOCAL(JsNumber);
-IMPL_SPECALIZATION_AS_VALUE(JsNumber);
-IMPL_SPECALIZATION_V8_LOCAL_TYPE(JsNumber);
-int    Local<JsNumber>::getInt32() const { return static_cast<int>(val->Value()); }
-float  Local<JsNumber>::getFloat() const { return static_cast<float>(val->Value()); }
-double Local<JsNumber>::getDouble() const { return val->Value(); }
-
-
-IMPL_SPECIALIZATION_LOCAL(JsBigInt);
-IMPL_SPECALIZATION_AS_VALUE(JsBigInt);
-IMPL_SPECALIZATION_V8_LOCAL_TYPE(JsBigInt);
-int64_t  Local<JsBigInt>::getInt64() const { return val->Int64Value(/* lossless? */); }
-uint64_t Local<JsBigInt>::getUint64() const { return val->Uint64Value(/* lossless? */); }
+IMPL_SPECIALIZATION_LOCAL(Number);
+IMPL_SPECALIZATION_AS_VALUE(Number);
+IMPL_SPECALIZATION_V8_LOCAL_TYPE(Number);
+int    Local<Number>::getInt32() const { return static_cast<int>(val->Value()); }
+float  Local<Number>::getFloat() const { return static_cast<float>(val->Value()); }
+double Local<Number>::getDouble() const { return val->Value(); }
 
 
-IMPL_SPECIALIZATION_LOCAL(JsString);
-IMPL_SPECALIZATION_AS_VALUE(JsString);
-IMPL_SPECALIZATION_V8_LOCAL_TYPE(JsString);
-int         Local<JsString>::length() const { return val->Length(); }
-std::string Local<JsString>::getValue() const {
+IMPL_SPECIALIZATION_LOCAL(BigInt);
+IMPL_SPECALIZATION_AS_VALUE(BigInt);
+IMPL_SPECALIZATION_V8_LOCAL_TYPE(BigInt);
+int64_t  Local<BigInt>::getInt64() const { return val->Int64Value(/* lossless? */); }
+uint64_t Local<BigInt>::getUint64() const { return val->Uint64Value(/* lossless? */); }
+
+
+IMPL_SPECIALIZATION_LOCAL(String);
+IMPL_SPECALIZATION_AS_VALUE(String);
+IMPL_SPECALIZATION_V8_LOCAL_TYPE(String);
+int         Local<String>::length() const { return val->Length(); }
+std::string Local<String>::getValue() const {
     auto                  isolate = JsRuntimeScope::currentRuntimeIsolateChecked();
     v8::String::Utf8Value utf8(isolate, val);
     if (*utf8 == nullptr) {
@@ -169,20 +169,20 @@ std::string Local<JsString>::getValue() const {
 }
 
 
-IMPL_SPECIALIZATION_LOCAL(JsSymbol);
-IMPL_SPECALIZATION_AS_VALUE(JsSymbol);
-IMPL_SPECALIZATION_V8_LOCAL_TYPE(JsSymbol);
-Local<JsValue> Local<JsSymbol>::getDescription() {
+IMPL_SPECIALIZATION_LOCAL(Symbol);
+IMPL_SPECALIZATION_AS_VALUE(Symbol);
+IMPL_SPECALIZATION_V8_LOCAL_TYPE(Symbol);
+Local<Value> Local<Symbol>::getDescription() {
     auto isolate = JsRuntimeScope::currentRuntimeIsolateChecked();
     auto maybe   = val->Description(isolate);
-    return Local<JsValue>{maybe};
+    return Local<Value>{maybe};
 }
 
 
-IMPL_SPECIALIZATION_LOCAL(JsObject);
-IMPL_SPECALIZATION_AS_VALUE(JsObject);
-IMPL_SPECALIZATION_V8_LOCAL_TYPE(JsObject);
-bool Local<JsObject>::has(Local<JsString> const& key) const {
+IMPL_SPECIALIZATION_LOCAL(Object);
+IMPL_SPECALIZATION_AS_VALUE(Object);
+IMPL_SPECALIZATION_V8_LOCAL_TYPE(Object);
+bool Local<Object>::has(Local<String> const& key) const {
     auto&& [isolate, ctx] = JsRuntimeScope::currentIsolateAndContextChecked();
     v8::TryCatch vtry{isolate};
     auto         maybe = val->Has(ctx, key.val);
@@ -190,29 +190,29 @@ bool Local<JsObject>::has(Local<JsString> const& key) const {
     return maybe.ToChecked();
 }
 
-Local<JsValue> Local<JsObject>::get(Local<JsString> const& key) const {
+Local<Value> Local<Object>::get(Local<String> const& key) const {
     auto&& [isolate, ctx] = JsRuntimeScope::currentIsolateAndContextChecked();
     v8::TryCatch vtry{isolate};
     auto         maybe = val->Get(ctx, key.val);
     JsException::rethrow(vtry);
-    return Local<JsValue>{maybe.ToLocalChecked()};
+    return Local<Value>{maybe.ToLocalChecked()};
 }
 
-void Local<JsObject>::set(Local<JsString> const& key, Local<JsValue> const& value) {
+void Local<Object>::set(Local<String> const& key, Local<Value> const& value) {
     auto&& [isolate, ctx] = JsRuntimeScope::currentIsolateAndContextChecked();
     v8::TryCatch vtry{isolate};
     val->Set(ctx, key.val, value.val).ToChecked();
     JsException::rethrow(vtry);
 }
 
-void Local<JsObject>::remove(Local<JsString> const& key) {
+void Local<Object>::remove(Local<String> const& key) {
     auto&& [isolate, ctx] = JsRuntimeScope::currentIsolateAndContextChecked();
     v8::TryCatch vtry{isolate};
     val->Delete(ctx, key.val).ToChecked();
     JsException::rethrow(vtry);
 }
 
-std::vector<Local<JsString>> Local<JsObject>::getOwnPropertyNames() const {
+std::vector<Local<String>> Local<Object>::getOwnPropertyNames() const {
     auto&& [isolate, ctx] = JsRuntimeScope::currentIsolateAndContextChecked();
     v8::TryCatch vtry{isolate};
 
@@ -220,7 +220,7 @@ std::vector<Local<JsString>> Local<JsObject>::getOwnPropertyNames() const {
     JsException::rethrow(vtry);
     auto array = maybe.ToLocalChecked();
 
-    std::vector<Local<JsString>> result;
+    std::vector<Local<String>> result;
     result.reserve(array->Length());
 
     for (uint32_t i = 0; i < array->Length(); ++i) {
@@ -230,24 +230,24 @@ std::vector<Local<JsString>> Local<JsObject>::getOwnPropertyNames() const {
         JsException::rethrow(vtry);
         auto value = maybeVal.ToLocalChecked();
         if (value->IsString()) {
-            result.push_back(Local<JsString>{scope.escape(value.As<v8::String>())});
+            result.push_back(Local<String>{scope.escape(value.As<v8::String>())});
         }
     }
     return result;
 }
 
-std::vector<std::string> Local<JsObject>::getOwnPropertyNamesAsString() const {
+std::vector<std::string> Local<Object>::getOwnPropertyNamesAsString() const {
     auto keys = getOwnPropertyNames();
 
     std::vector<std::string> result;
     result.reserve(keys.size());
-    std::transform(keys.begin(), keys.end(), std::back_inserter(result), [](Local<JsString> const& key) {
+    std::transform(keys.begin(), keys.end(), std::back_inserter(result), [](Local<String> const& key) {
         return key.getValue();
     });
     return result;
 }
 
-bool Local<JsObject>::instanceof(Local<JsValue> const& type) const {
+bool Local<Object>::instanceof(Local<Value> const& type) const {
     if (!type.isObject()) {
         return false;
     }
@@ -259,10 +259,10 @@ bool Local<JsObject>::instanceof(Local<JsValue> const& type) const {
     return maybe.ToChecked();
 }
 
-bool Local<JsObject>::defineOwnProperty(
-    Local<JsString> const& key,
-    Local<JsValue> const&  value,
-    PropertyAttribute      attrs
+bool Local<Object>::defineOwnProperty(
+    Local<String> const& key,
+    Local<Value> const&  value,
+    PropertyAttribute    attrs
 ) const {
     auto&& [isolate, ctx] = JsRuntimeScope::currentIsolateAndContextChecked();
     v8::TryCatch vtry{isolate};
@@ -272,7 +272,7 @@ bool Local<JsObject>::defineOwnProperty(
     return maybe.ToChecked();
 }
 
-bool Local<JsObject>::defineProperty(Local<JsString> const& key, PropertyDescriptor& desc) const {
+bool Local<Object>::defineProperty(Local<String> const& key, PropertyDescriptor& desc) const {
     auto&& [isolate, ctx] = JsRuntimeScope::currentIsolateAndContextChecked();
     v8::TryCatch vtry{isolate};
 
@@ -282,34 +282,34 @@ bool Local<JsObject>::defineProperty(Local<JsString> const& key, PropertyDescrip
 }
 
 
-IMPL_SPECIALIZATION_LOCAL(JsArray);
-IMPL_SPECALIZATION_AS_VALUE(JsArray);
-IMPL_SPECALIZATION_V8_LOCAL_TYPE(JsArray);
-size_t Local<JsArray>::length() const { return static_cast<size_t>(val->Length()); }
+IMPL_SPECIALIZATION_LOCAL(Array);
+IMPL_SPECALIZATION_AS_VALUE(Array);
+IMPL_SPECALIZATION_V8_LOCAL_TYPE(Array);
+size_t Local<Array>::length() const { return static_cast<size_t>(val->Length()); }
 
-Local<JsValue> Local<JsArray>::get(size_t index) const {
+Local<Value> Local<Array>::get(size_t index) const {
     auto&& [isolate, ctx] = JsRuntimeScope::currentIsolateAndContextChecked();
     v8::TryCatch vtry{isolate};
     auto         maybe = val->Get(ctx, static_cast<uint32_t>(index));
     JsException::rethrow(vtry);
-    return Local<JsValue>{maybe.ToLocalChecked()};
+    return Local<Value>{maybe.ToLocalChecked()};
 }
 
-void Local<JsArray>::set(size_t index, Local<JsValue> const& value) {
+void Local<Array>::set(size_t index, Local<Value> const& value) {
     auto&& [isolate, ctx] = JsRuntimeScope::currentIsolateAndContextChecked();
     v8::TryCatch vtry{isolate};
     val->Set(ctx, static_cast<uint32_t>(index), value.val).ToChecked();
     JsException::rethrow(vtry);
 }
 
-void Local<JsArray>::push(Local<JsValue> const& value) {
+void Local<Array>::push(Local<Value> const& value) {
     auto&& [isolate, ctx] = JsRuntimeScope::currentIsolateAndContextChecked();
     v8::TryCatch vtry{isolate};
     val->Set(ctx, val->Length(), value.val).ToChecked();
     JsException::rethrow(vtry);
 }
 
-void Local<JsArray>::clear() {
+void Local<Array>::clear() {
     auto&& [isolate, ctx] = JsRuntimeScope::currentIsolateAndContextChecked();
     v8::TryCatch vtry{isolate};
 
@@ -321,14 +321,14 @@ void Local<JsArray>::clear() {
 }
 
 
-IMPL_SPECIALIZATION_LOCAL(JsFunction);
-IMPL_SPECALIZATION_AS_VALUE(JsFunction);
-IMPL_SPECALIZATION_V8_LOCAL_TYPE(JsFunction);
-bool Local<JsFunction>::isAsyncFunction() const { return val->IsAsyncFunction(); }
+IMPL_SPECIALIZATION_LOCAL(Function);
+IMPL_SPECALIZATION_AS_VALUE(Function);
+IMPL_SPECALIZATION_V8_LOCAL_TYPE(Function);
+bool Local<Function>::isAsyncFunction() const { return val->IsAsyncFunction(); }
 
-Local<JsValue> Local<JsFunction>::call() const { return call({}, {}); }
+Local<Value> Local<Function>::call() const { return call({}, {}); }
 
-Local<JsValue> Local<JsFunction>::call(Local<JsValue> const& thiz, std::vector<Local<JsValue>> const& args) const {
+Local<Value> Local<Function>::call(Local<Value> const& thiz, std::vector<Local<Value>> const& args) const {
     auto&& [isolate, ctx] = JsRuntimeScope::currentIsolateAndContextChecked();
     v8::TryCatch vtry{isolate};
 
@@ -337,15 +337,15 @@ Local<JsValue> Local<JsFunction>::call(Local<JsValue> const& thiz, std::vector<L
     v8::Local<v8::Value>* argv = nullptr;
     if (!args.empty()) {
         static_assert(
-            sizeof(Local<JsValue>) == sizeof(v8::Local<v8::Value>),
-            "Local<JsValue> must be binary-compatible with v8::Local<v8::Value>"
+            sizeof(Local<Value>) == sizeof(v8::Local<v8::Value>),
+            "Local<Value> must be binary-compatible with v8::Local<v8::Value>"
         );
-        argv = reinterpret_cast<v8::Local<v8::Value>*>(const_cast<Local<JsValue>*>(args.data()));
+        argv = reinterpret_cast<v8::Local<v8::Value>*>(const_cast<Local<Value>*>(args.data()));
     }
 
     auto result = val->Call(ctx, thiz.val, argc, argv);
     JsException::rethrow(vtry);
-    return Local<JsValue>{result.ToLocalChecked()};
+    return Local<Value>{result.ToLocalChecked()};
 }
 
 

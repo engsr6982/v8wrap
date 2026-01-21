@@ -47,7 +47,7 @@ public:
      * Throw this exception to v8 (JavaScript).
      * Normally we don't need to call this method, the package library handles exceptions internally.
      * You just need to re-throw 'throw e;`
-     * Or throw JsException inside the JsFunction callback.
+     * Or throw JsException inside the Function callback.
      */
     void rethrowToRuntime() const;
 

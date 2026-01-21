@@ -28,22 +28,22 @@ concept StringLike = requires(const T& s) {
 
 
 template <typename T>
-concept IsJsFunctionCallback = std::is_invocable_r_v<Local<JsValue>, T, Arguments const&>;
+concept IsJsFunctionCallback = std::is_invocable_r_v<Local<Value>, T, Arguments const&>;
 
 template <typename T>
-concept IsJsGetterCallback = std::is_invocable_r_v<Local<JsValue>, T>;
+concept IsJsGetterCallback = std::is_invocable_r_v<Local<Value>, T>;
 
 template <typename T>
-concept IsJsSetterCallback = std::is_invocable_r_v<void, T, Local<JsValue> const&>;
+concept IsJsSetterCallback = std::is_invocable_r_v<void, T, Local<Value> const&>;
 
 template <typename T>
 concept IsJsInstanceConstructor = std::is_invocable_r_v<void*, T, Arguments const&>;
 
 template <typename T>
-concept IsJsInstanceMethodCallback = std::is_invocable_r_v<Local<JsValue>, T, void*, Arguments const&>;
+concept IsJsInstanceMethodCallback = std::is_invocable_r_v<Local<Value>, T, void*, Arguments const&>;
 
 template <typename T>
-concept IsJsInstanceGetterCallback = std::is_invocable_r_v<Local<JsValue>, T, void*, Arguments const&>;
+concept IsJsInstanceGetterCallback = std::is_invocable_r_v<Local<Value>, T, void*, Arguments const&>;
 
 template <typename T>
 concept IsJsInstanceSetterCallback = std::is_invocable_r_v<void, T, void*, Arguments const&>;
@@ -60,12 +60,12 @@ concept HasUserDeclaredDestructor = !std::is_trivially_destructible_v<T>;
 
 template <typename T>
 concept IsWrappedV8Type =
-    std::is_same_v<std::remove_cvref_t<T>, JsValue> || std::is_same_v<std::remove_cvref_t<T>, JsNull>
-    || std::is_same_v<std::remove_cvref_t<T>, JsUndefined> || std::is_same_v<std::remove_cvref_t<T>, JsBoolean>
-    || std::is_same_v<std::remove_cvref_t<T>, JsNumber> || std::is_same_v<std::remove_cvref_t<T>, JsBigInt>
-    || std::is_same_v<std::remove_cvref_t<T>, JsString> || std::is_same_v<std::remove_cvref_t<T>, JsSymbol>
-    || std::is_same_v<std::remove_cvref_t<T>, JsFunction> || std::is_same_v<std::remove_cvref_t<T>, JsObject>
-    || std::is_same_v<std::remove_cvref_t<T>, JsArray>;
+    std::is_same_v<std::remove_cvref_t<T>, Value> || std::is_same_v<std::remove_cvref_t<T>, Null>
+    || std::is_same_v<std::remove_cvref_t<T>, Undefined> || std::is_same_v<std::remove_cvref_t<T>, Boolean>
+    || std::is_same_v<std::remove_cvref_t<T>, Number> || std::is_same_v<std::remove_cvref_t<T>, BigInt>
+    || std::is_same_v<std::remove_cvref_t<T>, String> || std::is_same_v<std::remove_cvref_t<T>, Symbol>
+    || std::is_same_v<std::remove_cvref_t<T>, Function> || std::is_same_v<std::remove_cvref_t<T>, Object>
+    || std::is_same_v<std::remove_cvref_t<T>, Array>;
 
 
 } // namespace v8wrap

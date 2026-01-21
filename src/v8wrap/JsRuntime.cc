@@ -12,7 +12,6 @@
 #include <vector>
 
 
-
 V8_WRAP_WARNING_GUARD_BEGIN
 #include "v8-external.h"
 #include "v8-function-callback.h"
@@ -96,9 +95,9 @@ void JsRuntime::destroy() {
 
 bool JsRuntime::isDestroying() const { return mDestroying; }
 
-Local<JsValue> JsRuntime::eval(Local<JsString> const& code) { return eval(code, JsString::newString("<eval>")); }
+Local<Value> JsRuntime::eval(Local<String> const& code) { return eval(code, String::newString("<eval>")); }
 
-Local<JsValue> JsRuntime::eval(Local<JsString> const& code, Local<JsString> const& source) {
+Local<Value> JsRuntime::eval(Local<String> const& code, Local<String> const& source) {
     v8::TryCatch try_catch(mIsolate);
 
     auto v8Code   = JsValueHelper::unwrap(code);
@@ -111,7 +110,7 @@ Local<JsValue> JsRuntime::eval(Local<JsString> const& code, Local<JsString> cons
 
     auto result = script.ToLocalChecked()->Run(ctx);
     JsException::rethrow(try_catch);
-    return JsValueHelper::wrap<JsValue>(result.ToLocalChecked());
+    return JsValueHelper::wrap<Value>(result.ToLocalChecked());
 }
 
 void JsRuntime::loadFile(std::filesystem::path const& path) {
@@ -124,20 +123,18 @@ void JsRuntime::loadFile(std::filesystem::path const& path) {
         throw JsException("Failed to open file: " + path.string());
     }
     std::string code((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
-    eval(JsString::newString(code), JsString::newString(path.string()));
+    eval(String::newString(code), String::newString(path.string()));
 }
 
-Local<JsObject> JsRuntime::getGlobalThis() const {
-    return JsValueHelper::wrap<JsObject>(mContext.Get(mIsolate)->Global());
-}
+Local<Object> JsRuntime::getGlobalThis() const { return JsValueHelper::wrap<Object>(mContext.Get(mIsolate)->Global()); }
 
-Local<JsValue> JsRuntime::getVauleFromGlobalThis(Local<JsString> const& key) const {
+Local<Value> JsRuntime::getVauleFromGlobalThis(Local<String> const& key) const {
     auto globalThis = getGlobalThis();
     if (!globalThis.has(key)) return {};
     return globalThis.get(key);
 }
 
-void JsRuntime::setVauleToGlobalThis(Local<JsString> const& key, Local<JsValue> const& value) const {
+void JsRuntime::setVauleToGlobalThis(Local<String> const& key, Local<Value> const& value) const {
     auto globalThis = getGlobalThis();
     globalThis.set(key, value);
 }
@@ -191,7 +188,7 @@ void JsRuntime::registerBindingClass(ClassBinding const& binding) {
         ctor->RemovePrototype();
     }
 
-    auto scriptClassName = JsString::newString(binding.mClassName);
+    auto scriptClassName = String::newString(binding.mClassName);
     ctor->SetClassName(JsValueHelper::unwrap(scriptClassName));
 
     if (binding.mExtends != nullptr) {
@@ -221,12 +218,12 @@ void JsRuntime::registerBindingClass(ClassBinding const& binding) {
     mRegisteredBindings.emplace(binding.mClassName, &binding);
     mJsClassConstructor.emplace(&binding, v8::Global<v8::FunctionTemplate>{mIsolate, ctor});
 
-    setVauleToGlobalThis(scriptClassName, JsValueHelper::wrap<JsFunction>(function.ToLocalChecked()));
+    setVauleToGlobalThis(scriptClassName, JsValueHelper::wrap<Function>(function.ToLocalChecked()));
 }
 
 void JsRuntime::implStaticRegister(v8::Local<v8::FunctionTemplate>& ctor, StaticBinding const& staticBinding) {
     for (auto& property : staticBinding.mProperty) {
-        auto scriptPropertyName = JsString::newString(property.mName);
+        auto scriptPropertyName = String::newString(property.mName);
 
         auto v8Getter = [](v8::Local<v8::Name>, v8::PropertyCallbackInfo<v8::Value> const& info) {
             auto pbin = static_cast<StaticBinding::Property*>(info.Data().As<v8::External>()->Value());
@@ -243,7 +240,7 @@ void JsRuntime::implStaticRegister(v8::Local<v8::FunctionTemplate>& ctor, Static
             v8Setter = [](v8::Local<v8::Name>, v8::Local<v8::Value> value, v8::PropertyCallbackInfo<void> const& info) {
                 auto pbin = static_cast<StaticBinding::Property*>(info.Data().As<v8::External>()->Value());
                 try {
-                    pbin->mSetter(JsValueHelper::wrap<JsValue>(value));
+                    pbin->mSetter(JsValueHelper::wrap<Value>(value));
                 } catch (JsException const& e) {
                     e.rethrowToRuntime();
                 }
@@ -268,7 +265,7 @@ void JsRuntime::implStaticRegister(v8::Local<v8::FunctionTemplate>& ctor, Static
         );
     }
     for (auto& function : staticBinding.mFunctions) {
-        auto scriptFunctionName = JsString::newString(function.mName);
+        auto scriptFunctionName = String::newString(function.mName);
 
         auto fn = v8::FunctionTemplate::New(
             mIsolate,
@@ -390,7 +387,7 @@ void JsRuntime::implInstanceRegister(v8::Local<v8::FunctionTemplate>& ctor, Inst
     auto signature = v8::Signature::New(mIsolate);
 
     for (auto& method : instanceBinding.mMethods) {
-        auto scriptMethodName = JsString::newString(method.mName);
+        auto scriptMethodName = String::newString(method.mName);
 
         auto fn = v8::FunctionTemplate::New(
             mIsolate,
@@ -419,7 +416,7 @@ void JsRuntime::implInstanceRegister(v8::Local<v8::FunctionTemplate>& ctor, Inst
     }
 
     for (auto& prop : instanceBinding.mProperty) {
-        auto scriptPropertyName = JsString::newString(prop.mName);
+        auto scriptPropertyName = String::newString(prop.mName);
         auto data               = v8::External::New(mIsolate, const_cast<InstanceBinding::Property*>(&prop));
         v8::Local<v8::FunctionTemplate> v8Getter;
         v8::Local<v8::FunctionTemplate> v8Setter;
@@ -482,7 +479,7 @@ void JsRuntime::implInstanceRegister(v8::Local<v8::FunctionTemplate>& ctor, Inst
     }
 }
 
-Local<JsObject> JsRuntime::newInstance(ClassBinding const& bind, std::unique_ptr<WrappedResource>&& wrappedResource) {
+Local<Object> JsRuntime::newInstance(ClassBinding const& bind, std::unique_ptr<WrappedResource>&& wrappedResource) {
     auto iter = mJsClassConstructor.find(&bind);
     if (iter == mJsClassConstructor.end()) {
         throw JsException{
@@ -504,10 +501,10 @@ Local<JsObject> JsRuntime::newInstance(ClassBinding const& bind, std::unique_ptr
     auto val = ctor.ToLocalChecked()->NewInstance(ctx, static_cast<int>(args.size()), args.data());
     JsException::rethrow(vtry);
 
-    return JsValueHelper::wrap<JsObject>(val.ToLocalChecked());
+    return JsValueHelper::wrap<Object>(val.ToLocalChecked());
 }
 
-bool JsRuntime::isInstanceOf(Local<JsObject> const& obj, ClassBinding const& binding) const {
+bool JsRuntime::isInstanceOf(Local<Object> const& obj, ClassBinding const& binding) const {
     auto iter = mJsClassConstructor.find(&binding);
     if (iter == mJsClassConstructor.end()) {
         return false;
@@ -516,7 +513,7 @@ bool JsRuntime::isInstanceOf(Local<JsObject> const& obj, ClassBinding const& bin
     return ctor->HasInstance(JsValueHelper::unwrap(obj));
 }
 
-void* JsRuntime::getNativeInstanceOf(Local<JsObject> const& obj) const {
+void* JsRuntime::getNativeInstanceOf(Local<Object> const& obj) const {
     auto v8Obj   = JsValueHelper::unwrap(obj);
     auto wrapped = v8Obj->GetAlignedPointerFromInternalField(kInternalField_WrappedResource);
     auto typed   = static_cast<WrappedResource*>(wrapped);

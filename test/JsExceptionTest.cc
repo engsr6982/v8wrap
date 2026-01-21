@@ -17,7 +17,7 @@ TEST_CASE("JsException") {
     {
         v8wrap::JsRuntimeScope scope(rt);
 
-        auto bol = v8wrap::JsBoolean::newBoolean(true);
+        auto bol = v8wrap::Boolean::newBoolean(true);
         CHECK(bol.toString().getValue() == "true");
 
         REQUIRE_THROWS_AS(bol.asValue().asString(), v8wrap::JsException); // 非法的类型转换

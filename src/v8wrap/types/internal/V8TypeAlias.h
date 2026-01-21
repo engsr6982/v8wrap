@@ -28,17 +28,17 @@ using V8Type_v = typename V8TypeAlias<T>::type;
         using type = V8_TYPE;                                                                                          \
     };
 
-TYPE_ALIAS(JsValue, v8::Value);
-TYPE_ALIAS(JsNull, v8::Primitive);
-TYPE_ALIAS(JsUndefined, v8::Primitive);
-TYPE_ALIAS(JsBoolean, v8::Boolean);
-TYPE_ALIAS(JsNumber, v8::Number);
-TYPE_ALIAS(JsBigInt, v8::BigInt);
-TYPE_ALIAS(JsString, v8::String);
-TYPE_ALIAS(JsSymbol, v8::Symbol);
-TYPE_ALIAS(JsFunction, v8::Function);
-TYPE_ALIAS(JsObject, v8::Object);
-TYPE_ALIAS(JsArray, v8::Array);
+TYPE_ALIAS(Value, v8::Value);
+TYPE_ALIAS(Null, v8::Primitive);
+TYPE_ALIAS(Undefined, v8::Primitive);
+TYPE_ALIAS(Boolean, v8::Boolean);
+TYPE_ALIAS(Number, v8::Number);
+TYPE_ALIAS(BigInt, v8::BigInt);
+TYPE_ALIAS(String, v8::String);
+TYPE_ALIAS(Symbol, v8::Symbol);
+TYPE_ALIAS(Function, v8::Function);
+TYPE_ALIAS(Object, v8::Object);
+TYPE_ALIAS(Array, v8::Array);
 
 
 #undef TYPE_ALIAS

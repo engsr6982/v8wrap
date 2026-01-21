@@ -68,21 +68,21 @@ public:
 
     [[nodiscard]] bool isDestroying() const;
 
-    Local<JsValue> eval(Local<JsString> const& code);
+    Local<Value> eval(Local<String> const& code);
 
-    Local<JsValue> eval(Local<JsString> const& code, Local<JsString> const& source);
+    Local<Value> eval(Local<String> const& code, Local<String> const& source);
 
     template <typename T>
         requires StringLike<T>
-    Local<JsValue> eval(T const& str);
+    Local<Value> eval(T const& str);
 
     void loadFile(std::filesystem::path const& path);
 
-    [[nodiscard]] Local<JsObject> getGlobalThis() const;
+    [[nodiscard]] Local<Object> getGlobalThis() const;
 
-    [[nodiscard]] Local<JsValue> getVauleFromGlobalThis(Local<JsString> const& key) const;
+    [[nodiscard]] Local<Value> getVauleFromGlobalThis(Local<String> const& key) const;
 
-    void setVauleToGlobalThis(Local<JsString> const& key, Local<JsValue> const& value) const;
+    void setVauleToGlobalThis(Local<String> const& key, Local<Value> const& value) const;
 
     /**
      * Add a managed resource to the runtime.
@@ -103,7 +103,7 @@ public:
      * 创建一个新的 JavaScript 类实例
      * Creates a new JavaScript class instance.
      */
-    Local<JsObject> newInstance(ClassBinding const& bind, std::unique_ptr<WrappedResource>&& wrappedResource);
+    Local<Object> newInstance(ClassBinding const& bind, std::unique_ptr<WrappedResource>&& wrappedResource);
 
     /**
      * 创建一个新的 JavaScript 类实例
@@ -111,49 +111,49 @@ public:
      * @note v8wrap 会接管实例的生命周期，GC 时自动销毁
      */
     template <typename T>
-    Local<JsObject> newInstanceOfRaw(ClassBinding const& bind, T* instance);
+    Local<Object> newInstanceOfRaw(ClassBinding const& bind, T* instance);
 
     /**
      * 创建一个新的 JavaScript 类实例
      * @note v8wrap 不接管实例的生命周期，由外部管理实例的生命周期 (不自动销毁)
      */
     template <typename T>
-    Local<JsObject> newInstanceOfView(ClassBinding const& bind, T* instance);
+    Local<Object> newInstanceOfView(ClassBinding const& bind, T* instance);
 
     /**
      * 创建一个新的 JavaScript 类实例
      * @note v8wrap 不接管实例的生命周期，对子资源创建 Global 引用关联生命周期(常见于对类成员创建Js实例，防止主实例 GC)
      */
     template <typename T>
-    Local<JsObject> newInstanceOfView(ClassBinding const& bind, T* instance, Local<JsObject> const& ownerJs);
+    Local<Object> newInstanceOfView(ClassBinding const& bind, T* instance, Local<Object> const& ownerJs);
 
     /**
      * 创建一个新的 JavaScript 类实例
      * @note v8wrap 接管实例的生命周期，GC 时自动销毁
      */
     template <typename T>
-    Local<JsObject> newInstanceOfUnique(ClassBinding const& bind, std::unique_ptr<T>&& instance);
+    Local<Object> newInstanceOfUnique(ClassBinding const& bind, std::unique_ptr<T>&& instance);
 
     /**
      * 创建一个新的 JavaScript 类实例
      * @note v8wrap 共享对此实例的引用，仅在 Gc 时重置引用
      */
     template <typename T>
-    Local<JsObject> newInstanceOfShared(ClassBinding const& bind, std::shared_ptr<T>&& instance);
+    Local<Object> newInstanceOfShared(ClassBinding const& bind, std::shared_ptr<T>&& instance);
 
     /**
      * 创建一个新的 JavaScript 类实例
      * @note v8wrap 仅在运行时尝试获取资源，如果获取不到资源则返回 null
      */
     template <typename T>
-    Local<JsObject> newInstanceOfWeak(ClassBinding const& bind, std::weak_ptr<T>&& instance);
+    Local<Object> newInstanceOfWeak(ClassBinding const& bind, std::weak_ptr<T>&& instance);
 
-    [[nodiscard]] bool isInstanceOf(Local<JsObject> const& obj, ClassBinding const& binding) const;
+    [[nodiscard]] bool isInstanceOf(Local<Object> const& obj, ClassBinding const& binding) const;
 
-    [[nodiscard]] void* getNativeInstanceOf(Local<JsObject> const& obj) const;
+    [[nodiscard]] void* getNativeInstanceOf(Local<Object> const& obj) const;
 
     template <typename T>
-    [[nodiscard]] inline T* getNativeInstanceOf(Local<JsObject> const& obj) const;
+    [[nodiscard]] inline T* getNativeInstanceOf(Local<Object> const& obj) const;
 
     void gc() const;
 

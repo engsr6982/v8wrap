@@ -47,7 +47,7 @@ public:
 
     Local<T> get() const { return Local<T>{mHandle.Get(mRuntime->mIsolate)}; }
 
-    Local<JsValue> getValue() const { return Local<JsValue>{mHandle.Get(mRuntime->mIsolate).template As<v8::Value>()}; }
+    Local<Value> getValue() const { return Local<Value>{mHandle.Get(mRuntime->mIsolate).template As<v8::Value>()}; }
 
     bool isEmpty() const { return mHandle.IsEmpty(); }
 

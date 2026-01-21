@@ -26,29 +26,19 @@ class JsRuntimeScope;
 class ExitJsRuntimeScope;
 
 // 值类型
-enum class JsValueType;
+enum class ValueType;
 
-class JsValue;
-
-class JsNull;
-
-class JsUndefined;
-
-class JsBoolean;
-
-class JsNumber;
-
-class JsBigInt;
-
-class JsString;
-
-class JsSymbol;
-
-class JsFunction;
-
-class JsObject;
-
-class JsArray;
+class Value;
+class Null;
+class Undefined;
+class Boolean;
+class Number;
+class BigInt;
+class String;
+class Symbol;
+class Function;
+class Object;
+class Array;
 
 class Arguments;
 
@@ -63,14 +53,14 @@ template <typename>
 class Weak;
 
 
-using JsFunctionCallback = std::function<Local<JsValue>(Arguments const&)>;
-using JsGetterCallback   = std::function<Local<JsValue>()>;
-using JsSetterCallback   = std::function<void(Local<JsValue> const&)>;
+using FunctionCallback = std::function<Local<Value>(Arguments const&)>;
+using GetterCallback   = std::function<Local<Value>()>;
+using SetterCallback   = std::function<void(Local<Value> const&)>;
 
-using JsInstanceConstructor    = std::function<void*(Arguments const& args)>;
-using JsInstanceMethodCallback = std::function<Local<JsValue>(void*, Arguments const& args)>;
-using JsInstanceGetterCallback = std::function<Local<JsValue>(void*, Arguments const& args)>;
-using JsInstanceSetterCallback = std::function<void(void*, Arguments const& args)>;
+using InstanceConstructor    = std::function<void*(Arguments const& args)>;
+using InstanceMethodCallback = std::function<Local<Value>(void*, Arguments const& args)>;
+using InstanceGetterCallback = std::function<Local<Value>(void*, Arguments const& args)>;
+using InstanceSetterCallback = std::function<void(void*, Arguments const& args)>;
 
 
 // 绑定相关

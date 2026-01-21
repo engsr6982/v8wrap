@@ -6,7 +6,6 @@
 #include <utility>
 
 
-
 #include "v8wrap/Bindings.h"
 
 
@@ -15,34 +14,34 @@ namespace v8wrap {
 
 template <typename T>
     requires IsI64<T>
-Local<JsBigInt> JsBigInt::newBigInt(T i) {
+Local<BigInt> BigInt::newBigInt(T i) {
     auto isolate = JsRuntimeScope::currentRuntimeIsolateChecked();
-    return Local<JsBigInt>{v8::BigInt::New(isolate, i)};
+    return Local<BigInt>{v8::BigInt::New(isolate, i)};
 }
 
 template <typename T>
     requires IsU64<T>
-Local<JsBigInt> JsBigInt::newBigInt(T u) {
+Local<BigInt> BigInt::newBigInt(T u) {
     auto isolate = JsRuntimeScope::currentRuntimeIsolateChecked();
-    return Local<JsBigInt>{v8::BigInt::NewFromUnsigned(isolate, u)};
+    return Local<BigInt>{v8::BigInt::NewFromUnsigned(isolate, u)};
 }
 
 
 template <typename T>
     requires IsJsFunctionCallback<T>
-Local<JsFunction> JsFunction::newFunction(T&& cb) {
+Local<Function> Function::newFunction(T&& cb) {
     return newFunctionImpl(std::forward<T>(cb));
 }
 
 template <typename Fn>
     requires(!IsJsFunctionCallback<Fn>)
-Local<JsFunction> JsFunction::newFunction(Fn&& func) {
+Local<Function> Function::newFunction(Fn&& func) {
     return newFunctionImpl(internal::bindStaticFunction(std::forward<Fn>(func)));
 }
 
 template <typename... Fn>
     requires(sizeof...(Fn) > 1 && (!IsJsFunctionCallback<Fn> && ...))
-Local<JsFunction> JsFunction::newFunction(Fn&&... func) {
+Local<Function> Function::newFunction(Fn&&... func) {
     return newFunctionImpl(internal::bindStaticOverloadedFunction(std::forward<Fn>(func)...));
 }
 

@@ -1,7 +1,7 @@
 #pragma once
-#include "v8wrap/Types.h"
 #include "v8wrap/Concepts.h"
 #include "v8wrap/Global.h"
+#include "v8wrap/Types.h"
 #include "v8wrap/types/internal/V8TypeAlias.h"
 #include <cstddef>
 #include <string>
@@ -16,7 +16,7 @@ V8_WRAP_WARNING_GUARD_END
 namespace v8wrap {
 
 
-enum class JsValueType {
+enum class ValueType {
     Null = 0,
     Undefined,
     Boolean,
@@ -30,95 +30,95 @@ enum class JsValueType {
     // TODO: Promise、(ArrayBuffer/TypedArray)、(Map/Set)、Date、RegExp、Proxy
 };
 
-class JsValue {};
+class Value {};
 
-class JsNull : public JsValue {
+class Null : public Value {
 public:
-    [[nodiscard]] static Local<JsNull> newNull();
+    [[nodiscard]] static Local<Null> newNull();
 };
 
-class JsUndefined : public JsValue {
+class Undefined : public Value {
 public:
-    [[nodiscard]] static Local<JsUndefined> newUndefined();
+    [[nodiscard]] static Local<Undefined> newUndefined();
 };
 
-class JsBoolean : public JsValue {
+class Boolean : public Value {
 public:
-    [[nodiscard]] static Local<JsBoolean> newBoolean(bool b);
+    [[nodiscard]] static Local<Boolean> newBoolean(bool b);
 };
 
-class JsNumber : public JsValue {
+class Number : public Value {
 public:
-    [[nodiscard]] static Local<JsNumber> newNumber(double d);
-    [[nodiscard]] static Local<JsNumber> newNumber(int i);
-    [[nodiscard]] static Local<JsNumber> newNumber(float f);
+    [[nodiscard]] static Local<Number> newNumber(double d);
+    [[nodiscard]] static Local<Number> newNumber(int i);
+    [[nodiscard]] static Local<Number> newNumber(float f);
 };
 
-class JsBigInt : public JsValue {
+class BigInt : public Value {
 public:
     template <typename T>
         requires IsI64<T>
-    [[nodiscard]] static Local<JsBigInt> newBigInt(T i);
+    [[nodiscard]] static Local<BigInt> newBigInt(T i);
 
     template <typename T>
         requires IsU64<T>
-    [[nodiscard]] static Local<JsBigInt> newBigInt(T u);
+    [[nodiscard]] static Local<BigInt> newBigInt(T u);
 };
 
-class JsString : public JsValue {
+class String : public Value {
 public:
-    [[nodiscard]] static Local<JsString> newString(const char* str);
-    [[nodiscard]] static Local<JsString> newString(std::string const& str);
-    [[nodiscard]] static Local<JsString> newString(std::string_view str);
+    [[nodiscard]] static Local<String> newString(const char* str);
+    [[nodiscard]] static Local<String> newString(std::string const& str);
+    [[nodiscard]] static Local<String> newString(std::string_view str);
 };
 
-class JsSymbol : public JsValue {
+class Symbol : public Value {
 public:
-    [[nodiscard]] static Local<JsSymbol> newSymbol();
-    [[nodiscard]] static Local<JsSymbol> newSymbol(std::string_view description);
-    [[nodiscard]] static Local<JsSymbol> newSymbol(const char* description);
-    [[nodiscard]] static Local<JsSymbol> newSymbol(std::string const& description);
+    [[nodiscard]] static Local<Symbol> newSymbol();
+    [[nodiscard]] static Local<Symbol> newSymbol(std::string_view description);
+    [[nodiscard]] static Local<Symbol> newSymbol(const char* description);
+    [[nodiscard]] static Local<Symbol> newSymbol(std::string const& description);
 
-    [[nodiscard]] static Local<JsSymbol> forKey(Local<JsString> const& str); // JavaScript: Symbol.for
+    [[nodiscard]] static Local<Symbol> forKey(Local<String> const& str); // JavaScript: Symbol.for
 };
 
-class JsFunction : public JsValue {
+class Function : public Value {
 public:
     /**
      * Create a JavaScript callable function.
      */
-    template <typename T = JsFunctionCallback>
+    template <typename T = FunctionCallback>
         requires IsJsFunctionCallback<T>
-    [[nodiscard]] static Local<JsFunction> newFunction(T&& cb);
+    [[nodiscard]] static Local<Function> newFunction(T&& cb);
 
     /**
      * Binding wrapping arbitrary C++ functions, function pointers, lambdas, and callable objects.
      */
     template <typename Fn>
         requires(!IsJsFunctionCallback<Fn>)
-    [[nodiscard]] static Local<JsFunction> newFunction(Fn&& func);
+    [[nodiscard]] static Local<Function> newFunction(Fn&& func);
 
     /**
      * Bind any C++ overload function.
      */
     template <typename... Fn>
         requires(sizeof...(Fn) > 1 && (!IsJsFunctionCallback<Fn> && ...))
-    [[nodiscard]] static Local<JsFunction> newFunction(Fn&&... func);
+    [[nodiscard]] static Local<Function> newFunction(Fn&&... func);
 
     /**
      * Function creation implementation.
      */
-    [[nodiscard]] static Local<JsFunction> newFunctionImpl(JsFunctionCallback cb);
+    [[nodiscard]] static Local<Function> newFunctionImpl(FunctionCallback cb);
 };
 
-class JsObject : public JsValue {
+class Object : public Value {
 public:
-    [[nodiscard]] static Local<JsObject> newObject();
+    [[nodiscard]] static Local<Object> newObject();
 };
 
-class JsArray : public JsValue {
+class Array : public Value {
 public:
-    [[nodiscard]] static Local<JsArray> newArray(size_t length = 0);
+    [[nodiscard]] static Local<Array> newArray(size_t length = 0);
 };
 
 class JsRuntime; // forward declaration
@@ -129,7 +129,7 @@ class Arguments {
     explicit Arguments(JsRuntime* runtime, v8::FunctionCallbackInfo<v8::Value> const& args);
 
     friend class JsRuntime;
-    friend class JsFunction;
+    friend class Function;
 
 public:
     V8WRAP_DISALLOW_COPY_AND_MOVE(Arguments);
@@ -138,11 +138,11 @@ public:
 
     [[nodiscard]] bool hasThiz() const;
 
-    [[nodiscard]] Local<JsObject> thiz() const; // this
+    [[nodiscard]] Local<Object> thiz() const; // this
 
     [[nodiscard]] size_t length() const;
 
-    Local<JsValue> operator[](size_t index) const;
+    Local<Value> operator[](size_t index) const;
 };
 
 struct JsValueHelper {

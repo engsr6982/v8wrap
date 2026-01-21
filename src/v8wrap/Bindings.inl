@@ -12,7 +12,6 @@
 #include <vector>
 
 
-
 namespace v8wrap {
 
 
@@ -78,8 +77,8 @@ decltype(auto) ConvertArgsToTuple(const Arguments& args, std::index_sequence<Is.
 
 // static
 template <typename Func>
-JsFunctionCallback bindStaticFunction(Func&& func) {
-    return [f = std::forward<Func>(func)](Arguments const& args) -> Local<JsValue> {
+FunctionCallback bindStaticFunction(Func&& func) {
+    return [f = std::forward<Func>(func)](Arguments const& args) -> Local<Value> {
         using Traits       = FunctionTraits<std::decay_t<Func>>;
         using R            = typename Traits::ReturnType;
         using Tuple        = typename Traits::ArgsTuple;
@@ -91,7 +90,7 @@ JsFunctionCallback bindStaticFunction(Func&& func) {
 
         if constexpr (std::is_void_v<R>) {
             std::apply(f, ConvertArgsToTuple<Tuple>(args, std::make_index_sequence<N>()));
-            return JsUndefined::newUndefined();
+            return Undefined::newUndefined();
         } else {
             decltype(auto) ret = std::apply(f, ConvertArgsToTuple<Tuple>(args, std::make_index_sequence<N>()));
             return ConvertToJs(ret);
@@ -100,9 +99,9 @@ JsFunctionCallback bindStaticFunction(Func&& func) {
 }
 
 template <typename... Func>
-JsFunctionCallback bindStaticOverloadedFunction(Func&&... funcs) {
+FunctionCallback bindStaticOverloadedFunction(Func&&... funcs) {
     std::vector functions = {bindStaticFunction(std::forward<Func>(funcs))...};
-    return [fs = std::move(functions)](Arguments const& args) -> Local<JsValue> {
+    return [fs = std::move(functions)](Arguments const& args) -> Local<Value> {
         for (size_t i = 0; i < sizeof...(Func); ++i) {
             try {
                 return std::invoke(fs[i], args);
@@ -118,19 +117,19 @@ JsFunctionCallback bindStaticOverloadedFunction(Func&&... funcs) {
 
 // Fn: () -> Ty
 template <typename Fn>
-JsGetterCallback bindStaticGetter(Fn&& fn) {
-    return [f = std::forward<Fn>(fn)]() -> Local<JsValue> { return ConvertToJs(std::invoke(f)); };
+GetterCallback bindStaticGetter(Fn&& fn) {
+    return [f = std::forward<Fn>(fn)]() -> Local<Value> { return ConvertToJs(std::invoke(f)); };
 }
 
 // Fn: (Ty) -> void
 template <typename Fn>
-JsSetterCallback bindStaticSetter(Fn&& fn) {
+SetterCallback bindStaticSetter(Fn&& fn) {
     using Ty = ArgType_t<Fn>;
-    return [f = std::forward<Fn>(fn)](Local<JsValue> const& value) { std::invoke(f, ConvertToCpp<Ty>(value)); };
+    return [f = std::forward<Fn>(fn)](Local<Value> const& value) { std::invoke(f, ConvertToCpp<Ty>(value)); };
 }
 
 template <typename Ty>
-std::pair<JsGetterCallback, JsSetterCallback> bindStaticProperty(Ty* p) {
+std::pair<GetterCallback, SetterCallback> bindStaticProperty(Ty* p) {
     if constexpr (std::is_const_v<Ty>) {
         return {
             bindStaticGetter([p]() -> Ty { return *p; }),
@@ -144,7 +143,7 @@ std::pair<JsGetterCallback, JsSetterCallback> bindStaticProperty(Ty* p) {
 
 // Instance
 template <typename C, typename... Args>
-JsInstanceConstructor bindInstanceConstructor() {
+InstanceConstructor bindInstanceConstructor() {
     return [](Arguments const& args) -> void* {
         if constexpr (sizeof...(Args) == 0) {
             static_assert(
@@ -170,8 +169,8 @@ JsInstanceConstructor bindInstanceConstructor() {
 }
 
 template <typename C, typename Func>
-JsInstanceMethodCallback bindInstanceMethod(Func&& fn) {
-    return [f = std::forward<Func>(fn)](void* inst, const Arguments& args) -> Local<JsValue> {
+InstanceMethodCallback bindInstanceMethod(Func&& fn) {
+    return [f = std::forward<Func>(fn)](void* inst, const Arguments& args) -> Local<Value> {
         using Traits       = FunctionTraits<std::decay_t<Func>>;
         using R            = typename Traits::ReturnType;
         using Tuple        = typename Traits::ArgsTuple;
@@ -190,7 +189,7 @@ JsInstanceMethodCallback bindInstanceMethod(Func&& fn) {
                 },
                 ConvertArgsToTuple<Tuple>(args, std::make_index_sequence<N>())
             );
-            return JsUndefined::newUndefined();
+            return Undefined::newUndefined();
         } else {
             decltype(auto) ret = std::apply(
                 [typedInstance, &f](auto&&... unpackedArgs) -> R {
@@ -204,9 +203,9 @@ JsInstanceMethodCallback bindInstanceMethod(Func&& fn) {
 }
 
 template <typename C, typename... Func>
-JsInstanceMethodCallback bindInstanceOverloadedMethod(Func&&... funcs) {
+InstanceMethodCallback bindInstanceOverloadedMethod(Func&&... funcs) {
     std::vector functions = {bindInstanceMethod(std::forward<Func>(funcs))...};
-    return [fs = std::move(functions)](void* inst, Arguments const& args) -> Local<JsValue> {
+    return [fs = std::move(functions)](void* inst, Arguments const& args) -> Local<Value> {
         for (size_t i = 0; i < sizeof...(Func); ++i) {
             try {
                 return std::invoke(fs[i], inst, args);
@@ -222,15 +221,15 @@ JsInstanceMethodCallback bindInstanceOverloadedMethod(Func&&... funcs) {
 
 // Fn: (C*) -> Ty
 template <typename C, typename Fn>
-JsInstanceGetterCallback bindInstanceGetter(Fn&& fn) {
-    return [f = std::forward<Fn>(fn)](void* inst, Arguments const& /* args */) -> Local<JsValue> {
+InstanceGetterCallback bindInstanceGetter(Fn&& fn) {
+    return [f = std::forward<Fn>(fn)](void* inst, Arguments const& /* args */) -> Local<Value> {
         return ConvertToJs(std::invoke(f, static_cast<C*>(inst)));
     };
 }
 
 // Fn: (void* inst, Ty val) -> void
 template <typename C, typename Fn>
-JsInstanceSetterCallback bindInstanceSetter(Fn&& fn) {
+InstanceSetterCallback bindInstanceSetter(Fn&& fn) {
     using Ty = ArgNType<Fn, 1>; // (void* inst, Ty val)
     return [f = std::forward<Fn>(fn)](void* inst, Arguments const& args) -> void {
         std::invoke(f, static_cast<C*>(inst), ConvertToCpp<Ty>(args[0]));
@@ -238,7 +237,7 @@ JsInstanceSetterCallback bindInstanceSetter(Fn&& fn) {
 }
 
 template <typename C, typename Ty>
-std::pair<JsInstanceGetterCallback, JsInstanceSetterCallback> bindInstanceProperty(Ty C::* prop) {
+std::pair<InstanceGetterCallback, InstanceSetterCallback> bindInstanceProperty(Ty C::* prop) {
     if constexpr (std::is_const_v<Ty>) {
         return {
             bindInstanceGetter<C>([prop](C* inst) -> Ty { return inst->*prop; }),

@@ -17,7 +17,6 @@
 #include <utility>
 
 
-
 struct BindingTestFixture {
     BindingTestFixture() { rt = new v8wrap::JsRuntime(); }
     ~BindingTestFixture() { rt->destroy(); }
@@ -45,30 +44,30 @@ TEST_CASE_METHOD(BindingTestFixture, "Static Binding") {
     v8wrap::JsRuntimeScope enter(rt);
 
     SECTION("No return value function") {
-        auto fn = v8wrap::JsFunction::newFunction(&defaultFunc);
-        rt->getGlobalThis().set(v8wrap::JsString::newString("defaultFunc"), fn);
+        auto fn = v8wrap::Function::newFunction(&defaultFunc);
+        rt->getGlobalThis().set(v8wrap::String::newString("defaultFunc"), fn);
 
         REQUIRE(rt->eval("defaultFunc(1, 2.0);").isUndefined()); // void -> undefined
 
-        auto fn2 = v8wrap::JsFunction::newFunction(&noArgsFunc);
-        rt->getGlobalThis().set(v8wrap::JsString::newString("noArgsFunc"), fn2);
+        auto fn2 = v8wrap::Function::newFunction(&noArgsFunc);
+        rt->getGlobalThis().set(v8wrap::String::newString("noArgsFunc"), fn2);
 
         REQUIRE(rt->eval("noArgsFunc();").isUndefined()); // void -> undefined
     }
 
     SECTION("Return value function") {
-        auto fn = v8wrap::JsFunction::newFunction(&stdcout);
-        rt->getGlobalThis().set(v8wrap::JsString::newString("stdcout"), fn);
+        auto fn = v8wrap::Function::newFunction(&stdcout);
+        rt->getGlobalThis().set(v8wrap::String::newString("stdcout"), fn);
 
         REQUIRE(rt->eval("stdcout('hello');").isBoolean()); // bool -> true/false
         REQUIRE(rt->eval("stdcout('鸡你太美');").isBoolean());
     }
 
     SECTION("Lambda function") {
-        auto add = v8wrap::JsFunction::newFunction([](int a, int b) -> v8wrap::Local<v8wrap::JsValue> {
-            return v8wrap::JsNumber::newNumber(a + b);
+        auto add = v8wrap::Function::newFunction([](int a, int b) -> v8wrap::Local<v8wrap::Value> {
+            return v8wrap::Number::newNumber(a + b);
         });
-        rt->getGlobalThis().set(v8wrap::JsString::newString("add"), add);
+        rt->getGlobalThis().set(v8wrap::String::newString("add"), add);
 
         auto value = rt->eval("add(1, 2);");
         REQUIRE(value.isNumber());
@@ -76,8 +75,8 @@ TEST_CASE_METHOD(BindingTestFixture, "Static Binding") {
     }
 
     SECTION("Args not matched") {
-        auto fn = v8wrap::JsFunction::newFunction(&stdcout);
-        rt->getGlobalThis().set(v8wrap::JsString::newString("stdcout1"), fn);
+        auto fn = v8wrap::Function::newFunction(&stdcout);
+        rt->getGlobalThis().set(v8wrap::String::newString("stdcout1"), fn);
 
         REQUIRE_THROWS_MATCHES(
             rt->eval("stdcout1();"),
@@ -87,23 +86,23 @@ TEST_CASE_METHOD(BindingTestFixture, "Static Binding") {
     }
 
     SECTION("Args type not matched") {
-        auto fn = v8wrap::JsFunction::newFunction(&stdcout);
-        rt->getGlobalThis().set(v8wrap::JsString::newString("stdcout2"), fn);
+        auto fn = v8wrap::Function::newFunction(&stdcout);
+        rt->getGlobalThis().set(v8wrap::String::newString("stdcout2"), fn);
 
         REQUIRE_THROWS_MATCHES(
             rt->eval("stdcout2(1);"),
             v8wrap::JsException,
-            Catch::Matchers::ExceptionMessageMatcher("Uncaught Error: cannot convert to JsString")
+            Catch::Matchers::ExceptionMessageMatcher("Uncaught Error: cannot convert to String")
         );
     }
 
     SECTION("Overload") {
-        auto fn = v8wrap::JsFunction::newFunction(
+        auto fn = v8wrap::Function::newFunction(
             static_cast<int (*)(int)>(&overloadedFn),
             static_cast<std::string (*)(std::string const&)>(&overloadedFn),
             static_cast<std::string (*)(int, std::string const&)>(&overloadedFn)
         );
-        rt->getGlobalThis().set(v8wrap::JsString::newString("overloadedFn"), fn);
+        rt->getGlobalThis().set(v8wrap::String::newString("overloadedFn"), fn);
 
         auto pick1 = rt->eval("overloadedFn(1.0);");
         REQUIRE(pick1.isNumber());
@@ -126,12 +125,12 @@ TEST_CASE_METHOD(BindingTestFixture, "Static Binding") {
     }
 
     SECTION("Overload with lambda") {
-        auto fn = v8wrap::JsFunction::newFunction(
+        auto fn = v8wrap::Function::newFunction(
             [](int a) { return a; },
             [](std::string const& str) { return str; },
             [](int a, float b) { return a + b; }
         );
-        rt->getGlobalThis().set(v8wrap::JsString::newString("overloadedFn"), fn);
+        rt->getGlobalThis().set(v8wrap::String::newString("overloadedFn"), fn);
 
         auto pick1 = rt->eval("overloadedFn(1.0);");
         REQUIRE(pick1.isNumber());
@@ -165,14 +164,14 @@ public:
     static std::string append(std::string const& a, int b) { return a + std::to_string(b); }
 
     // script function
-    static v8wrap::Local<v8wrap::JsValue> subtract(v8wrap::Arguments const& args) {
+    static v8wrap::Local<v8wrap::Value> subtract(v8wrap::Arguments const& args) {
         REQUIRE(args.length() == 2);
         REQUIRE(args[0].isNumber());
         REQUIRE(args[1].isNumber());
 
         double a = args[0].asNumber().getDouble();
         double b = args[1].asNumber().getDouble();
-        return v8wrap::JsNumber::newNumber(a - b);
+        return v8wrap::Number::newNumber(a - b);
     }
 
     static int constexpr readOnly = 114; // read-only member
@@ -196,8 +195,8 @@ v8wrap::ClassBinding StaticBind =
         .property("name", &Test::name)
         .property(
             "custom",
-            []() -> v8wrap::Local<v8wrap::JsValue> { return v8wrap::JsBoolean::newBoolean(Test::custom); },
-            [](v8wrap::Local<v8wrap::JsValue> const& val) { Test::custom = val.asBoolean().getValue(); }
+            []() -> v8wrap::Local<v8wrap::Value> { return v8wrap::Boolean::newBoolean(Test::custom); },
+            [](v8wrap::Local<v8wrap::Value> const& val) { Test::custom = val.asBoolean().getValue(); }
         )
         .build();
 
@@ -352,7 +351,7 @@ v8wrap::ClassBinding PlayerBind =
         .instanceProperty(
             "uuid_",
             /* ! Note: Dangerous behavior. Attention should be paid to the lifecycle of nested objects. */
-            [](void* inst, v8wrap::Arguments const& args) -> v8wrap::Local<v8wrap::JsValue> {
+            [](void* inst, v8wrap::Arguments const& args) -> v8wrap::Local<v8wrap::Value> {
                 auto typed = static_cast<Player*>(inst);
                 /*
                  ! For custom types, it is generally not recommended to specialize them into TypeConverter.
@@ -387,7 +386,7 @@ v8wrap::ClassBinding PlayerBind =
         .instanceMethod("setName", &Player::setName)
         .instanceMethod(
             "getUUID",
-            [](void* inst, v8wrap::Arguments const& args) -> v8wrap::Local<v8wrap::JsValue> {
+            [](void* inst, v8wrap::Arguments const& args) -> v8wrap::Local<v8wrap::Value> {
                 auto  typed = static_cast<Player*>(inst);
                 auto& uuid  = typed->getUUID();
                 return args.runtime()->newInstanceOfView(UUIDBind, const_cast<UUID*>(&uuid), args.thiz());
@@ -395,7 +394,7 @@ v8wrap::ClassBinding PlayerBind =
         )
         .instanceMethod(
             "setUUID",
-            [](void* inst, v8wrap::Arguments const& args) -> v8wrap::Local<v8wrap::JsValue> {
+            [](void* inst, v8wrap::Arguments const& args) -> v8wrap::Local<v8wrap::Value> {
                 auto typed = static_cast<Player*>(inst);
                 if (args.length() != 1) {
                     throw v8wrap::JsException("Wrong arguments count", v8wrap::JsException::Type::SyntaxError);
@@ -441,11 +440,11 @@ TEST_CASE_METHOD(BindingTestFixture, "Instance binding") {
         );
 
         // C++ side construction
-        auto fn = v8wrap::JsFunction::newFunction([](v8wrap::Arguments const& args) -> v8wrap::Local<v8wrap::JsValue> {
+        auto fn = v8wrap::Function::newFunction([](v8wrap::Arguments const& args) -> v8wrap::Local<v8wrap::Value> {
             REQUIRE(args.length() == 0);
             return v8wrap::JsRuntimeScope::currentRuntimeChecked().newInstanceOfRaw(ActorBind, new Actor());
         });
-        rt->setVauleToGlobalThis(v8wrap::JsString::newString("getActor"), fn);
+        rt->setVauleToGlobalThis(v8wrap::String::newString("getActor"), fn);
         auto actor = rt->eval("getActor();");
         REQUIRE(actor.isObject());
         REQUIRE(rt->isInstanceOf(actor.asObject(), ActorBind));

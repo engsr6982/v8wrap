@@ -19,41 +19,41 @@ V8_WRAP_WARNING_GUARD_END
 namespace v8wrap {
 
 
-Local<JsNull> JsNull::newNull() {
+Local<Null> Null::newNull() {
     auto isolate = JsRuntimeScope::currentRuntimeIsolateChecked();
-    return Local<JsNull>{v8::Null(isolate)};
+    return Local<Null>{v8::Null(isolate)};
 }
 
 
-Local<JsUndefined> JsUndefined::newUndefined() {
+Local<Undefined> Undefined::newUndefined() {
     auto isolate = JsRuntimeScope::currentRuntimeIsolateChecked();
-    return Local<JsUndefined>{v8::Undefined(isolate)};
+    return Local<Undefined>{v8::Undefined(isolate)};
 }
 
 
-Local<JsBoolean> JsBoolean::newBoolean(bool b) {
+Local<Boolean> Boolean::newBoolean(bool b) {
     auto isolate = JsRuntimeScope::currentRuntimeIsolateChecked();
-    return Local<JsBoolean>{v8::Boolean::New(isolate, b)};
+    return Local<Boolean>{v8::Boolean::New(isolate, b)};
 }
 
 
-Local<JsNumber> JsNumber::newNumber(double d) {
+Local<Number> Number::newNumber(double d) {
     auto isolate = JsRuntimeScope::currentRuntimeIsolateChecked();
-    return Local<JsNumber>{v8::Number::New(isolate, d)};
+    return Local<Number>{v8::Number::New(isolate, d)};
 }
-Local<JsNumber> JsNumber::newNumber(int i) {
+Local<Number> Number::newNumber(int i) {
     auto isolate = JsRuntimeScope::currentRuntimeIsolateChecked();
-    return Local<JsNumber>{v8::Number::New(isolate, i)};
+    return Local<Number>{v8::Number::New(isolate, i)};
 }
-Local<JsNumber> JsNumber::newNumber(float f) {
+Local<Number> Number::newNumber(float f) {
     auto isolate = JsRuntimeScope::currentRuntimeIsolateChecked();
-    return Local<JsNumber>{v8::Number::New(isolate, f)};
+    return Local<Number>{v8::Number::New(isolate, f)};
 }
 
 
-Local<JsString> JsString::newString(const char* str) { return newString(std::string_view{str}); }
-Local<JsString> JsString::newString(std::string const& str) { return newString(str.c_str()); }
-Local<JsString> JsString::newString(std::string_view str) {
+Local<String> String::newString(const char* str) { return newString(std::string_view{str}); }
+Local<String> String::newString(std::string const& str) { return newString(str.c_str()); }
+Local<String> String::newString(std::string_view str) {
     auto isolate = JsRuntimeScope::currentRuntimeIsolateChecked();
 
     v8::TryCatch vtry{isolate};
@@ -61,31 +61,31 @@ Local<JsString> JsString::newString(std::string_view str) {
     auto v8Str =
         v8::String::NewFromUtf8(isolate, str.data(), v8::NewStringType::kNormal, static_cast<int>(str.length()));
     JsException::rethrow(vtry);
-    return Local<JsString>{v8Str.ToLocalChecked()};
+    return Local<String>{v8Str.ToLocalChecked()};
 }
 
-Local<JsSymbol> JsSymbol::newSymbol() {
+Local<Symbol> Symbol::newSymbol() {
     auto isolate = JsRuntimeScope::currentRuntimeIsolateChecked();
-    return Local<JsSymbol>{v8::Symbol::New(isolate)};
+    return Local<Symbol>{v8::Symbol::New(isolate)};
 }
-Local<JsSymbol> JsSymbol::newSymbol(std::string_view description) {
+Local<Symbol> Symbol::newSymbol(std::string_view description) {
     auto isolate = JsRuntimeScope::currentRuntimeIsolateChecked();
-    auto v8Sym   = v8::Symbol::New(isolate, JsValueHelper::unwrap(JsString::newString(description)));
-    return Local<JsSymbol>{v8Sym};
+    auto v8Sym   = v8::Symbol::New(isolate, JsValueHelper::unwrap(String::newString(description)));
+    return Local<Symbol>{v8Sym};
 }
-Local<JsSymbol> JsSymbol::newSymbol(const char* description) { return newSymbol(std::string_view{description}); }
-Local<JsSymbol> JsSymbol::newSymbol(std::string const& description) { return newSymbol(description.c_str()); }
+Local<Symbol> Symbol::newSymbol(const char* description) { return newSymbol(std::string_view{description}); }
+Local<Symbol> Symbol::newSymbol(std::string const& description) { return newSymbol(description.c_str()); }
 
-Local<JsSymbol> JsSymbol::forKey(Local<JsString> const& str) {
+Local<Symbol> Symbol::forKey(Local<String> const& str) {
     auto isolate = JsRuntimeScope::currentRuntimeIsolateChecked();
-    return Local<JsSymbol>{v8::Symbol::For(isolate, JsValueHelper::unwrap(str))};
+    return Local<Symbol>{v8::Symbol::For(isolate, JsValueHelper::unwrap(str))};
 }
 
 
-Local<JsFunction> JsFunction::newFunctionImpl(JsFunctionCallback cb) {
+Local<Function> Function::newFunctionImpl(FunctionCallback cb) {
     struct AssociateResources {
-        JsRuntime*         runtime{nullptr};
-        JsFunctionCallback cb;
+        JsRuntime*       runtime{nullptr};
+        FunctionCallback cb;
     };
 
     auto&& [isolate, ctx] = JsRuntimeScope::currentIsolateAndContextChecked();
@@ -117,19 +117,19 @@ Local<JsFunction> JsFunction::newFunctionImpl(JsFunctionCallback cb) {
         delete reinterpret_cast<AssociateResources*>(data);
     });
 
-    return Local<JsFunction>{v8Func.ToLocalChecked()};
+    return Local<Function>{v8Func.ToLocalChecked()};
 }
 
 
-Local<JsObject> JsObject::newObject() {
+Local<Object> Object::newObject() {
     auto isolate = JsRuntimeScope::currentRuntimeIsolateChecked();
-    return Local<JsObject>{v8::Object::New(isolate)};
+    return Local<Object>{v8::Object::New(isolate)};
 }
 
 
-Local<JsArray> JsArray::newArray(size_t length) {
+Local<Array> Array::newArray(size_t length) {
     auto isolate = JsRuntimeScope::currentRuntimeIsolateChecked();
-    return Local<JsArray>{v8::Array::New(isolate, static_cast<int>(length))};
+    return Local<Array>{v8::Array::New(isolate, static_cast<int>(length))};
 }
 
 
@@ -141,18 +141,18 @@ JsRuntime* Arguments::runtime() const { return mRuntime; }
 
 bool Arguments::hasThiz() const { return mArgs.This()->IsObject(); }
 
-Local<JsObject> Arguments::thiz() const {
+Local<Object> Arguments::thiz() const {
     if (!hasThiz()) {
         throw JsException{"Arguments::thiz(): no thiz"};
     }
-    return Local<JsObject>{mArgs.This()};
+    return Local<Object>{mArgs.This()};
 }
 
 size_t Arguments::length() const { return static_cast<size_t>(mArgs.Length()); }
 
-Local<JsValue> Arguments::operator[](size_t index) const {
+Local<Value> Arguments::operator[](size_t index) const {
     auto value = mArgs[static_cast<int>(index)];
-    return Local<JsValue>{value};
+    return Local<Value>{value};
 }
 
 

@@ -6,7 +6,6 @@
 #include <type_traits>
 
 
-
 namespace v8wrap {
 
 
@@ -18,27 +17,27 @@ struct TypeConverter {
 
 template <>
 struct TypeConverter<bool> {
-    static Local<JsBoolean> toJs(bool value) { return JsBoolean::newBoolean(value); }
+    static Local<Boolean> toJs(bool value) { return Boolean::newBoolean(value); }
 
-    static bool toCpp(Local<JsValue> const& value) { return value.asBoolean().getValue(); }
+    static bool toCpp(Local<Value> const& value) { return value.asBoolean().getValue(); }
 };
 
 
-// int/uint/float/double → JsNumber
+// int/uint/float/double → Number
 template <IsJsNumberLike T>
 struct TypeConverter<T> {
-    static Local<JsNumber> toJs(T value) { return JsNumber::newNumber(static_cast<double>(value)); }
+    static Local<Number> toJs(T value) { return Number::newNumber(static_cast<double>(value)); }
 
-    static T toCpp(Local<JsValue> const& value) { return static_cast<T>(value.asNumber().getDouble()); }
+    static T toCpp(Local<Value> const& value) { return static_cast<T>(value.asNumber().getDouble()); }
 };
 
 
-// int64_t / uint64_t → JsBigInt
+// int64_t / uint64_t → BigInt
 template <IsI64OrU64 T>
 struct TypeConverter<T> {
-    static Local<JsBigInt> toJs(T value) { return JsBigInt::newBigInt(value); }
+    static Local<BigInt> toJs(T value) { return BigInt::newBigInt(value); }
 
-    static T toCpp(Local<JsValue> const& value) {
+    static T toCpp(Local<Value> const& value) {
         if constexpr (IsI64<T>) {
             return value.asBigInt().getInt64();
         } else {
@@ -51,20 +50,20 @@ struct TypeConverter<T> {
 template <typename T>
     requires StringLike<T>
 struct TypeConverter<T> {
-    static Local<JsString> toJs(T const& value) { return JsString::newString(value); }
-    // static Local<JsString> toJs(std::string const& value) { return JsString::newString(value); }
+    static Local<String> toJs(T const& value) { return String::newString(value); }
+    // static Local<String> toJs(std::string const& value) { return String::newString(value); }
 
-    static std::string toCpp(Local<JsValue> const& value) { return value.asString().getValue(); } // always UTF-8
+    static std::string toCpp(Local<Value> const& value) { return value.asString().getValue(); } // always UTF-8
 };
 
 
-// enum -> JsNumber (enum value)
+// enum -> Number (enum value)
 template <typename T>
     requires std::is_enum_v<T>
 struct TypeConverter<T> {
-    static Local<JsNumber> toJs(T value) { return JsNumber::newNumber(static_cast<int>(value)); }
+    static Local<Number> toJs(T value) { return Number::newNumber(static_cast<int>(value)); }
 
-    static T toCpp(Local<JsValue> const& value) { return static_cast<T>(value.asNumber().getInt32()); }
+    static T toCpp(Local<Value> const& value) { return static_cast<T>(value.asNumber().getInt32()); }
 };
 
 
@@ -72,8 +71,8 @@ struct TypeConverter<T> {
 template <typename T>
     requires IsWrappedV8Type<T>
 struct TypeConverter<Local<T>> {
-    static Local<JsValue> toJs(Local<T> const& value) { return value.asValue(); }
-    static Local<T>       toCpp(Local<JsValue> const& value) { return value.as<T>(); }
+    static Local<Value> toJs(Local<T> const& value) { return value.asValue(); }
+    static Local<T>     toCpp(Local<Value> const& value) { return value.as<T>(); }
 };
 
 
@@ -93,7 +92,7 @@ struct IsTypeConverterAvailable<
     T,
     std::void_t<
         decltype(TypedConverter<T>::toJs(std::declval<T>())),
-        decltype(TypedConverter<T>::toCpp(std::declval<Local<JsValue>>()))>> : std::true_type {};
+        decltype(TypedConverter<T>::toCpp(std::declval<Local<Value>>()))>> : std::true_type {};
 
 template <typename T>
 constexpr bool IsTypeConverterAvailable_v = IsTypeConverterAvailable<T>::value;
@@ -102,7 +101,7 @@ constexpr bool IsTypeConverterAvailable_v = IsTypeConverterAvailable<T>::value;
 
 
 template <typename T>
-[[nodiscard]] inline Local<JsValue> ConvertToJs(T&& value) {
+[[nodiscard]] inline Local<Value> ConvertToJs(T&& value) {
     static_assert(
         internal::IsTypeConverterAvailable_v<T>,
         "Cannot convert T to Js; there is no available TypeConverter."
@@ -111,7 +110,7 @@ template <typename T>
 }
 
 template <typename T>
-[[nodiscard]] inline decltype(auto) ConvertToCpp(Local<JsValue> const& value) {
+[[nodiscard]] inline decltype(auto) ConvertToCpp(Local<Value> const& value) {
     static_assert(
         internal::IsTypeConverterAvailable_v<T>,
         "Cannot convert Js to T; there is no available TypeConverter."

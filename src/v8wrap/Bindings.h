@@ -13,38 +13,38 @@ namespace internal {
 // Forward statement
 
 template <typename Func>
-JsFunctionCallback bindStaticFunction(Func&& func);
+FunctionCallback bindStaticFunction(Func&& func);
 
 template <typename... Func>
-JsFunctionCallback bindStaticOverloadedFunction(Func&&... funcs);
+FunctionCallback bindStaticOverloadedFunction(Func&&... funcs);
 
 template <typename Fn>
-JsGetterCallback bindStaticGetter(Fn&& fn);
+GetterCallback bindStaticGetter(Fn&& fn);
 
 template <typename Fn>
-JsSetterCallback bindStaticSetter(Fn&& fn);
+SetterCallback bindStaticSetter(Fn&& fn);
 
 template <typename Ty>
-std::pair<JsGetterCallback, JsSetterCallback> bindStaticProperty(Ty* p);
+std::pair<GetterCallback, SetterCallback> bindStaticProperty(Ty* p);
 
 
 template <typename C, typename... Args>
-JsInstanceConstructor bindInstanceConstructor();
+InstanceConstructor bindInstanceConstructor();
 
 template <typename C, typename Func>
-JsInstanceMethodCallback bindInstanceMethod(Func&& fn);
+InstanceMethodCallback bindInstanceMethod(Func&& fn);
 
 template <typename C, typename... Func>
-JsInstanceMethodCallback bindInstanceOverloadedMethod(Func&&... funcs);
+InstanceMethodCallback bindInstanceOverloadedMethod(Func&&... funcs);
 
 template <typename C, typename Fn>
-JsInstanceGetterCallback bindInstanceGetter(Fn&& fn);
+InstanceGetterCallback bindInstanceGetter(Fn&& fn);
 
 template <typename C, typename Fn>
-JsInstanceSetterCallback bindInstanceSetter(Fn&& fn);
+InstanceSetterCallback bindInstanceSetter(Fn&& fn);
 
 template <typename C, typename Ty>
-std::pair<JsInstanceGetterCallback, JsInstanceSetterCallback> bindInstanceProperty(Ty C::* prop);
+std::pair<InstanceGetterCallback, InstanceSetterCallback> bindInstanceProperty(Ty C::* prop);
 
 
 } // namespace internal
@@ -52,18 +52,18 @@ std::pair<JsInstanceGetterCallback, JsInstanceSetterCallback> bindInstanceProper
 
 struct StaticBinding {
     struct Property {
-        std::string const      mName;
-        JsGetterCallback const mGetter;
-        JsSetterCallback const mSetter;
+        std::string const    mName;
+        GetterCallback const mGetter;
+        SetterCallback const mSetter;
 
-        explicit Property(std::string name, JsGetterCallback getter, JsSetterCallback setter);
+        explicit Property(std::string name, GetterCallback getter, SetterCallback setter);
     };
 
     struct Function {
-        std::string const        mName;
-        JsFunctionCallback const mCallback;
+        std::string const      mName;
+        FunctionCallback const mCallback;
 
-        explicit Function(std::string name, JsFunctionCallback callback);
+        explicit Function(std::string name, FunctionCallback callback);
     };
 
     std::vector<Property> const mProperty;
@@ -74,27 +74,27 @@ struct StaticBinding {
 
 struct InstanceBinding {
     struct Property {
-        std::string const              mName;
-        JsInstanceGetterCallback const mGetter;
-        JsInstanceSetterCallback const mSetter;
+        std::string const            mName;
+        InstanceGetterCallback const mGetter;
+        InstanceSetterCallback const mSetter;
 
-        explicit Property(std::string name, JsInstanceGetterCallback getter, JsInstanceSetterCallback setter);
+        explicit Property(std::string name, InstanceGetterCallback getter, InstanceSetterCallback setter);
     };
 
     struct Method {
-        std::string const              mName;
-        JsInstanceMethodCallback const mCallback;
+        std::string const            mName;
+        InstanceMethodCallback const mCallback;
 
-        explicit Method(std::string name, JsInstanceMethodCallback callback);
+        explicit Method(std::string name, InstanceMethodCallback callback);
     };
 
-    JsInstanceConstructor const mConstructor;
+    InstanceConstructor const   mConstructor;
     std::vector<Property> const mProperty;
     std::vector<Method> const   mMethods;
     size_t const                mClassSize; // sizeof(C) for instance class
 
     explicit InstanceBinding(
-        JsInstanceConstructor constructor,
+        InstanceConstructor   constructor,
         std::vector<Property> property,
         std::vector<Method>   functions,
         size_t                classSize
@@ -143,11 +143,11 @@ public:
 
     // 由于采用 void* 提升了运行时的灵活性，但缺少了类型信息。
     // delete void* 是不安全的，所以需要此辅助方法，以生成合理的 deleter。
-    // 此回调仅在 JavaScript new 时调用，用于包装 JsInstanceConstructor 返回的实例 (T*)
+    // 此回调仅在 JavaScript new 时调用，用于包装 InstanceConstructor 返回的实例 (T*)
     // The use of void* enhances runtime flexibility but lacks type information.
     // Deleting a void* is unsafe, so this helper method is needed to generate a reasonable deleter.
     // This callback is only invoked when using JavaScript's `new` operator, and it is used to wrap the instance (T*)
-    //  returned by JsInstanceConstructor.
+    //  returned by InstanceConstructor.
     using TypedWrappedResourceFactory = std::unique_ptr<WrappedResource> (*)(void* instance);
     TypedWrappedResourceFactory const mJsNewInstanceWrapFactory{nullptr};
 
@@ -179,7 +179,7 @@ private:
     std::string                            mClassName;
     std::vector<StaticBinding::Property>   mStaticProperty;
     std::vector<StaticBinding::Function>   mStaticFunctions;
-    JsInstanceConstructor                  mInstanceConstructor;
+    InstanceConstructor                    mInstanceConstructor;
     std::vector<InstanceBinding::Property> mInstanceProperty;
     std::vector<InstanceBinding::Method>   mInstanceFunctions;
     ClassBinding const*                    mExtends         = nullptr;
@@ -188,7 +188,7 @@ private:
 public:
     explicit ClassBindingBuilder(std::string className) : mClassName(std::move(className)) {}
 
-    // 注册静态方法（已包装的 JsFunctionCallback） / Register static function (already wrapped)
+    // 注册静态方法（已包装的 FunctionCallback） / Register static function (already wrapped)
     template <typename Fn>
         requires(IsJsFunctionCallback<Fn>)
     ClassBindingBuilder<Class>& function(std::string name, Fn&& fn) {
@@ -213,7 +213,7 @@ public:
     }
 
     // 注册静态属性（回调形式）/ Static property with raw callback
-    ClassBindingBuilder<Class>& property(std::string name, JsGetterCallback getter, JsSetterCallback setter = nullptr) {
+    ClassBindingBuilder<Class>& property(std::string name, GetterCallback getter, SetterCallback setter = nullptr) {
         mStaticProperty.emplace_back(std::move(name), std::move(getter), std::move(setter));
         return *this;
     }
@@ -250,7 +250,7 @@ public:
      */
     template <typename T = Class>
         requires(!std::is_void_v<T>)
-    ClassBindingBuilder<Class>& customConstructor(JsInstanceConstructor ctor) {
+    ClassBindingBuilder<Class>& customConstructor(InstanceConstructor ctor) {
         if (mInstanceConstructor) throw std::logic_error("Constructor has already been registered!");
         mInstanceConstructor = std::move(ctor);
         return *this;
@@ -268,7 +268,7 @@ public:
         return *this;
     }
 
-    // 注册实例方法（已包装）/ Instance method with JsInstanceMethodCallback
+    // 注册实例方法（已包装）/ Instance method with InstanceMethodCallback
     template <typename Fn>
         requires(!std::is_void_v<Class> && IsJsInstanceMethodCallback<Fn>)
     ClassBindingBuilder<Class>& instanceMethod(std::string name, Fn&& fn) {
@@ -301,7 +301,7 @@ public:
 
     // 实例属性（回调）/ Instance property with callbacks
     ClassBindingBuilder<Class>&
-    instanceProperty(std::string name, JsInstanceGetterCallback getter, JsInstanceSetterCallback setter = nullptr) {
+    instanceProperty(std::string name, InstanceGetterCallback getter, InstanceSetterCallback setter = nullptr) {
         static_assert(!std::is_void_v<Class>, "Only instance class can have instanceProperty");
         mInstanceProperty.emplace_back(std::move(name), std::move(getter), std::move(setter));
         return *this;

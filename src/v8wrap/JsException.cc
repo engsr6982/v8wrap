@@ -6,7 +6,6 @@
 #include <exception>
 
 
-
 V8_WRAP_WARNING_GUARD_BEGIN
 #include <v8-exception.h>
 #include <v8-local-handle.h>
@@ -77,7 +76,7 @@ void JsException::extractMessage() const noexcept {
 
     auto msg = v8::Exception::CreateMessage(isolate, mExceptionCtx->exception.Get(isolate));
     if (!msg.IsEmpty()) {
-        Local<JsString> jsStr{msg->Get()};
+        Local<String> jsStr{msg->Get()};
         mExceptionCtx->message = jsStr.toString().getValue();
         return;
     }
