@@ -6,15 +6,15 @@
 
 ## 功能
 
-- [x] JsPlatform.h - Js 平台,管理 `JsRuntime` (`v8::Platform`)
-- [x] JsRuntime.h - Js 运行时 (`v8::Isolate` + `v8::Global<v8::Context>`)
+- [x] Platform.h - Js 平台,管理 `Engine` (`v8::Platform`)
+- [x] Engine.h - Js 运行时 (`v8::Isolate` + `v8::Global<v8::Context>`)
   - [x] 资源管理
   - [x] 绑定类注册
   - [x] C++构造 Js 类
   - [x] isInstanceOf 类型判定
   - [x] 解包获取原生实例（从绑定的类实例获取 Local<Object>）
-- [x] JsRuntimeScope.h - v8 作用域封装 (`v8::Locker` + `v8::Isolate::Scope` + `v8::HandleScope` + `v8::Context::Scope`)
-- [x] JsException.h - v8 异常封装，双向异常转换
+- [x] EngineScope.h - v8 作用域封装 (`v8::Locker` + `v8::Isolate::Scope` + `v8::HandleScope` + `v8::Context::Scope`)
+- [x] Exception.h - v8 异常封装，双向异常转换
 - [x] Value.h - v8 值封装，双向值转换
   - [x] `Value` -> `v8::Value`
   - [x] `Null` -> `v8::Primitive`

@@ -14,7 +14,7 @@ graph LR
     U -- "native member strong" --> P
     JU -- "getter/setter property" --> JP
     
-    RT[JsRuntime]
+    RT[Engine]
     RT -- "v8 WeakRef" --> JP
     
     %% bug fix: Keep the player alive

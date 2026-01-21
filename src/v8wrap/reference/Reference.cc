@@ -1,9 +1,11 @@
 #include "v8wrap/reference/Reference.h"
-#include "v8wrap/JsException.h"
-#include "v8wrap/JsRuntimeScope.h"
+#include "v8wrap/runtime/EngineScope.h"
+#include "v8wrap/runtime/Exception.h"
 #include "v8wrap/types/Value.h"
 #include <algorithm>
 #include <cassert>
+
+
 
 V8_WRAP_WARNING_GUARD_BEGIN
 #include <v8-exception.h>
@@ -32,43 +34,43 @@ bool Local<Value>::isFunction() const { return !isNullOrUndefined() && val->IsFu
 Local<Value> Local<Value>::asValue() const { return *this; }
 Local<Null>  Local<Value>::asNull() const {
     if (isNull()) return Local<Null>{val.As<v8::Primitive>()};
-    throw JsException("cannot convert to Null");
+    throw Exception("cannot convert to Null");
 }
 Local<Undefined> Local<Value>::asUndefined() const {
     if (isUndefined()) return Local<Undefined>{val.As<v8::Primitive>()};
-    throw JsException("cannot convert to Undefined");
+    throw Exception("cannot convert to Undefined");
 }
 Local<Boolean> Local<Value>::asBoolean() const {
     if (isBoolean()) return Local<Boolean>{val.As<v8::Boolean>()};
-    throw JsException("cannot convert to Boolean");
+    throw Exception("cannot convert to Boolean");
 }
 Local<Number> Local<Value>::asNumber() const {
     if (isNumber()) return Local<Number>{val.As<v8::Number>()};
-    throw JsException("cannot convert to Number");
+    throw Exception("cannot convert to Number");
 }
 Local<BigInt> Local<Value>::asBigInt() const {
     if (isBigInt()) return Local<BigInt>{val.As<v8::BigInt>()};
-    throw JsException("cannot convert to BigInt");
+    throw Exception("cannot convert to BigInt");
 }
 Local<String> Local<Value>::asString() const {
     if (isString()) return Local<String>{val.As<v8::String>()};
-    throw JsException("cannot convert to String");
+    throw Exception("cannot convert to String");
 }
 Local<Symbol> Local<Value>::asSymbol() const {
     if (isSymbol()) return Local<Symbol>{val.As<v8::Symbol>()};
-    throw JsException("cannot convert to Symbol");
+    throw Exception("cannot convert to Symbol");
 }
 Local<Object> Local<Value>::asObject() const {
     if (isObject()) return Local<Object>{val.As<v8::Object>()};
-    throw JsException("cannot convert to Object");
+    throw Exception("cannot convert to Object");
 }
 Local<Array> Local<Value>::asArray() const {
     if (isArray()) return Local<Array>{val.As<v8::Array>()};
-    throw JsException("cannot convert to Array");
+    throw Exception("cannot convert to Array");
 }
 Local<Function> Local<Value>::asFunction() const {
     if (isFunction()) return Local<Function>{val.As<v8::Function>()};
-    throw JsException("cannot convert to Function");
+    throw Exception("cannot convert to Function");
 }
 
 void Local<Value>::clear() { val.Clear(); }
@@ -84,7 +86,7 @@ ValueType Local<Value>::getType() const {
     if (isObject()) return ValueType::Object;
     if (isArray()) return ValueType::Array;
     if (isFunction()) return ValueType::Function;
-    throw JsException("Unknown type, did you forget to add if branch?");
+    throw Exception("Unknown type, did you forget to add if branch?");
 }
 
 
@@ -108,7 +110,7 @@ ValueType Local<Value>::getType() const {
     Local<String> Local<VALUE>::toString() {                                                                           \
         if (asValue().isNull()) return String::newString("null");                                                      \
         if (asValue().isUndefined()) return String::newString("undefined");                                            \
-        auto&& [isolate, ctx] = JsRuntimeScope::currentIsolateAndContextChecked();                                     \
+        auto&& [isolate, ctx] = EngineScope::currentIsolateAndContextChecked();                                        \
         v8::TryCatch vtry{isolate};                                                                                    \
         auto         maybe = val->ToString(ctx);                                                                       \
         return Local<String>{maybe.ToLocalChecked()};                                                                  \
@@ -120,7 +122,7 @@ ValueType Local<Value>::getType() const {
 
 #define IMPL_SPECALIZATION_V8_LOCAL_TYPE(VALUE)                                                                        \
     Local<VALUE>::Local(v8::Local<Type> v8Type) : val{v8Type} {                                                        \
-        if (val.IsEmpty()) throw JsException("Incorrect reference, v8::Local<T> is empty");                            \
+        if (val.IsEmpty()) throw Exception("Incorrect reference, v8::Local<T> is empty");                              \
     }
 
 
@@ -160,10 +162,10 @@ IMPL_SPECALIZATION_AS_VALUE(String);
 IMPL_SPECALIZATION_V8_LOCAL_TYPE(String);
 int         Local<String>::length() const { return val->Length(); }
 std::string Local<String>::getValue() const {
-    auto                  isolate = JsRuntimeScope::currentRuntimeIsolateChecked();
+    auto                  isolate = EngineScope::currentRuntimeIsolateChecked();
     v8::String::Utf8Value utf8(isolate, val);
     if (*utf8 == nullptr) {
-        throw JsException("Cannot convert v8::String to std::string");
+        throw Exception("Cannot convert v8::String to std::string");
     }
     return std::string{*utf8, static_cast<size_t>(utf8.length())};
 }
@@ -173,7 +175,7 @@ IMPL_SPECIALIZATION_LOCAL(Symbol);
 IMPL_SPECALIZATION_AS_VALUE(Symbol);
 IMPL_SPECALIZATION_V8_LOCAL_TYPE(Symbol);
 Local<Value> Local<Symbol>::getDescription() {
-    auto isolate = JsRuntimeScope::currentRuntimeIsolateChecked();
+    auto isolate = EngineScope::currentRuntimeIsolateChecked();
     auto maybe   = val->Description(isolate);
     return Local<Value>{maybe};
 }
@@ -183,41 +185,41 @@ IMPL_SPECIALIZATION_LOCAL(Object);
 IMPL_SPECALIZATION_AS_VALUE(Object);
 IMPL_SPECALIZATION_V8_LOCAL_TYPE(Object);
 bool Local<Object>::has(Local<String> const& key) const {
-    auto&& [isolate, ctx] = JsRuntimeScope::currentIsolateAndContextChecked();
+    auto&& [isolate, ctx] = EngineScope::currentIsolateAndContextChecked();
     v8::TryCatch vtry{isolate};
     auto         maybe = val->Has(ctx, key.val);
-    JsException::rethrow(vtry);
+    Exception::rethrow(vtry);
     return maybe.ToChecked();
 }
 
 Local<Value> Local<Object>::get(Local<String> const& key) const {
-    auto&& [isolate, ctx] = JsRuntimeScope::currentIsolateAndContextChecked();
+    auto&& [isolate, ctx] = EngineScope::currentIsolateAndContextChecked();
     v8::TryCatch vtry{isolate};
     auto         maybe = val->Get(ctx, key.val);
-    JsException::rethrow(vtry);
+    Exception::rethrow(vtry);
     return Local<Value>{maybe.ToLocalChecked()};
 }
 
 void Local<Object>::set(Local<String> const& key, Local<Value> const& value) {
-    auto&& [isolate, ctx] = JsRuntimeScope::currentIsolateAndContextChecked();
+    auto&& [isolate, ctx] = EngineScope::currentIsolateAndContextChecked();
     v8::TryCatch vtry{isolate};
     val->Set(ctx, key.val, value.val).ToChecked();
-    JsException::rethrow(vtry);
+    Exception::rethrow(vtry);
 }
 
 void Local<Object>::remove(Local<String> const& key) {
-    auto&& [isolate, ctx] = JsRuntimeScope::currentIsolateAndContextChecked();
+    auto&& [isolate, ctx] = EngineScope::currentIsolateAndContextChecked();
     v8::TryCatch vtry{isolate};
     val->Delete(ctx, key.val).ToChecked();
-    JsException::rethrow(vtry);
+    Exception::rethrow(vtry);
 }
 
 std::vector<Local<String>> Local<Object>::getOwnPropertyNames() const {
-    auto&& [isolate, ctx] = JsRuntimeScope::currentIsolateAndContextChecked();
+    auto&& [isolate, ctx] = EngineScope::currentIsolateAndContextChecked();
     v8::TryCatch vtry{isolate};
 
     auto maybe = val->GetOwnPropertyNames(ctx);
-    JsException::rethrow(vtry);
+    Exception::rethrow(vtry);
     auto array = maybe.ToLocalChecked();
 
     std::vector<Local<String>> result;
@@ -227,7 +229,7 @@ std::vector<Local<String>> Local<Object>::getOwnPropertyNames() const {
         internal::V8EscapeScope scope{isolate};
 
         auto maybeVal = array->Get(ctx, i);
-        JsException::rethrow(vtry);
+        Exception::rethrow(vtry);
         auto value = maybeVal.ToLocalChecked();
         if (value->IsString()) {
             result.push_back(Local<String>{scope.escape(value.As<v8::String>())});
@@ -251,11 +253,11 @@ bool Local<Object>::instanceof(Local<Value> const& type) const {
     if (!type.isObject()) {
         return false;
     }
-    auto&& [isolate, ctx] = JsRuntimeScope::currentIsolateAndContextChecked();
+    auto&& [isolate, ctx] = EngineScope::currentIsolateAndContextChecked();
     v8::TryCatch vtry{isolate};
 
     auto maybe = val->InstanceOf(ctx, type.asObject().val);
-    JsException::rethrow(vtry);
+    Exception::rethrow(vtry);
     return maybe.ToChecked();
 }
 
@@ -264,20 +266,20 @@ bool Local<Object>::defineOwnProperty(
     Local<Value> const&  value,
     PropertyAttribute    attrs
 ) const {
-    auto&& [isolate, ctx] = JsRuntimeScope::currentIsolateAndContextChecked();
+    auto&& [isolate, ctx] = EngineScope::currentIsolateAndContextChecked();
     v8::TryCatch vtry{isolate};
 
     auto maybe = val->DefineOwnProperty(ctx, key.val, value.val, attrs);
-    JsException::rethrow(vtry);
+    Exception::rethrow(vtry);
     return maybe.ToChecked();
 }
 
 bool Local<Object>::defineProperty(Local<String> const& key, PropertyDescriptor& desc) const {
-    auto&& [isolate, ctx] = JsRuntimeScope::currentIsolateAndContextChecked();
+    auto&& [isolate, ctx] = EngineScope::currentIsolateAndContextChecked();
     v8::TryCatch vtry{isolate};
 
     auto maybe = val->DefineProperty(ctx, key.val, desc);
-    JsException::rethrow(vtry);
+    Exception::rethrow(vtry);
     return maybe.ToChecked();
 }
 
@@ -288,36 +290,36 @@ IMPL_SPECALIZATION_V8_LOCAL_TYPE(Array);
 size_t Local<Array>::length() const { return static_cast<size_t>(val->Length()); }
 
 Local<Value> Local<Array>::get(size_t index) const {
-    auto&& [isolate, ctx] = JsRuntimeScope::currentIsolateAndContextChecked();
+    auto&& [isolate, ctx] = EngineScope::currentIsolateAndContextChecked();
     v8::TryCatch vtry{isolate};
     auto         maybe = val->Get(ctx, static_cast<uint32_t>(index));
-    JsException::rethrow(vtry);
+    Exception::rethrow(vtry);
     return Local<Value>{maybe.ToLocalChecked()};
 }
 
 void Local<Array>::set(size_t index, Local<Value> const& value) {
-    auto&& [isolate, ctx] = JsRuntimeScope::currentIsolateAndContextChecked();
+    auto&& [isolate, ctx] = EngineScope::currentIsolateAndContextChecked();
     v8::TryCatch vtry{isolate};
     val->Set(ctx, static_cast<uint32_t>(index), value.val).ToChecked();
-    JsException::rethrow(vtry);
+    Exception::rethrow(vtry);
 }
 
 void Local<Array>::push(Local<Value> const& value) {
-    auto&& [isolate, ctx] = JsRuntimeScope::currentIsolateAndContextChecked();
+    auto&& [isolate, ctx] = EngineScope::currentIsolateAndContextChecked();
     v8::TryCatch vtry{isolate};
     val->Set(ctx, val->Length(), value.val).ToChecked();
-    JsException::rethrow(vtry);
+    Exception::rethrow(vtry);
 }
 
 void Local<Array>::clear() {
-    auto&& [isolate, ctx] = JsRuntimeScope::currentIsolateAndContextChecked();
+    auto&& [isolate, ctx] = EngineScope::currentIsolateAndContextChecked();
     v8::TryCatch vtry{isolate};
 
     // Method 1: Set length = 0
     auto len_str = v8::String::NewFromUtf8Literal(isolate, "length");
     val->Set(ctx, len_str, v8::Integer::New(isolate, 0)).ToChecked();
 
-    JsException::rethrow(vtry);
+    Exception::rethrow(vtry);
 }
 
 
@@ -329,7 +331,7 @@ bool Local<Function>::isAsyncFunction() const { return val->IsAsyncFunction(); }
 Local<Value> Local<Function>::call() const { return call({}, {}); }
 
 Local<Value> Local<Function>::call(Local<Value> const& thiz, std::vector<Local<Value>> const& args) const {
-    auto&& [isolate, ctx] = JsRuntimeScope::currentIsolateAndContextChecked();
+    auto&& [isolate, ctx] = EngineScope::currentIsolateAndContextChecked();
     v8::TryCatch vtry{isolate};
 
     int argc = static_cast<int>(args.size());
@@ -344,7 +346,7 @@ Local<Value> Local<Function>::call(Local<Value> const& thiz, std::vector<Local<V
     }
 
     auto result = val->Call(ctx, thiz.val, argc, argv);
-    JsException::rethrow(vtry);
+    Exception::rethrow(vtry);
     return Local<Value>{result.ToLocalChecked()};
 }
 

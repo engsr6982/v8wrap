@@ -1,7 +1,9 @@
 #pragma once
-#include "v8wrap/JsException.h"
-#include "v8wrap/JsRuntimeScope.h"
 #include "v8wrap/reference/Reference.h"
+#include "v8wrap/runtime/EngineScope.h"
+#include "v8wrap/runtime/Exception.h"
+
+
 
 #include <cassert>
 
@@ -35,7 +37,7 @@ Local<T> Local<Value>::as() const {
     } else if constexpr (std::is_same_v<T, Array>) {
         return asArray();
     }
-    throw JsException("Unable to convert Local<Value> to T, forgot to add if branch?");
+    throw Exception("Unable to convert Local<Value> to T, forgot to add if branch?");
 }
 
 
@@ -44,13 +46,13 @@ template <typename T>
 Global<T>::Global() noexcept : impl{} {}
 
 template <typename T>
-Global<T>::Global(Local<T> const& val) : impl(JsRuntimeScope::currentRuntime(), val) {
-    auto* runtime = JsRuntimeScope::currentRuntime();
-    assert(runtime && "Global<T> must be created inside a JsRuntimeScope");
+Global<T>::Global(Local<T> const& val) : impl(EngineScope::currentRuntime(), val) {
+    auto* runtime = EngineScope::currentRuntime();
+    assert(runtime && "Global<T> must be created inside a EngineScope");
 }
 
 template <typename T>
-Global<T>::Global(Weak<T> const& val) : impl(JsRuntimeScope::currentRuntime(), val) {}
+Global<T>::Global(Weak<T> const& val) : impl(EngineScope::currentRuntime(), val) {}
 
 template <typename T>
 Global<T>::Global(Global<T>&& other) noexcept : impl(std::move(other.impl)) {}
@@ -94,14 +96,14 @@ Weak<T>::Weak() noexcept : impl{} {
 }
 
 template <typename T>
-Weak<T>::Weak(Local<T> const& val) : impl(JsRuntimeScope::currentRuntime(), val) {
+Weak<T>::Weak(Local<T> const& val) : impl(EngineScope::currentRuntime(), val) {
     impl.makeWeak();
-    auto* runtime = JsRuntimeScope::currentRuntime();
-    assert(runtime && "Weak<T> must be created inside a JsRuntimeScope");
+    auto* runtime = EngineScope::currentRuntime();
+    assert(runtime && "Weak<T> must be created inside a EngineScope");
 }
 
 template <typename T>
-Weak<T>::Weak(Global<T> const& val) : impl(JsRuntimeScope::currentRuntime(), val) {
+Weak<T>::Weak(Global<T> const& val) : impl(EngineScope::currentRuntime(), val) {
     impl.makeWeak();
 }
 

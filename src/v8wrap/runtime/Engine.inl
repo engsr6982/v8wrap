@@ -1,5 +1,5 @@
 #pragma once
-#include "JsRuntime.h"
+#include "Engine.h"
 #include "v8-object.h"
 #include "v8wrap/Types.h"
 
@@ -8,18 +8,18 @@ namespace v8wrap {
 
 
 template <typename T>
-std::shared_ptr<T> JsRuntime::getData() const {
+std::shared_ptr<T> Engine::getData() const {
     return std::static_pointer_cast<T>(mUserData);
 }
 
 template <typename T>
     requires StringLike<T>
-Local<Value> JsRuntime::eval(T const& str) {
+Local<Value> Engine::eval(T const& str) {
     return eval(String::newString(str));
 }
 
 template <typename T>
-Local<Object> JsRuntime::newInstanceOfRaw(ClassBinding const& bind, T* instance) {
+Local<Object> Engine::newInstanceOfRaw(ClassBinding const& bind, T* instance) {
     auto wrap = WrappedResource::make(
         instance,
         [](void* res) -> void* { return res; }, // no-op
@@ -29,7 +29,7 @@ Local<Object> JsRuntime::newInstanceOfRaw(ClassBinding const& bind, T* instance)
 }
 
 template <typename T>
-Local<Object> JsRuntime::newInstanceOfView(ClassBinding const& bind, T* instance) {
+Local<Object> Engine::newInstanceOfView(ClassBinding const& bind, T* instance) {
     auto wrap = WrappedResource::make(
         instance,
         [](void* res) -> void* { return res; }, // no-op
@@ -39,7 +39,7 @@ Local<Object> JsRuntime::newInstanceOfView(ClassBinding const& bind, T* instance
 }
 
 template <typename T>
-Local<Object> JsRuntime::newInstanceOfView(ClassBinding const& bind, T* instance, Local<Object> const& ownerJs) {
+Local<Object> Engine::newInstanceOfView(ClassBinding const& bind, T* instance, Local<Object> const& ownerJs) {
     struct Control {
         v8::Global<v8::Object> ownerJsInst;
         void*                  nativeInst{nullptr};
@@ -61,12 +61,12 @@ Local<Object> JsRuntime::newInstanceOfView(ClassBinding const& bind, T* instance
 }
 
 template <typename T>
-Local<Object> JsRuntime::newInstanceOfUnique(ClassBinding const& bind, std::unique_ptr<T>&& instance) {
+Local<Object> Engine::newInstanceOfUnique(ClassBinding const& bind, std::unique_ptr<T>&& instance) {
     return newInstanceOfRaw<T>(bind, instance.release());
 }
 
 template <typename T>
-Local<Object> JsRuntime::newInstanceOfShared(ClassBinding const& bind, std::shared_ptr<T>&& instance) {
+Local<Object> Engine::newInstanceOfShared(ClassBinding const& bind, std::shared_ptr<T>&& instance) {
     struct Control {
         std::shared_ptr<T> instance;
         explicit Control(std::shared_ptr<T>&& instance) : instance(std::move(instance)) {}
@@ -81,7 +81,7 @@ Local<Object> JsRuntime::newInstanceOfShared(ClassBinding const& bind, std::shar
 }
 
 template <typename T>
-Local<Object> JsRuntime::newInstanceOfWeak(ClassBinding const& bind, std::weak_ptr<T>&& instance) {
+Local<Object> Engine::newInstanceOfWeak(ClassBinding const& bind, std::weak_ptr<T>&& instance) {
     struct Control {
         std::weak_ptr<T> instance;
         explicit Control(std::weak_ptr<T>&& instance) : instance(std::move(instance)) {}
@@ -96,7 +96,7 @@ Local<Object> JsRuntime::newInstanceOfWeak(ClassBinding const& bind, std::weak_p
 }
 
 template <typename T>
-T* JsRuntime::getNativeInstanceOf(Local<Object> const& obj) const {
+T* Engine::getNativeInstanceOf(Local<Object> const& obj) const {
     return static_cast<T*>(this->getNativeInstanceOf(obj));
 }
 

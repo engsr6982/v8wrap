@@ -31,7 +31,7 @@ public:                                                                         
                                                                                                                        \
 private:                                                                                                               \
     friend struct JsValueHelper;                                                                                       \
-    friend class JsException;                                                                                          \
+    friend class Exception;                                                                                            \
     friend class VALUE;                                                                                                \
     template <typename>                                                                                                \
     friend class Local;                                                                                                \
@@ -276,7 +276,7 @@ public:
 private:
     internal::V8GlobalRef<T> impl;
 
-    friend class JsRuntime;
+    friend class Engine;
 
     template <typename>
     friend class Local;
@@ -312,7 +312,7 @@ public:
 private:
     internal::V8GlobalRef<T> impl;
 
-    friend class JsRuntime;
+    friend class Engine;
 
     template <typename>
     friend class Local;

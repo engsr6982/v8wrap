@@ -1,5 +1,5 @@
-#include "v8wrap/JsPlatform.h"
-#include "v8wrap/JsRuntime.h"
+#include "v8wrap/runtime/Platform.h"
+#include "v8wrap/runtime/Engine.h"
 #include <memory>
 #include <mutex>
 #include <vector>
@@ -15,24 +15,24 @@ V8_WRAP_WARNING_GUARD_END
 namespace v8wrap {
 
 
-std::unique_ptr<JsPlatform> JsPlatform::sInstance{nullptr};
+std::unique_ptr<Platform> Platform::sInstance{nullptr};
 
-void JsPlatform::initJsPlatform() {
+void Platform::initJsPlatform() {
     if (sInstance) {
         return;
     }
-    sInstance = std::unique_ptr<JsPlatform>(new JsPlatform());
+    sInstance = std::unique_ptr<Platform>(new Platform());
 }
-JsPlatform* JsPlatform::getPlatform() { return sInstance.get(); }
+Platform* Platform::getPlatform() { return sInstance.get(); }
 
-void JsPlatform::shutdownJsPlatform() { sInstance.reset(); }
+void Platform::shutdownJsPlatform() { sInstance.reset(); }
 
-JsPlatform::JsPlatform() : mPlatform(v8::platform::NewDefaultPlatform()) {
+Platform::Platform() : mPlatform(v8::platform::NewDefaultPlatform()) {
     v8::V8::InitializePlatform(mPlatform.get());
     v8::V8::Initialize();
 }
 
-JsPlatform::~JsPlatform() {
+Platform::~Platform() {
     for (auto runtime : mRuntimes) {
         runtime->destroy();
     }
@@ -41,25 +41,25 @@ JsPlatform::~JsPlatform() {
     v8::V8::DisposePlatform();
 }
 
-JsRuntime* JsPlatform::newRuntime() {
-    return new JsRuntime(); // The constructor internally adds a runtime to the JsPlatform
+Engine* Platform::newRuntime() {
+    return new Engine(); // The constructor internally adds a runtime to the Platform
 }
 
-void JsPlatform::addRuntime(JsRuntime* runtime) {
+void Platform::addRuntime(Engine* runtime) {
     std::lock_guard<std::mutex> lock(mMutex);
     if (std::find(mRuntimes.begin(), mRuntimes.end(), runtime) == mRuntimes.end()) {
         mRuntimes.push_back(runtime);
     }
 }
 
-void JsPlatform::removeRuntime(JsRuntime* runtime, bool destroyRuntime) {
+void Platform::removeRuntime(Engine* runtime, bool destroyRuntime) {
     {
         std::lock_guard<std::mutex> lock(mMutex);
-        std::erase_if(mRuntimes, [runtime](JsRuntime* r) { return r == runtime; });
+        std::erase_if(mRuntimes, [runtime](Engine* r) { return r == runtime; });
     }
     if (destroyRuntime) runtime->destroy();
 }
 
-std::vector<JsRuntime*> JsPlatform::getRuntimes() const { return mRuntimes; }
+std::vector<Engine*> Platform::getRuntimes() const { return mRuntimes; }
 
 } // namespace v8wrap

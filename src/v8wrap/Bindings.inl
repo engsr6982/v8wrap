@@ -1,9 +1,9 @@
 #pragma once
 #include "v8wrap/Concepts.h"
 #include "v8wrap/Global.h"
-#include "v8wrap/JsException.h"
 #include "v8wrap/TypeConverter.h"
 #include "v8wrap/Types.h"
+#include "v8wrap/runtime/Exception.h"
 #include "v8wrap/types/Value.h"
 #include <array>
 #include <cstddef>
@@ -85,7 +85,7 @@ FunctionCallback bindStaticFunction(Func&& func) {
         constexpr size_t N = std::tuple_size_v<Tuple>;
 
         if (args.length() != N) {
-            throw JsException("argument count mismatch");
+            throw Exception("argument count mismatch");
         }
 
         if constexpr (std::is_void_v<R>) {
@@ -105,9 +105,9 @@ FunctionCallback bindStaticOverloadedFunction(Func&&... funcs) {
         for (size_t i = 0; i < sizeof...(Func); ++i) {
             try {
                 return std::invoke(fs[i], args);
-            } catch (JsException const&) {
+            } catch (Exception const&) {
                 if (i == sizeof...(Func) - 1) {
-                    throw JsException{"no overload found"};
+                    throw Exception{"no overload found"};
                 }
             }
         }
@@ -177,7 +177,7 @@ InstanceMethodCallback bindInstanceMethod(Func&& fn) {
         constexpr size_t N = std::tuple_size_v<Tuple>;
 
         if (args.length() != N) {
-            throw JsException("argument count mismatch");
+            throw Exception("argument count mismatch");
         }
 
         auto typedInstance = static_cast<C*>(inst);
@@ -209,9 +209,9 @@ InstanceMethodCallback bindInstanceOverloadedMethod(Func&&... funcs) {
         for (size_t i = 0; i < sizeof...(Func); ++i) {
             try {
                 return std::invoke(fs[i], inst, args);
-            } catch (JsException const&) {
+            } catch (Exception const&) {
                 if (i == sizeof...(Func) - 1) {
-                    throw JsException{"no overload found"};
+                    throw Exception{"no overload found"};
                 }
             }
         }

@@ -1,43 +1,43 @@
 #include "catch2/catch_test_macros.hpp"
-#include "v8wrap/JsException.h"
-#include "v8wrap/JsPlatform.h"
-#include "v8wrap/JsRuntime.h"
-#include "v8wrap/JsRuntimeScope.h"
 #include "v8wrap/Types.h"
+#include "v8wrap/runtime/Engine.h"
+#include "v8wrap/runtime/EngineScope.h"
+#include "v8wrap/runtime/Exception.h"
+#include "v8wrap/runtime/Platform.h"
 #include "v8wrap/types/Value.h"
 #include <cstddef>
 #include <iostream>
 
 
 struct JsValueTestFixture {
-    JsValueTestFixture() { rt = new v8wrap::JsRuntime(); }
+    JsValueTestFixture() { rt = new v8wrap::Engine(); }
     ~JsValueTestFixture() { rt->destroy(); }
-    v8wrap::JsRuntime* rt;
+    v8wrap::Engine* rt;
 };
 
 TEST_CASE_METHOD(JsValueTestFixture, "Null") {
-    v8wrap::JsRuntimeScope enter(rt);
+    v8wrap::EngineScope enter(rt);
 
     auto null = v8wrap::Null::newNull();
     CHECK(null.toString().getValue() == "null");
 }
 
 TEST_CASE_METHOD(JsValueTestFixture, "Undefined") {
-    v8wrap::JsRuntimeScope enter(rt);
+    v8wrap::EngineScope enter(rt);
 
     auto undefined = v8wrap::Undefined::newUndefined();
     CHECK(undefined.toString().getValue() == "undefined");
 }
 
 TEST_CASE_METHOD(JsValueTestFixture, "Boolean") {
-    v8wrap::JsRuntimeScope enter(rt);
+    v8wrap::EngineScope enter(rt);
 
     auto boolean = v8wrap::Boolean::newBoolean(true);
     CHECK(boolean.getValue() == true);
 }
 
 TEST_CASE_METHOD(JsValueTestFixture, "Number") {
-    v8wrap::JsRuntimeScope enter(rt);
+    v8wrap::EngineScope enter(rt);
     SECTION("Float") {
         auto num = v8wrap::Number::newNumber(3.1f);
         CHECK(num.getFloat() == 3.1f);
@@ -53,14 +53,14 @@ TEST_CASE_METHOD(JsValueTestFixture, "Number") {
 }
 
 TEST_CASE_METHOD(JsValueTestFixture, "BigInt") {
-    v8wrap::JsRuntimeScope enter(rt);
+    v8wrap::EngineScope enter(rt);
 
     auto bigInt = v8wrap::BigInt::newBigInt(int64_t{114514});
     CHECK(bigInt.getInt64() == 114514);
 }
 
 TEST_CASE_METHOD(JsValueTestFixture, "String") {
-    v8wrap::JsRuntimeScope enter(rt);
+    v8wrap::EngineScope enter(rt);
     SECTION("std::string") {
         auto str = v8wrap::String::newString("Hello, World!");
         CHECK(str.getValue() == "Hello, World!");
@@ -74,7 +74,7 @@ TEST_CASE_METHOD(JsValueTestFixture, "String") {
 }
 
 TEST_CASE_METHOD(JsValueTestFixture, "Symbol") {
-    v8wrap::JsRuntimeScope enter(rt);
+    v8wrap::EngineScope enter(rt);
 
     auto symbol = v8wrap::Symbol::newSymbol("Hello, World!");
     CHECK(symbol.getDescription().isString());
@@ -82,7 +82,7 @@ TEST_CASE_METHOD(JsValueTestFixture, "Symbol") {
 }
 
 TEST_CASE_METHOD(JsValueTestFixture, "Function") {
-    v8wrap::JsRuntimeScope enter(rt);
+    v8wrap::EngineScope enter(rt);
 
     SECTION("Basic Function") {
         auto func = v8wrap::Function::newFunction([](v8wrap::Arguments const& args) {
@@ -114,25 +114,25 @@ TEST_CASE_METHOD(JsValueTestFixture, "Function") {
             auto value = rt->eval(v8wrap::String::newString("testFunc2((str, num) => { return num; });"));
             REQUIRE(value.isNumber());
             CHECK(value.asNumber().getInt32() == 114514);
-        } catch (v8wrap::JsException const& e) {
+        } catch (v8wrap::Exception const& e) {
             std::cout << e.what() << std::endl;
         }
     }
 
     SECTION("Function with exception") {
         auto func = v8wrap::Function::newFunction([](v8wrap::Arguments const&) -> v8wrap::Local<v8wrap::Value> {
-            throw v8wrap::JsException("Test Exception"); // native => js
+            throw v8wrap::Exception("Test Exception"); // native => js
         });
         rt->getGlobalThis().set(v8wrap::String::newString("testFunc3"), func);
 
-        CHECK_THROWS_AS(rt->eval(v8wrap::String::newString("testFunc3();")), v8wrap::JsException);
+        CHECK_THROWS_AS(rt->eval(v8wrap::String::newString("testFunc3();")), v8wrap::Exception);
 
 
         // js => native
         auto func2 = v8wrap::Function::newFunction([](v8wrap::Arguments const& args) {
             REQUIRE(args.length() == 1);
             REQUIRE(args[0].isFunction());
-            CHECK_THROWS_AS(args[0].asFunction().call({}, {}), v8wrap::JsException);
+            CHECK_THROWS_AS(args[0].asFunction().call({}, {}), v8wrap::Exception);
             return v8wrap::Boolean::newBoolean(true);
         });
         rt->getGlobalThis().set(v8wrap::String::newString("testFunc4"), func2);
@@ -143,7 +143,7 @@ TEST_CASE_METHOD(JsValueTestFixture, "Function") {
 }
 
 TEST_CASE_METHOD(JsValueTestFixture, "Object") {
-    v8wrap::JsRuntimeScope enter(rt);
+    v8wrap::EngineScope enter(rt);
 
     SECTION("Basic Object") {
         auto obj = v8wrap::Object::newObject();
@@ -175,7 +175,7 @@ TEST_CASE_METHOD(JsValueTestFixture, "Object") {
     SECTION("Instance Check") {
         auto obj         = v8wrap::Object::newObject();
         auto constructor = v8wrap::Object::newObject();
-        CHECK_THROWS_AS(obj.instanceof(constructor) == false, v8wrap::JsException);
+        CHECK_THROWS_AS(obj.instanceof(constructor) == false, v8wrap::Exception);
     }
 
     SECTION("Object Prototype") {
@@ -195,7 +195,7 @@ TEST_CASE_METHOD(JsValueTestFixture, "Object") {
 }
 
 TEST_CASE_METHOD(JsValueTestFixture, "Array") {
-    v8wrap::JsRuntimeScope enter(rt);
+    v8wrap::EngineScope enter(rt);
 
     SECTION("Basic Array") {
         auto arr = v8wrap::Array::newArray();
@@ -245,8 +245,8 @@ TEST_CASE_METHOD(JsValueTestFixture, "Array") {
 }
 
 TEST_CASE_METHOD(JsValueTestFixture, "Array Boundary Tests") {
-    v8wrap::JsRuntimeScope enter(rt);
-    auto                   arr = v8wrap::Array::newArray(3);
+    v8wrap::EngineScope enter(rt);
+    auto                arr = v8wrap::Array::newArray(3);
 
     SECTION("Out-of-bounds access returns undefined") {
         CHECK(arr.get(10).isUndefined()); // undefined

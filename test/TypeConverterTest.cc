@@ -1,14 +1,14 @@
 #include "v8wrap/TypeConverter.h"
 #include "catch2/catch_test_macros.hpp"
-#include "v8wrap/JsRuntime.h"
-#include "v8wrap/JsRuntimeScope.h"
+#include "v8wrap/runtime/Engine.h"
+#include "v8wrap/runtime/EngineScope.h"
 #include <string>
 
 
 TEST_CASE("TypeConverter") {
-    auto rt = new v8wrap::JsRuntime();
+    auto rt = new v8wrap::Engine();
 
-    v8wrap::JsRuntimeScope scope(rt);
+    v8wrap::EngineScope scope(rt);
 
     auto value = v8wrap::ConvertToJs("hello world");
     REQUIRE(value.isString());

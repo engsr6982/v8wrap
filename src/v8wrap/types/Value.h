@@ -121,20 +121,20 @@ public:
     [[nodiscard]] static Local<Array> newArray(size_t length = 0);
 };
 
-class JsRuntime; // forward declaration
+class Engine; // forward declaration
 class Arguments {
-    JsRuntime*                          mRuntime;
+    Engine*                             mRuntime;
     v8::FunctionCallbackInfo<v8::Value> mArgs;
 
-    explicit Arguments(JsRuntime* runtime, v8::FunctionCallbackInfo<v8::Value> const& args);
+    explicit Arguments(Engine* runtime, v8::FunctionCallbackInfo<v8::Value> const& args);
 
-    friend class JsRuntime;
+    friend class Engine;
     friend class Function;
 
 public:
     V8WRAP_DISALLOW_COPY_AND_MOVE(Arguments);
 
-    [[nodiscard]] JsRuntime* runtime() const;
+    [[nodiscard]] Engine* runtime() const;
 
     [[nodiscard]] bool hasThiz() const;
 

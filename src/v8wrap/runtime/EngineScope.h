@@ -1,5 +1,5 @@
 #pragma once
-#include "Global.h"
+#include "v8wrap/Global.h"
 
 V8_WRAP_WARNING_GUARD_BEGIN
 #include <v8-context.h>
@@ -11,20 +11,20 @@ V8_WRAP_WARNING_GUARD_END
 
 namespace v8wrap {
 
-class JsRuntime;
+class Engine;
 
-class JsRuntimeScope final {
+class EngineScope final {
 public:
-    explicit JsRuntimeScope(JsRuntime& runtime);
-    explicit JsRuntimeScope(JsRuntime* runtime);
-    ~JsRuntimeScope();
+    explicit EngineScope(Engine& runtime);
+    explicit EngineScope(Engine* runtime);
+    ~EngineScope();
 
-    V8WRAP_DISALLOW_COPY_AND_MOVE(JsRuntimeScope);
+    V8WRAP_DISALLOW_COPY_AND_MOVE(EngineScope);
     V8WRAP_DISALLOW_NEW();
 
-    static JsRuntime* currentRuntime();
+    static Engine* currentRuntime();
 
-    static JsRuntime& currentRuntimeChecked();
+    static Engine& currentRuntimeChecked();
 
     static std::tuple<v8::Isolate*, v8::Local<v8::Context>> currentIsolateAndContextChecked();
 
@@ -34,8 +34,8 @@ public:
 
 private:
     // 作用域链
-    JsRuntime const* mRuntime{nullptr};
-    JsRuntimeScope*  mPrev{nullptr};
+    Engine const* mRuntime{nullptr};
+    EngineScope*  mPrev{nullptr};
 
     // v8作用域
     v8::Locker         mLocker;
@@ -43,17 +43,17 @@ private:
     v8::HandleScope    mHandleScope;
     v8::Context::Scope mContextScope;
 
-    static thread_local JsRuntimeScope* gCurrentScope;
+    static thread_local EngineScope* gCurrentScope;
 };
 
-class ExitJsRuntimeScope final {
+class ExitEngineScope final {
     v8::Unlocker mUnlocker;
 
 public:
-    explicit ExitJsRuntimeScope();
-    ~ExitJsRuntimeScope() = default;
+    explicit ExitEngineScope();
+    ~ExitEngineScope() = default;
 
-    V8WRAP_DISALLOW_COPY_AND_MOVE(ExitJsRuntimeScope);
+    V8WRAP_DISALLOW_COPY_AND_MOVE(ExitEngineScope);
     V8WRAP_DISALLOW_NEW();
 };
 

@@ -1,6 +1,6 @@
-#include "v8wrap/JsException.h"
-#include "v8wrap/JsRuntimeScope.h"
+#include "v8wrap/runtime/Exception.h"
 #include "v8wrap/reference/Reference.h"
+#include "v8wrap/runtime/EngineScope.h"
 #include "v8wrap/types/Value.h"
 #include <algorithm>
 #include <exception>
@@ -18,15 +18,15 @@ V8_WRAP_WARNING_GUARD_END
 namespace v8wrap {
 
 
-JsException::JsException(v8::TryCatch const& tryCatch)
+Exception::Exception(v8::TryCatch const& tryCatch)
 : std::exception(),
   mExceptionCtx(std::make_shared<ExceptionContext>()) {
-    auto isolate = JsRuntimeScope::currentRuntimeIsolateChecked();
+    auto isolate = EngineScope::currentRuntimeIsolateChecked();
 
     mExceptionCtx->exception = v8::Global<v8::Value>(isolate, tryCatch.Exception());
 }
 
-JsException::JsException(std::string message, Type type)
+Exception::Exception(std::string message, Type type)
 : std::exception(),
   mExceptionCtx(std::make_shared<ExceptionContext>()) {
     mExceptionCtx->type    = type;
@@ -35,20 +35,20 @@ JsException::JsException(std::string message, Type type)
 }
 
 
-JsException::Type JsException::type() const noexcept { return mExceptionCtx->type; }
+Exception::Type Exception::type() const noexcept { return mExceptionCtx->type; }
 
-char const* JsException::what() const noexcept {
+char const* Exception::what() const noexcept {
     extractMessage();
     return mExceptionCtx->message.c_str();
 }
 
-std::string JsException::message() const noexcept {
+std::string Exception::message() const noexcept {
     extractMessage();
     return mExceptionCtx->message;
 }
 
-std::string JsException::stacktrace() const noexcept {
-    auto&& [isolate, ctx] = JsRuntimeScope::currentIsolateAndContextChecked();
+std::string Exception::stacktrace() const noexcept {
+    auto&& [isolate, ctx] = EngineScope::currentIsolateAndContextChecked();
 
     auto vtry = v8::TryCatch{isolate}; // noexcept
 
@@ -62,16 +62,16 @@ std::string JsException::stacktrace() const noexcept {
     return "[ERROR: Could not get stacktrace]";
 }
 
-void JsException::rethrowToRuntime() const {
-    auto isolate = JsRuntimeScope::currentRuntimeIsolateChecked();
+void Exception::rethrowToRuntime() const {
+    auto isolate = EngineScope::currentRuntimeIsolateChecked();
     isolate->ThrowException(mExceptionCtx->exception.Get(isolate));
 }
 
-void JsException::extractMessage() const noexcept {
+void Exception::extractMessage() const noexcept {
     if (!mExceptionCtx->message.empty()) {
         return;
     }
-    auto isolate = JsRuntimeScope::currentRuntimeIsolateChecked();
+    auto isolate = EngineScope::currentRuntimeIsolateChecked();
     auto vtry    = v8::TryCatch{isolate};
 
     auto msg = v8::Exception::CreateMessage(isolate, mExceptionCtx->exception.Get(isolate));
@@ -83,8 +83,8 @@ void JsException::extractMessage() const noexcept {
     mExceptionCtx->message = "[ERROR: Could not get exception message]";
 }
 
-void JsException::makeException() const {
-    auto isolate = JsRuntimeScope::currentRuntimeIsolateChecked();
+void Exception::makeException() const {
+    auto isolate = EngineScope::currentRuntimeIsolateChecked();
 
     v8::Local<v8::Value> exception;
     {
@@ -119,9 +119,9 @@ void JsException::makeException() const {
     mExceptionCtx->exception = v8::Global<v8::Value>(isolate, exception);
 }
 
-void JsException::rethrow(v8::TryCatch const& tryCatch) {
+void Exception::rethrow(v8::TryCatch const& tryCatch) {
     if (tryCatch.HasCaught()) {
-        throw JsException(tryCatch);
+        throw Exception(tryCatch);
     }
 }
 

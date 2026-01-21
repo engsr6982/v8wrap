@@ -113,9 +113,9 @@ private:
 
     // internal use only
     ClassBinding const* binding{nullptr};
-    JsRuntime const*    runtime{nullptr};
+    Engine const*       runtime{nullptr};
     bool const          constructFromJs{false};
-    friend class JsRuntime;
+    friend class Engine;
 
 public:
     inline void* operator()() const { return getter(resource); }

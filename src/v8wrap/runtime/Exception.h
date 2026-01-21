@@ -1,5 +1,5 @@
 #pragma once
-#include "Global.h"
+#include "v8wrap/Global.h"
 #include <exception>
 #include <memory>
 #include <string>
@@ -15,7 +15,7 @@ V8_WRAP_WARNING_GUARD_END
 namespace v8wrap {
 
 
-class JsException final : public std::exception {
+class Exception final : public std::exception {
 public:
     enum class Type {
         Unknown = -1, // JavaScript 侧抛出的异常为 Unknown
@@ -26,14 +26,14 @@ public:
         TypeError
     };
 
-    explicit JsException(v8::TryCatch const& tryCatch);
-    explicit JsException(std::string message, Type type = Type::Error);
+    explicit Exception(v8::TryCatch const& tryCatch);
+    explicit Exception(std::string message, Type type = Type::Error);
 
     // The C++ standard requires exception classes to be reproducible
-    JsException(JsException const&)                = default;
-    JsException& operator=(JsException const&)     = default;
-    JsException(JsException&&) noexcept            = default;
-    JsException& operator=(JsException&&) noexcept = default;
+    Exception(Exception const&)                = default;
+    Exception& operator=(Exception const&)     = default;
+    Exception(Exception&&) noexcept            = default;
+    Exception& operator=(Exception&&) noexcept = default;
 
     [[nodiscard]] Type type() const noexcept;
 
@@ -47,13 +47,13 @@ public:
      * Throw this exception to v8 (JavaScript).
      * Normally we don't need to call this method, the package library handles exceptions internally.
      * You just need to re-throw 'throw e;`
-     * Or throw JsException inside the Function callback.
+     * Or throw Exception inside the Function callback.
      */
     void rethrowToRuntime() const;
 
 public:
     /**
-     * Re-throw the exception in v8::TryCatch as a JsException
+     * Re-throw the exception in v8::TryCatch as a Exception
      */
     static void rethrow(v8::TryCatch const& tryCatch);
 

@@ -1,9 +1,10 @@
 #pragma once
-#include "v8wrap/JsException.h"
-#include "v8wrap/JsRuntimeScope.h"
 #include "v8wrap/reference/Reference.h"
+#include "v8wrap/runtime/EngineScope.h"
+#include "v8wrap/runtime/Exception.h"
 #include "v8wrap/types/Value.h"
 #include <utility>
+
 
 
 #include "v8wrap/Bindings.h"
@@ -15,14 +16,14 @@ namespace v8wrap {
 template <typename T>
     requires IsI64<T>
 Local<BigInt> BigInt::newBigInt(T i) {
-    auto isolate = JsRuntimeScope::currentRuntimeIsolateChecked();
+    auto isolate = EngineScope::currentRuntimeIsolateChecked();
     return Local<BigInt>{v8::BigInt::New(isolate, i)};
 }
 
 template <typename T>
     requires IsU64<T>
 Local<BigInt> BigInt::newBigInt(T u) {
-    auto isolate = JsRuntimeScope::currentRuntimeIsolateChecked();
+    auto isolate = EngineScope::currentRuntimeIsolateChecked();
     return Local<BigInt>{v8::BigInt::NewFromUnsigned(isolate, u)};
 }
 

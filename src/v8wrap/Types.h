@@ -14,16 +14,16 @@ namespace v8wrap {
  */
 
 // 运行时
-class JsPlatform;
+class Platform;
 
-class JsRuntime;
+class Engine;
 
-class JsException;
+class Exception;
 
 // 作用域
-class JsRuntimeScope;
+class EngineScope;
 
-class ExitJsRuntimeScope;
+class ExitEngineScope;
 
 // 值类型
 enum class ValueType;

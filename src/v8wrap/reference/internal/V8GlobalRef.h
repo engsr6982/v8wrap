@@ -1,9 +1,9 @@
 #pragma once
 #include "V8TypeAlias.h"
 #include "v8wrap/Global.h"
-#include "v8wrap/JsRuntime.h"
 #include "v8wrap/Types.h"
 #include "v8wrap/reference/Reference.h"
+#include "v8wrap/runtime/Engine.h"
 
 
 namespace v8wrap::internal {
@@ -13,16 +13,16 @@ template <typename T>
 class V8GlobalRef final {
     using V8GlobalType = v8::Global<internal::V8Type_v<T>>;
 
-    JsRuntime*   mRuntime{nullptr};
+    Engine*      mRuntime{nullptr};
     V8GlobalType mHandle{};
 
 public:
     V8WRAP_DISALLOW_COPY(V8GlobalRef);
 
     V8GlobalRef() = default;
-    explicit V8GlobalRef(JsRuntime* rt, Local<T> local)
+    explicit V8GlobalRef(Engine* rt, Local<T> local)
     : mRuntime(rt),
-      mHandle(rt->mIsolate, v8wrap::JsRuntime::unwrap(local)) {}
+      mHandle(rt->mIsolate, v8wrap::Engine::unwrap(local)) {}
 
     V8GlobalRef(V8GlobalRef&& other) noexcept {
         mRuntime       = other.mRuntime;

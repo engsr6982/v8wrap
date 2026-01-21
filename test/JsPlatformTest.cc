@@ -1,10 +1,12 @@
 #include "catch2/catch_test_macros.hpp"
 
-#include "v8wrap/JsPlatform.h"
-#include "v8wrap/JsRuntime.h"
+#include "v8wrap/runtime/Engine.h"
+#include "v8wrap/runtime/Platform.h"
+
+
 
 TEST_CASE("JsPlatformTest") {
-    auto platform = v8wrap::JsPlatform::getPlatform();
+    auto platform = v8wrap::Platform::getPlatform();
     REQUIRE(platform != nullptr);
 
     auto rt  = platform->newRuntime();

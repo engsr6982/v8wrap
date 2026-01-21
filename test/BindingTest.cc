@@ -2,13 +2,13 @@
 #include "catch2/matchers/catch_matchers.hpp"
 #include "catch2/matchers/catch_matchers_exception.hpp"
 #include "v8wrap/Bindings.h"
-#include "v8wrap/JsException.h"
-#include "v8wrap/JsPlatform.h"
-#include "v8wrap/JsRuntime.h"
-#include "v8wrap/JsRuntimeScope.h"
 #include "v8wrap/TypeConverter.h"
 #include "v8wrap/Types.h"
 #include "v8wrap/reference/Reference.h"
+#include "v8wrap/runtime/Engine.h"
+#include "v8wrap/runtime/EngineScope.h"
+#include "v8wrap/runtime/Exception.h"
+#include "v8wrap/runtime/Platform.h"
 #include "v8wrap/types/Value.h"
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
@@ -18,9 +18,9 @@
 
 
 struct BindingTestFixture {
-    BindingTestFixture() { rt = new v8wrap::JsRuntime(); }
+    BindingTestFixture() { rt = new v8wrap::Engine(); }
     ~BindingTestFixture() { rt->destroy(); }
-    v8wrap::JsRuntime* rt;
+    v8wrap::Engine* rt;
 };
 
 
@@ -41,7 +41,7 @@ std::string overloadedFn(std::string const& str) { return str; }
 std::string overloadedFn(int a, std::string const& str) { return std::to_string(a) + str; }
 
 TEST_CASE_METHOD(BindingTestFixture, "Static Binding") {
-    v8wrap::JsRuntimeScope enter(rt);
+    v8wrap::EngineScope enter(rt);
 
     SECTION("No return value function") {
         auto fn = v8wrap::Function::newFunction(&defaultFunc);
@@ -80,7 +80,7 @@ TEST_CASE_METHOD(BindingTestFixture, "Static Binding") {
 
         REQUIRE_THROWS_MATCHES(
             rt->eval("stdcout1();"),
-            v8wrap::JsException,
+            v8wrap::Exception,
             Catch::Matchers::ExceptionMessageMatcher("Uncaught Error: argument count mismatch")
         );
     }
@@ -91,7 +91,7 @@ TEST_CASE_METHOD(BindingTestFixture, "Static Binding") {
 
         REQUIRE_THROWS_MATCHES(
             rt->eval("stdcout2(1);"),
-            v8wrap::JsException,
+            v8wrap::Exception,
             Catch::Matchers::ExceptionMessageMatcher("Uncaught Error: cannot convert to String")
         );
     }
@@ -119,7 +119,7 @@ TEST_CASE_METHOD(BindingTestFixture, "Static Binding") {
         // No matching overload
         REQUIRE_THROWS_MATCHES(
             rt->eval("overloadedFn(1, 2);"),
-            v8wrap::JsException,
+            v8wrap::Exception,
             Catch::Matchers::ExceptionMessageMatcher("Uncaught Error: no overload found")
         );
     }
@@ -147,7 +147,7 @@ TEST_CASE_METHOD(BindingTestFixture, "Static Binding") {
         // No matching overload
         REQUIRE_THROWS_MATCHES(
             rt->eval("overloadedFn(1, 2, 3);"),
-            v8wrap::JsException,
+            v8wrap::Exception,
             Catch::Matchers::ExceptionMessageMatcher("Uncaught Error: no overload found")
         );
     }
@@ -201,7 +201,7 @@ v8wrap::ClassBinding StaticBind =
         .build();
 
 TEST_CASE_METHOD(BindingTestFixture, "Static binding") {
-    v8wrap::JsRuntimeScope enter{rt};
+    v8wrap::EngineScope enter{rt};
 
     rt->registerBindingClass(StaticBind);
 
@@ -216,7 +216,7 @@ TEST_CASE_METHOD(BindingTestFixture, "Static binding") {
     // Static classes do not allow new
     REQUIRE_THROWS_MATCHES(
         rt->eval("new Test();"),
-        v8wrap::JsException,
+        v8wrap::Exception,
         Catch::Matchers::ExceptionMessageMatcher("Uncaught TypeError: Test is not a constructor")
     );
 
@@ -232,7 +232,7 @@ TEST_CASE_METHOD(BindingTestFixture, "Static binding") {
         REQUIRE(rt->eval("Test.readOnly === 114").asBoolean().getValue() == true);
         REQUIRE_THROWS_MATCHES(
             rt->eval("Test.readOnly = 514;"),
-            v8wrap::JsException,
+            v8wrap::Exception,
             Catch::Matchers::ExceptionMessageMatcher(
                 "Uncaught TypeError: Native property have only one getter, and "
                 "you cannot modify native property without getters"
@@ -372,9 +372,9 @@ v8wrap::ClassBinding PlayerBind =
                     return;
                 }
                 if (args.runtime()->isInstanceOf(value.asObject(), UUIDBind)) {
-                    throw v8wrap::JsException(
+                    throw v8wrap::Exception(
                         "Failed to set property, invalid parameter type.",
-                        v8wrap::JsException::Type::TypeError
+                        v8wrap::Exception::Type::TypeError
                     );
                 }
                 auto uuid    = args.runtime()->getNativeInstanceOf<UUID>(value.asObject());
@@ -397,11 +397,11 @@ v8wrap::ClassBinding PlayerBind =
             [](void* inst, v8wrap::Arguments const& args) -> v8wrap::Local<v8wrap::Value> {
                 auto typed = static_cast<Player*>(inst);
                 if (args.length() != 1) {
-                    throw v8wrap::JsException("Wrong arguments count", v8wrap::JsException::Type::SyntaxError);
+                    throw v8wrap::Exception("Wrong arguments count", v8wrap::Exception::Type::SyntaxError);
                 }
                 auto runtime = args.runtime();
                 if (!args[0].isObject() || !runtime->isInstanceOf(args[0].asObject(), UUIDBind)) {
-                    throw v8wrap::JsException("Wrong argument type", v8wrap::JsException::Type::TypeError);
+                    throw v8wrap::Exception("Wrong argument type", v8wrap::Exception::Type::TypeError);
                 }
                 auto uuid = args.runtime()->getNativeInstanceOf<UUID>(args[0].asObject());
                 typed->setUUID(*uuid);
@@ -413,7 +413,7 @@ v8wrap::ClassBinding PlayerBind =
 
 
 TEST_CASE_METHOD(BindingTestFixture, "Instance binding") {
-    v8wrap::JsRuntimeScope enter{rt};
+    v8wrap::EngineScope enter{rt};
 
     REQUIRE_NOTHROW(rt->registerBindingClass(ActorBind));
     REQUIRE_NOTHROW(rt->registerBindingClass(PlayerBind));
@@ -435,14 +435,14 @@ TEST_CASE_METHOD(BindingTestFixture, "Instance binding") {
         // Prohibition of construction
         REQUIRE_THROWS_MATCHES(
             rt->eval("new Actor('John');"),
-            v8wrap::JsException,
+            v8wrap::Exception,
             Catch::Matchers::Message("Uncaught Error: This native class cannot be constructed.")
         );
 
         // C++ side construction
         auto fn = v8wrap::Function::newFunction([](v8wrap::Arguments const& args) -> v8wrap::Local<v8wrap::Value> {
             REQUIRE(args.length() == 0);
-            return v8wrap::JsRuntimeScope::currentRuntimeChecked().newInstanceOfRaw(ActorBind, new Actor());
+            return v8wrap::EngineScope::currentRuntimeChecked().newInstanceOfRaw(ActorBind, new Actor());
         });
         rt->setVauleToGlobalThis(v8wrap::String::newString("getActor"), fn);
         auto actor = rt->eval("getActor();");

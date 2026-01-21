@@ -6,15 +6,15 @@ A non-intrusive, easy-to-use V8 binding library for embedded scenarios, supporti
 
 ## Features
 
-- [x] JsPlatform.h – JavaScript platform manager, manages `JsRuntime` (`v8::Platform`)
-- [x] JsRuntime.h – JavaScript runtime (`v8::Isolate` + `v8::Global<v8::Context>`)
+- [x] Platform.h – JavaScript platform manager, manages `Engine` (`v8::Platform`)
+- [x] Engine.h – JavaScript runtime (`v8::Isolate` + `v8::Global<v8::Context>`)
   - [x] Resource management
   - [x] Registered bound classes
   - [x] Construct JavaScript classes from C++
   - [x] `isInstanceOf` type checking
   - [x] Unwrap native instances (obtain `Local<Object>` from a bound class instance)
-- [x] JsRuntimeScope.h – V8 scope encapsulation (`v8::Locker` + `v8::Isolate::Scope` + `v8::HandleScope` + `v8::Context::Scope`)
-- [x] JsException.h – V8 exception wrapper, bi-directional exception conversion
+- [x] EngineScope.h – V8 scope encapsulation (`v8::Locker` + `v8::Isolate::Scope` + `v8::HandleScope` + `v8::Context::Scope`)
+- [x] Exception.h – V8 exception wrapper, bi-directional exception conversion
 - [x] Value.h – V8 value wrapper, bi-directional value conversion
   - [x] `Value` -> `v8::Value`
   - [x] `Null` -> `v8::Primitive`

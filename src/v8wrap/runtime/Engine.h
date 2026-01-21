@@ -1,6 +1,6 @@
 #pragma once
-#include "Global.h"
-#include "Types.h"
+#include "v8wrap/Global.h"
+#include "v8wrap/Types.h"
 #include "v8wrap/Bindings.h"
 #include "v8wrap/Concepts.h"
 #include "v8wrap/reference/Reference.h"
@@ -28,24 +28,24 @@ class V8EscapeScope;
 }
 
 
-class JsRuntime {
-    ~JsRuntime();
+class Engine {
+    ~Engine();
 
 public:
-    V8WRAP_DISALLOW_COPY_AND_MOVE(JsRuntime);
+    V8WRAP_DISALLOW_COPY_AND_MOVE(Engine);
 
     /**
-     * Create a Js runtime from the JsPlatform.
+     * Create a Js runtime from the Platform.
      * Make sure that the Js platform is initialized before calling.
      */
-    explicit JsRuntime();
+    explicit Engine();
 
     /**
      * To create a Js runtime, using sources from outside is isolate and context.
      * This overload is commonly used in NodeJs Addons.
-     * When using isolate and contexts from outside (e.g. NodeJs), the JsPlatform is not required.
+     * When using isolate and contexts from outside (e.g. NodeJs), the Platform is not required.
      */
-    explicit JsRuntime(v8::Isolate* isolate, v8::Local<v8::Context> context);
+    explicit Engine(v8::Isolate* isolate, v8::Local<v8::Context> context);
 
     [[nodiscard]] v8::Isolate* isolate() const;
 
@@ -62,7 +62,7 @@ public:
      * After you destroy this runtime, you can no longer access any methods for this runtime because delete this is done
      * internally.
      *
-     * If this runtime is the default construct, it removes itself from JsPlatform internally
+     * If this runtime is the default construct, it removes itself from Platform internally
      */
     void destroy();
 
@@ -162,15 +162,15 @@ private:
     v8::Local<v8::FunctionTemplate> createInstanceClassCtor(ClassBinding const& binding);
     void implInstanceRegister(v8::Local<v8::FunctionTemplate>& ctor, InstanceBinding const& instanceBinding);
 
-    friend class JsRuntimeScope;
-    friend class ExitJsRuntimeScope;
+    friend class EngineScope;
+    friend class ExitEngineScope;
     friend class internal::V8EscapeScope;
 
     template <typename>
     friend class internal::V8GlobalRef;
 
     struct ManagedResource {
-        JsRuntime*                 runtime;
+        Engine*                    runtime;
         void*                      resource;
         std::function<void(void*)> deleter;
     };
@@ -182,7 +182,7 @@ private:
     v8::Isolate*            mIsolate{nullptr};
     v8::Global<v8::Context> mContext{};
     std::shared_ptr<void>   mUserData{nullptr};
-    JsPlatform*             mPlatform{nullptr}; // nullptr if this runtime is created from outside isolate and context
+    Platform*               mPlatform{nullptr}; // nullptr if this runtime is created from outside isolate and context
 
     bool mDestroying{false};
     bool mIsExternalIsolate{false};
@@ -198,4 +198,4 @@ private:
 
 } // namespace v8wrap
 
-#include "v8wrap/JsRuntime.inl" // include implementation
+#include "Engine.inl" // include implementation
