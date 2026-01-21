@@ -2,14 +2,15 @@
 #include "v8wrap/Concepts.h"
 #include "v8wrap/Global.h"
 #include "v8wrap/JsException.h"
-#include "v8wrap/JsValue.h"
 #include "v8wrap/TypeConverter.h"
 #include "v8wrap/Types.h"
+#include "v8wrap/types/Value.h"
 #include <array>
 #include <cstddef>
 #include <tuple>
 #include <utility>
 #include <vector>
+
 
 
 namespace v8wrap {

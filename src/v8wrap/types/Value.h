@@ -1,8 +1,8 @@
 #pragma once
-#include "Types.h"
+#include "v8wrap/Types.h"
 #include "v8wrap/Concepts.h"
 #include "v8wrap/Global.h"
-#include "v8wrap/internal/V8TypeAlias.h"
+#include "v8wrap/types/internal/V8TypeAlias.h"
 #include <cstddef>
 #include <string>
 #include <string_view>
@@ -158,4 +158,4 @@ struct JsValueHelper {
 
 } // namespace v8wrap
 
-#include "v8wrap/JsValue.inl"
+#include "Value.inl"

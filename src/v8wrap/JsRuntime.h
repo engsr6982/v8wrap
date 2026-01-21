@@ -3,13 +3,14 @@
 #include "Types.h"
 #include "v8wrap/Bindings.h"
 #include "v8wrap/Concepts.h"
-#include "v8wrap/JsReference.h"
-#include "v8wrap/JsValue.h"
-#include "v8wrap/internal/V8TypeAlias.h"
+#include "v8wrap/reference/Reference.h"
+#include "v8wrap/types/Value.h"
+#include "v8wrap/types/internal/V8TypeAlias.h"
 #include <filesystem>
 #include <functional>
 #include <memory>
 #include <unordered_map>
+
 
 V8_WRAP_WARNING_GUARD_BEGIN
 #include <v8-context.h>

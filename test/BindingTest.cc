@@ -4,17 +4,18 @@
 #include "v8wrap/Bindings.h"
 #include "v8wrap/JsException.h"
 #include "v8wrap/JsPlatform.h"
-#include "v8wrap/JsReference.h"
 #include "v8wrap/JsRuntime.h"
 #include "v8wrap/JsRuntimeScope.h"
-#include "v8wrap/JsValue.h"
 #include "v8wrap/TypeConverter.h"
 #include "v8wrap/Types.h"
+#include "v8wrap/reference/Reference.h"
+#include "v8wrap/types/Value.h"
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
 #include <iostream>
 #include <string>
 #include <utility>
+
 
 
 struct BindingTestFixture {

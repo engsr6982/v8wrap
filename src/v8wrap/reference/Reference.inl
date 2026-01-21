@@ -1,8 +1,10 @@
 #pragma once
 #include "v8wrap/JsException.h"
-#include "v8wrap/JsReference.h"
 #include "v8wrap/JsRuntimeScope.h"
+#include "v8wrap/reference/Reference.h"
+
 #include <cassert>
+
 
 namespace v8wrap {
 

@@ -27,7 +27,7 @@
   - [x] `JsFunction` -> `v8::Function`
   - [x] `JsObject` -> `v8::Object`
   - [x] `JsArray` -> `v8::Array`
-- [x] JsReference.h - v8 引用封装
+- [x] Reference.h - v8 引用封装
   - [x] `Local<T>` -> `v8::Local<T>`
   - [x] `Global<T>` -> `v8::Global<T>`
   - [x] `Weak<T>` -> `v8::Global<T>`

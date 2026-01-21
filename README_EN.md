@@ -27,7 +27,7 @@ A non-intrusive, easy-to-use V8 binding library for embedded scenarios, supporti
   - [x] `JsFunction` -> `v8::Function`
   - [x] `JsObject` -> `v8::Object`
   - [x] `JsArray` -> `v8::Array`
-- [x] JsReference.h – V8 reference wrapper
+- [x] Reference.h – V8 reference wrapper
   - [x] `Local<T>` -> `v8::Local<T>`
   - [x] `Global<T>` -> `v8::Global<T>`
   - [x] `Weak<T>` -> `v8::Global<T>`

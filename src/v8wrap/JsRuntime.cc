@@ -2,14 +2,16 @@
 #include "v8wrap/Bindings.h"
 #include "v8wrap/JsException.h"
 #include "v8wrap/JsPlatform.h"
-#include "v8wrap/JsReference.h"
 #include "v8wrap/JsRuntimeScope.h"
-#include "v8wrap/JsValue.h"
+#include "v8wrap/reference/Reference.h"
+#include "v8wrap/types/Value.h"
 #include <cassert>
 #include <fstream>
 #include <optional>
 #include <utility>
 #include <vector>
+
+
 
 V8_WRAP_WARNING_GUARD_BEGIN
 #include "v8-external.h"

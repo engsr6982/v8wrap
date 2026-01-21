@@ -6,7 +6,7 @@
 #include "v8wrap/JsPlatform.h"
 #include "v8wrap/JsRuntime.h"
 #include "v8wrap/JsRuntimeScope.h"
-#include "v8wrap/JsValue.h"
+#include "v8wrap/types/Value.h"
 
 
 using Catch::Matchers::MessageMatches;

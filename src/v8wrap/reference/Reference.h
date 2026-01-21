@@ -2,7 +2,7 @@
 #include "v8wrap/Concepts.h"
 #include "v8wrap/Global.h"
 #include "v8wrap/Types.h"
-#include "v8wrap/internal/V8TypeAlias.h"
+#include "v8wrap/types/internal/V8TypeAlias.h"
 #include <cstdint>
 #include <string>
 #include <type_traits>
@@ -323,4 +323,4 @@ private:
 
 } // namespace v8wrap
 
-#include "v8wrap/JsReference.inl"
+#include "Reference.inl"

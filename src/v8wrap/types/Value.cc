@@ -1,9 +1,10 @@
-#include "v8wrap/JsValue.h"
+#include "v8wrap/types/Value.h"
 #include "v8wrap/JsException.h"
-#include "v8wrap/JsReference.h"
 #include "v8wrap/JsRuntime.h"
 #include "v8wrap/JsRuntimeScope.h"
+#include "v8wrap/reference/Reference.h"
 #include <string_view>
+
 
 V8_WRAP_WARNING_GUARD_BEGIN
 #include <v8-exception.h>

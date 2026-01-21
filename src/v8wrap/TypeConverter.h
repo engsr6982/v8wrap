@@ -1,9 +1,10 @@
 #pragma once
 #include "v8wrap/Concepts.h"
-#include "v8wrap/JsReference.h"
-#include "v8wrap/JsValue.h"
+#include "v8wrap/reference/Reference.h"
+#include "v8wrap/types/Value.h"
 #include <string>
 #include <type_traits>
+
 
 
 namespace v8wrap {
