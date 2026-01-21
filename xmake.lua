@@ -37,6 +37,10 @@ target("v8wrap")
     set_languages("cxx20")
     set_symbols("debug")
 
+    if is_plat("windows") then 
+        add_cxxflags("/Zc:__cplusplus", {force = true})
+    end
+
     if has_config("test") then 
         set_kind("binary")
         add_packages("catch2")
