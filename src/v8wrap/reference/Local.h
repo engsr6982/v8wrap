@@ -240,9 +240,22 @@ class Local<Function> {
 public:
     [[nodiscard]] bool isAsyncFunction() const; // JavaScript: async function
 
-    Local<Value> call() const;
+    [[nodiscard]] bool isConstructor() const; // JavaScript: class
 
-    Local<Value> call(Local<Value> const& thiz, std::vector<Local<Value>> const& args) const;
+    Local<Value> call(Local<Value> const& thiz) const;
+
+    Local<Value> call(Local<Value> const& thiz, std::span<const Local<Value>> args) const;
+
+    [[nodiscard]] Local<Value> callAsConstructor() const;
+
+    [[nodiscard]] Local<Value> callAsConstructor(std::span<const Local<Value>> args) const;
+
+    template <typename... Args>
+        requires(sizeof...(Args) > 0)
+    Local<Value> call(Local<Value> const& thiz, Args&&... args) const;
+
+    template <typename... Args>
+    [[nodiscard]] Local<Value> callAsConstructor(Args&&... args) const;
 };
 
 #undef SPECIALIZATION_LOCAL

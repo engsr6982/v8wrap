@@ -2,6 +2,8 @@
 #include "v8wrap/reference/Local.h"
 #include "v8wrap/runtime/Exception.h"
 
+#include "v8wrap/bind/TypeConverter.h"
+
 #include <cassert>
 
 namespace v8wrap {
@@ -34,6 +36,20 @@ Local<T> Local<Value>::as() const {
         return asArray();
     }
     throw Exception("Unable to convert Local<Value> to T, forgot to add if branch?");
+}
+
+
+template <typename... Args>
+    requires(sizeof...(Args) > 0)
+Local<Value> Local<Function>::call(Local<Value> const& thiz, Args&&... args) const {
+    std::array<Local<Value>, sizeof...(Args)> argv = {bind::ConvertToJs(std::forward<Args>(args))...};
+    return this->call(thiz, std::span<const Local<Value>>(argv));
+}
+
+template <typename... Args>
+[[nodiscard]] Local<Value> Local<Function>::callAsConstructor(Args&&... args) const {
+    std::array<Local<Value>, sizeof...(Args)> argv = {bind::ConvertToJs(std::forward<Args>(args))...};
+    return callAsConstructor(std::span<const Local<Value>>(argv));
 }
 
 

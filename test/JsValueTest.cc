@@ -104,7 +104,8 @@ TEST_CASE_METHOD(JsValueTestFixture, "Function") {
             REQUIRE(args[0].isFunction());
             auto result = args[0].asFunction().call(
                 {},
-                {v8wrap::String::newString("Hello, World!"), v8wrap::Number::newNumber(114514)}
+                v8wrap::String::newString("Hello, World!"),
+                v8wrap::Number::newNumber(114514)
             );
             return result;
         });

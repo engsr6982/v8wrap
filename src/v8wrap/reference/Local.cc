@@ -329,9 +329,13 @@ IMPL_SPECALIZATION_AS_VALUE(Function);
 IMPL_SPECALIZATION_V8_LOCAL_TYPE(Function);
 bool Local<Function>::isAsyncFunction() const { return val->IsAsyncFunction(); }
 
-Local<Value> Local<Function>::call() const { return call({}, {}); }
+bool Local<Function>::isConstructor() const { return val->IsConstructor(); }
 
-Local<Value> Local<Function>::call(Local<Value> const& thiz, std::vector<Local<Value>> const& args) const {
+Local<Value> Local<Function>::call(Local<Value> const& thiz) const {
+    return call(thiz, std::span<const Local<Value>>{});
+}
+
+Local<Value> Local<Function>::call(Local<Value> const& thiz, std::span<const Local<Value>> args) const {
     auto&& [isolate, ctx] = EngineScope::currentIsolateAndContextChecked();
     v8::TryCatch vtry{isolate};
 
@@ -347,6 +351,31 @@ Local<Value> Local<Function>::call(Local<Value> const& thiz, std::vector<Local<V
     }
 
     auto result = val->Call(ctx, thiz.val, argc, argv);
+    Exception::rethrow(vtry);
+    return Local<Value>{result.ToLocalChecked()};
+}
+
+Local<Value> Local<Function>::callAsConstructor() const { return callAsConstructor(std::span<const Local<Value>>{}); }
+
+Local<Value> Local<Function>::callAsConstructor(std::span<const Local<Value>> args) const {
+    if (!isConstructor()) {
+        throw std::logic_error("Local<Function>::callAsConstructor called on non-constructor");
+    }
+    auto&& [isolate, ctx] = EngineScope::currentIsolateAndContextChecked();
+    v8::TryCatch vtry{isolate};
+
+    int argc = static_cast<int>(args.size());
+
+    v8::Local<v8::Value>* argv = nullptr;
+    if (!args.empty()) {
+        static_assert(
+            sizeof(Local<Value>) == sizeof(v8::Local<v8::Value>),
+            "Local<Value> must be binary-compatible with v8::Local<v8::Value>"
+        );
+        argv = reinterpret_cast<v8::Local<v8::Value>*>(const_cast<Local<Value>*>(args.data()));
+    }
+
+    auto result = val->CallAsConstructor(ctx, argc, argv);
     Exception::rethrow(vtry);
     return Local<Value>{result.ToLocalChecked()};
 }
