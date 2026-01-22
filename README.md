@@ -27,7 +27,7 @@
   - [x] `Function` -> `v8::Function`
   - [x] `Object` -> `v8::Object`
   - [x] `Array` -> `v8::Array`
-- [x] Reference.h - v8 引用封装
+- [x] Local.h - v8 引用封装
   - [x] `Local<T>` -> `v8::Local<T>`
   - [x] `Global<T>` -> `v8::Global<T>`
   - [x] `Weak<T>` -> `v8::Global<T>`

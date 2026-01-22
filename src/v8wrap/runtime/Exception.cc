@@ -1,5 +1,5 @@
 #include "v8wrap/runtime/Exception.h"
-#include "v8wrap/reference/Reference.h"
+#include "v8wrap/reference/Local.h"
 #include "v8wrap/runtime/EngineScope.h"
 #include "v8wrap/types/Value.h"
 #include <algorithm>

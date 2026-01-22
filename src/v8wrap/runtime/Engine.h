@@ -1,11 +1,12 @@
 #pragma once
 #include "v8wrap/Global.h"
 #include "v8wrap/Types.h"
-#include "v8wrap/Bindings.h"
-#include "v8wrap/Concepts.h"
-#include "v8wrap/reference/Reference.h"
+#include "v8wrap/bind/JsManagedResource.h"
+#include "v8wrap/bind/meta/MemberDefine.h"
+#include "v8wrap/concepts/BasicConcepts.h"
+#include "v8wrap/reference/Local.h"
 #include "v8wrap/types/Value.h"
-#include "v8wrap/types/internal/V8TypeAlias.h"
+
 #include <filesystem>
 #include <functional>
 #include <memory>
@@ -73,7 +74,7 @@ public:
     Local<Value> eval(Local<String> const& code, Local<String> const& source);
 
     template <typename T>
-        requires StringLike<T>
+        requires concepts::StringLike<T>
     Local<Value> eval(T const& str);
 
     void loadFile(std::filesystem::path const& path);
@@ -96,14 +97,15 @@ public:
     /**
      * Register a binding class and mount it to globalThis
      */
-    void registerBindingClass(ClassBinding const& binding);
+    void registerBindingClass(bind::meta::ClassDefine const& binding);
 
 
     /**
      * 创建一个新的 JavaScript 类实例
      * Creates a new JavaScript class instance.
      */
-    Local<Object> newInstance(ClassBinding const& bind, std::unique_ptr<WrappedResource>&& wrappedResource);
+    Local<Object>
+    newInstance(bind::meta::ClassDefine const& bind, std::unique_ptr<bind::JsManagedResource>&& wrappedResource);
 
     /**
      * 创建一个新的 JavaScript 类实例
@@ -111,44 +113,44 @@ public:
      * @note v8wrap 会接管实例的生命周期，GC 时自动销毁
      */
     template <typename T>
-    Local<Object> newInstanceOfRaw(ClassBinding const& bind, T* instance);
+    Local<Object> newInstanceOfRaw(bind::meta::ClassDefine const& bind, T* instance);
 
     /**
      * 创建一个新的 JavaScript 类实例
      * @note v8wrap 不接管实例的生命周期，由外部管理实例的生命周期 (不自动销毁)
      */
     template <typename T>
-    Local<Object> newInstanceOfView(ClassBinding const& bind, T* instance);
+    Local<Object> newInstanceOfView(bind::meta::ClassDefine const& bind, T* instance);
 
     /**
      * 创建一个新的 JavaScript 类实例
      * @note v8wrap 不接管实例的生命周期，对子资源创建 Global 引用关联生命周期(常见于对类成员创建Js实例，防止主实例 GC)
      */
     template <typename T>
-    Local<Object> newInstanceOfView(ClassBinding const& bind, T* instance, Local<Object> const& ownerJs);
+    Local<Object> newInstanceOfView(bind::meta::ClassDefine const& bind, T* instance, Local<Object> const& ownerJs);
 
     /**
      * 创建一个新的 JavaScript 类实例
      * @note v8wrap 接管实例的生命周期，GC 时自动销毁
      */
     template <typename T>
-    Local<Object> newInstanceOfUnique(ClassBinding const& bind, std::unique_ptr<T>&& instance);
+    Local<Object> newInstanceOfUnique(bind::meta::ClassDefine const& bind, std::unique_ptr<T>&& instance);
 
     /**
      * 创建一个新的 JavaScript 类实例
      * @note v8wrap 共享对此实例的引用，仅在 Gc 时重置引用
      */
     template <typename T>
-    Local<Object> newInstanceOfShared(ClassBinding const& bind, std::shared_ptr<T>&& instance);
+    Local<Object> newInstanceOfShared(bind::meta::ClassDefine const& bind, std::shared_ptr<T>&& instance);
 
     /**
      * 创建一个新的 JavaScript 类实例
      * @note v8wrap 仅在运行时尝试获取资源，如果获取不到资源则返回 null
      */
     template <typename T>
-    Local<Object> newInstanceOfWeak(ClassBinding const& bind, std::weak_ptr<T>&& instance);
+    Local<Object> newInstanceOfWeak(bind::meta::ClassDefine const& bind, std::weak_ptr<T>&& instance);
 
-    [[nodiscard]] bool isInstanceOf(Local<Object> const& obj, ClassBinding const& binding) const;
+    [[nodiscard]] bool isInstanceOf(Local<Object> const& obj, bind::meta::ClassDefine const& binding) const;
 
     [[nodiscard]] void* getNativeInstanceOf(Local<Object> const& obj) const;
 
@@ -158,16 +160,23 @@ public:
     void gc() const;
 
 private:
-    void implStaticRegister(v8::Local<v8::FunctionTemplate>& ctor, StaticBinding const& staticBinding);
-    v8::Local<v8::FunctionTemplate> createInstanceClassCtor(ClassBinding const& binding);
-    void implInstanceRegister(v8::Local<v8::FunctionTemplate>& ctor, InstanceBinding const& instanceBinding);
+    void implStaticRegister(v8::Local<v8::FunctionTemplate>& ctor, bind::meta::StaticMemberDefine const& staticBinding);
+
+    v8::Local<v8::FunctionTemplate> createInstanceClassCtor(bind::meta::ClassDefine const& binding);
+
+    void implInstanceRegister(
+        v8::Local<v8::FunctionTemplate>&        ctor,
+        bind::meta::InstanceMemberDefine const& instanceBinding
+    );
 
     friend class EngineScope;
     friend class ExitEngineScope;
     friend class internal::V8EscapeScope;
 
     template <typename>
-    friend class internal::V8GlobalRef;
+    friend class Global;
+    template <typename>
+    friend class Weak;
 
     struct ManagedResource {
         Engine*                    runtime;
@@ -190,9 +199,9 @@ private:
     // This symbol is used to mark the construction of objects from C++ (with special logic).
     v8::Global<v8::Symbol> mConstructorSymbol{};
 
-    std::unordered_map<ManagedResource*, v8::Global<v8::Value>>               mManagedResources;
-    std::unordered_map<std::string, ClassBinding const*>                      mRegisteredBindings;
-    std::unordered_map<ClassBinding const*, v8::Global<v8::FunctionTemplate>> mJsClassConstructor;
+    std::unordered_map<ManagedResource*, v8::Global<v8::Value>>                          mManagedResources;
+    std::unordered_map<std::string, bind::meta::ClassDefine const*>                      mRegisteredBindings;
+    std::unordered_map<bind::meta::ClassDefine const*, v8::Global<v8::FunctionTemplate>> mJsClassConstructor;
 };
 
 

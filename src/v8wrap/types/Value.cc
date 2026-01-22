@@ -1,5 +1,5 @@
 #include "v8wrap/types/Value.h"
-#include "v8wrap/reference/Reference.h"
+#include "v8wrap/reference/Local.h"
 #include "v8wrap/runtime/Engine.h"
 #include "v8wrap/runtime/EngineScope.h"
 #include "v8wrap/runtime/Exception.h"
@@ -70,7 +70,7 @@ Local<Symbol> Symbol::newSymbol() {
 }
 Local<Symbol> Symbol::newSymbol(std::string_view description) {
     auto isolate = EngineScope::currentRuntimeIsolateChecked();
-    auto v8Sym   = v8::Symbol::New(isolate, JsValueHelper::unwrap(String::newString(description)));
+    auto v8Sym   = v8::Symbol::New(isolate, ValueHelper::unwrap(String::newString(description)));
     return Local<Symbol>{v8Sym};
 }
 Local<Symbol> Symbol::newSymbol(const char* description) { return newSymbol(std::string_view{description}); }
@@ -78,7 +78,7 @@ Local<Symbol> Symbol::newSymbol(std::string const& description) { return newSymb
 
 Local<Symbol> Symbol::forKey(Local<String> const& str) {
     auto isolate = EngineScope::currentRuntimeIsolateChecked();
-    return Local<Symbol>{v8::Symbol::For(isolate, JsValueHelper::unwrap(str))};
+    return Local<Symbol>{v8::Symbol::For(isolate, ValueHelper::unwrap(str))};
 }
 
 
@@ -101,7 +101,7 @@ Local<Function> Function::newFunctionImpl(FunctionCallback cb) {
             auto args = Arguments{data->runtime, info};
             try {
                 auto returnValue = data->cb(args); // call native
-                info.GetReturnValue().Set(JsValueHelper::unwrap(returnValue));
+                info.GetReturnValue().Set(ValueHelper::unwrap(returnValue));
             } catch (Exception const& e) {
                 e.rethrowToRuntime(); // throw to v8 (js)
             }

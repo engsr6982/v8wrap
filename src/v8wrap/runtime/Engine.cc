@@ -1,16 +1,19 @@
 #include "v8wrap/runtime/Engine.h"
-#include "v8wrap/Bindings.h"
-#include "v8wrap/reference/Reference.h"
+#include "v8wrap/bind/JsManagedResource.h"
+#include "v8wrap/bind/meta/ClassDefine.h"
+#include "v8wrap/bind/meta/EnumDefine.h"
+#include "v8wrap/bind/meta/MemberDefine.h"
+#include "v8wrap/reference/Local.h"
 #include "v8wrap/runtime/EngineScope.h"
 #include "v8wrap/runtime/Exception.h"
 #include "v8wrap/runtime/Platform.h"
 #include "v8wrap/types/Value.h"
+
 #include <cassert>
 #include <fstream>
 #include <optional>
 #include <utility>
 #include <vector>
-
 
 
 V8_WRAP_WARNING_GUARD_BEGIN
@@ -101,8 +104,8 @@ Local<Value> Engine::eval(Local<String> const& code) { return eval(code, String:
 Local<Value> Engine::eval(Local<String> const& code, Local<String> const& source) {
     v8::TryCatch try_catch(mIsolate);
 
-    auto v8Code   = JsValueHelper::unwrap(code);
-    auto v8Source = JsValueHelper::unwrap(source);
+    auto v8Code   = ValueHelper::unwrap(code);
+    auto v8Source = ValueHelper::unwrap(source);
     auto ctx      = mContext.Get(mIsolate);
 
     auto origin = v8::ScriptOrigin(v8Source);
@@ -111,7 +114,7 @@ Local<Value> Engine::eval(Local<String> const& code, Local<String> const& source
 
     auto result = script.ToLocalChecked()->Run(ctx);
     Exception::rethrow(try_catch);
-    return JsValueHelper::wrap<Value>(result.ToLocalChecked());
+    return ValueHelper::wrap<Value>(result.ToLocalChecked());
 }
 
 void Engine::loadFile(std::filesystem::path const& path) {
@@ -127,7 +130,7 @@ void Engine::loadFile(std::filesystem::path const& path) {
     eval(String::newString(code), String::newString(path.string()));
 }
 
-Local<Object> Engine::getGlobalThis() const { return JsValueHelper::wrap<Object>(mContext.Get(mIsolate)->Global()); }
+Local<Object> Engine::getGlobalThis() const { return ValueHelper::wrap<Object>(mContext.Get(mIsolate)->Global()); }
 
 Local<Value> Engine::getVauleFromGlobalThis(Local<String> const& key) const {
     auto globalThis = getGlobalThis();
@@ -167,15 +170,15 @@ void Engine::addManagedResource(void* resource, v8::Local<v8::Value> value, std:
     mManagedResources.emplace(managed.release(), std::move(weak));
 }
 
-void Engine::registerBindingClass(ClassBinding const& binding) {
-    if (mRegisteredBindings.contains(binding.mClassName)) {
-        throw Exception("Class binding already registered: " + binding.mClassName);
+void Engine::registerBindingClass(bind::meta::ClassDefine const& binding) {
+    if (mRegisteredBindings.contains(binding.name_)) {
+        throw Exception("Class binding already registered: " + binding.name_);
     }
 
     v8::TryCatch vtry(mIsolate);
 
     v8::Local<v8::FunctionTemplate> ctor; // js: new T()
-    if (binding.hasInstanceConstructor()) {
+    if (binding.hasConstructor()) {
         ctor = createInstanceClassCtor(binding);
     } else {
         ctor = v8::FunctionTemplate::New(
@@ -189,20 +192,20 @@ void Engine::registerBindingClass(ClassBinding const& binding) {
         ctor->RemovePrototype();
     }
 
-    auto scriptClassName = String::newString(binding.mClassName);
-    ctor->SetClassName(JsValueHelper::unwrap(scriptClassName));
+    auto scriptClassName = String::newString(binding.name_);
+    ctor->SetClassName(ValueHelper::unwrap(scriptClassName));
 
-    if (binding.mExtends != nullptr) {
-        if (!binding.mExtends->hasInstanceConstructor()) {
+    if (binding.base_ != nullptr) {
+        if (!binding.base_->hasConstructor()) {
             throw Exception{
-                binding.mClassName + " cannot inherit from " + binding.mExtends->mClassName
+                binding.name_ + " cannot inherit from " + binding.base_->name_
                 + " because it is a static class without a prototype."
             };
         }
-        auto iter = mJsClassConstructor.find(binding.mExtends);
+        auto iter = mJsClassConstructor.find(binding.base_);
         if (iter == mJsClassConstructor.end()) {
             throw Exception{
-                binding.mClassName + " cannot inherit from " + binding.mExtends->mClassName
+                binding.name_ + " cannot inherit from " + binding.base_->name_
                 + " because the parent class is not registered."
             };
         }
@@ -210,38 +213,42 @@ void Engine::registerBindingClass(ClassBinding const& binding) {
         ctor->Inherit(parentCtor);
     }
 
-    implStaticRegister(ctor, binding.mStaticBinding);
-    implInstanceRegister(ctor, binding.mInstanceBinding);
+    implStaticRegister(ctor, binding.staticMemberDef_);
+    implInstanceRegister(ctor, binding.instanceMemberDef_);
 
     auto function = ctor->GetFunction(mContext.Get(mIsolate));
     Exception::rethrow(vtry);
 
-    mRegisteredBindings.emplace(binding.mClassName, &binding);
+    mRegisteredBindings.emplace(binding.name_, &binding);
     mJsClassConstructor.emplace(&binding, v8::Global<v8::FunctionTemplate>{mIsolate, ctor});
 
-    setVauleToGlobalThis(scriptClassName, JsValueHelper::wrap<Function>(function.ToLocalChecked()));
+    setVauleToGlobalThis(scriptClassName, ValueHelper::wrap<Function>(function.ToLocalChecked()));
 }
 
-void Engine::implStaticRegister(v8::Local<v8::FunctionTemplate>& ctor, StaticBinding const& staticBinding) {
-    for (auto& property : staticBinding.mProperty) {
-        auto scriptPropertyName = String::newString(property.mName);
+void Engine::implStaticRegister(
+    v8::Local<v8::FunctionTemplate>&      ctor,
+    bind::meta::StaticMemberDefine const& staticBinding
+) {
+    for (auto& property : staticBinding.property_) {
+        auto scriptPropertyName = String::newString(property.name_);
 
         auto v8Getter = [](v8::Local<v8::Name>, v8::PropertyCallbackInfo<v8::Value> const& info) {
-            auto pbin = static_cast<StaticBinding::Property*>(info.Data().As<v8::External>()->Value());
+            auto pbin = static_cast<bind::meta::StaticMemberDefine::Property*>(info.Data().As<v8::External>()->Value());
             try {
-                auto ret = pbin->mGetter();
-                info.GetReturnValue().Set(JsValueHelper::unwrap(ret));
+                auto ret = pbin->getter_();
+                info.GetReturnValue().Set(ValueHelper::unwrap(ret));
             } catch (Exception const& e) {
                 e.rethrowToRuntime();
             }
         };
 
         v8::AccessorNameSetterCallback v8Setter = nullptr;
-        if (property.mSetter) {
+        if (property.setter_) {
             v8Setter = [](v8::Local<v8::Name>, v8::Local<v8::Value> value, v8::PropertyCallbackInfo<void> const& info) {
-                auto pbin = static_cast<StaticBinding::Property*>(info.Data().As<v8::External>()->Value());
+                auto pbin =
+                    static_cast<bind::meta::StaticMemberDefine::Property*>(info.Data().As<v8::External>()->Value());
                 try {
-                    pbin->mSetter(JsValueHelper::wrap<Value>(value));
+                    pbin->setter_(ValueHelper::wrap<Value>(value));
                 } catch (Exception const& e) {
                     e.rethrowToRuntime();
                 }
@@ -258,41 +265,42 @@ void Engine::implStaticRegister(v8::Local<v8::FunctionTemplate>& ctor, StaticBin
         }
 
         ctor->SetNativeDataProperty(
-            JsValueHelper::unwrap(scriptPropertyName).As<v8::Name>(),
+            ValueHelper::unwrap(scriptPropertyName).As<v8::Name>(),
             std::move(v8Getter),
             std::move(v8Setter),
-            v8::External::New(mIsolate, const_cast<StaticBinding::Property*>(&property)),
+            v8::External::New(mIsolate, const_cast<bind::meta::StaticMemberDefine::Property*>(&property)),
             v8::PropertyAttribute::DontDelete
         );
     }
-    for (auto& function : staticBinding.mFunctions) {
-        auto scriptFunctionName = String::newString(function.mName);
+    for (auto& function : staticBinding.functions_) {
+        auto scriptFunctionName = String::newString(function.name_);
 
         auto fn = v8::FunctionTemplate::New(
             mIsolate,
             [](v8::FunctionCallbackInfo<v8::Value> const& info) {
-                auto fbin = static_cast<StaticBinding::Function*>(info.Data().As<v8::External>()->Value());
+                auto fbin =
+                    static_cast<bind::meta::StaticMemberDefine::Function*>(info.Data().As<v8::External>()->Value());
 
                 try {
-                    auto ret = (fbin->mCallback)(Arguments{EngineScope::currentRuntime(), info});
-                    info.GetReturnValue().Set(JsValueHelper::unwrap(ret));
+                    auto ret = (fbin->callback_)(Arguments{EngineScope::currentRuntime(), info});
+                    info.GetReturnValue().Set(ValueHelper::unwrap(ret));
                 } catch (Exception const& e) {
                     e.rethrowToRuntime();
                 }
             },
-            v8::External::New(mIsolate, const_cast<StaticBinding::Function*>(&function)),
+            v8::External::New(mIsolate, const_cast<bind::meta::StaticMemberDefine::Function*>(&function)),
             {},
             0,
             v8::ConstructorBehavior::kThrow
         );
-        ctor->Set(JsValueHelper::unwrap(scriptFunctionName).As<v8::Name>(), fn, v8::PropertyAttribute::DontDelete);
+        ctor->Set(ValueHelper::unwrap(scriptFunctionName).As<v8::Name>(), fn, v8::PropertyAttribute::DontDelete);
     }
 }
 
 constexpr int kCtorExternal_ClassBinding = 0;
 constexpr int kCtorExternal_JsRuntime    = 1;
 
-v8::Local<v8::FunctionTemplate> Engine::createInstanceClassCtor(ClassBinding const& binding) {
+v8::Local<v8::FunctionTemplate> Engine::createInstanceClassCtor(bind::meta::ClassDefine const& binding) {
     v8::TryCatch vtry{mIsolate};
 
     v8::Local<v8::Object> data = v8::Object::New(mIsolate);
@@ -300,7 +308,11 @@ v8::Local<v8::FunctionTemplate> Engine::createInstanceClassCtor(ClassBinding con
 
     auto ctx = mContext.Get(mIsolate);
 
-    (void)data->Set(ctx, kCtorExternal_ClassBinding, v8::External::New(mIsolate, const_cast<ClassBinding*>(&binding)));
+    (void)data->Set(
+        ctx,
+        kCtorExternal_ClassBinding,
+        v8::External::New(mIsolate, const_cast<bind::meta::ClassDefine*>(&binding))
+    );
     Exception::rethrow(vtry);
 
     (void)data->Set(ctx, kCtorExternal_JsRuntime, v8::External::New(mIsolate, this));
@@ -312,14 +324,14 @@ v8::Local<v8::FunctionTemplate> Engine::createInstanceClassCtor(ClassBinding con
             auto ctx  = info.GetIsolate()->GetCurrentContext();
             auto data = info.Data().As<v8::Object>();
 
-            auto binding = static_cast<ClassBinding*>(
+            auto binding = static_cast<bind::meta::ClassDefine*>(
                 data->Get(ctx, kCtorExternal_ClassBinding).ToLocalChecked().As<v8::External>()->Value()
             );
             auto runtime = static_cast<Engine*>(
                 data->Get(ctx, kCtorExternal_JsRuntime).ToLocalChecked().As<v8::External>()->Value()
             );
 
-            auto& ctor = binding->mInstanceBinding.mConstructor;
+            auto& ctor = binding->instanceMemberDef_.constructor_;
 
             try {
                 if (!info.IsConstructCall()) {
@@ -347,28 +359,28 @@ v8::Local<v8::FunctionTemplate> Engine::createInstanceClassCtor(ClassBinding con
                     }
                 }
 
-                void* wrapped = constructFromJs ? binding->wrap(instance).release() : instance;
+                void* wrapped = constructFromJs ? binding->manage(instance).release() : instance;
                 {
-                    auto typed     = static_cast<WrappedResource*>(wrapped);
-                    typed->binding = const_cast<ClassBinding*>(binding);
-                    typed->runtime = runtime;
+                    auto typed     = static_cast<bind::JsManagedResource*>(wrapped);
+                    typed->define_ = const_cast<bind::meta::ClassDefine*>(binding);
+                    typed->engine_ = runtime;
 
-                    (*const_cast<bool*>(&typed->constructFromJs)) = constructFromJs;
+                    (*const_cast<bool*>(&typed->constructFromJs_)) = constructFromJs;
                 }
                 info.This()->SetAlignedPointerInInternalField(kInternalField_WrappedResource, wrapped);
 
                 if (constructFromJs) {
                     runtime->mIsolate->AdjustAmountOfExternalAllocatedMemory(
-                        static_cast<int64_t>(binding->mInstanceBinding.mClassSize)
+                        static_cast<int64_t>(binding->instanceMemberDef_.classSize_)
                     );
                 }
 
                 runtime->addManagedResource(wrapped, info.This(), [](void* wrapped) {
-                    auto typed = static_cast<WrappedResource*>(wrapped);
+                    auto typed = static_cast<bind::JsManagedResource*>(wrapped);
 
-                    if (typed->constructFromJs) {
-                        typed->runtime->mIsolate->AdjustAmountOfExternalAllocatedMemory(
-                            -static_cast<int64_t>(typed->binding->mInstanceBinding.mClassSize)
+                    if (typed->constructFromJs_) {
+                        typed->engine_->mIsolate->AdjustAmountOfExternalAllocatedMemory(
+                            -static_cast<int64_t>(typed->define_->instanceMemberDef_.classSize_)
                         );
                     }
                     delete typed;
@@ -383,61 +395,66 @@ v8::Local<v8::FunctionTemplate> Engine::createInstanceClassCtor(ClassBinding con
     return ctor;
 }
 
-void Engine::implInstanceRegister(v8::Local<v8::FunctionTemplate>& ctor, InstanceBinding const& instanceBinding) {
+void Engine::implInstanceRegister(
+    v8::Local<v8::FunctionTemplate>&        ctor,
+    bind::meta::InstanceMemberDefine const& instanceBinding
+) {
     auto prototype = ctor->PrototypeTemplate();
     auto signature = v8::Signature::New(mIsolate);
 
-    for (auto& method : instanceBinding.mMethods) {
-        auto scriptMethodName = String::newString(method.mName);
+    for (auto& method : instanceBinding.methods_) {
+        auto scriptMethodName = String::newString(method.name_);
 
         auto fn = v8::FunctionTemplate::New(
             mIsolate,
             [](v8::FunctionCallbackInfo<v8::Value> const& info) {
-                auto method  = static_cast<InstanceBinding::Method*>(info.Data().As<v8::External>()->Value());
+                auto method =
+                    static_cast<bind::meta::InstanceMemberDefine::Method*>(info.Data().As<v8::External>()->Value());
                 auto wrapped = info.This()->GetAlignedPointerFromInternalField(kInternalField_WrappedResource);
 
-                auto typed   = static_cast<WrappedResource*>(wrapped);
-                auto runtime = const_cast<Engine*>(typed->runtime);
+                auto typed   = static_cast<bind::JsManagedResource*>(wrapped);
+                auto runtime = const_cast<Engine*>(typed->engine_);
                 auto thiz    = (*typed)(); // operator()()
                 if (thiz == nullptr) {
                     info.GetReturnValue().SetNull(); // object has been destroyed
                     return;
                 }
                 try {
-                    auto val = (method->mCallback)(thiz, Arguments{runtime, info});
-                    info.GetReturnValue().Set(JsValueHelper::unwrap(val));
+                    auto val = (method->callback_)(thiz, Arguments{runtime, info});
+                    info.GetReturnValue().Set(ValueHelper::unwrap(val));
                 } catch (Exception const& e) {
                     e.rethrowToRuntime();
                 }
             },
-            v8::External::New(mIsolate, const_cast<InstanceBinding::Method*>(&method)),
+            v8::External::New(mIsolate, const_cast<bind::meta::InstanceMemberDefine::Method*>(&method)),
             signature
         );
-        prototype->Set(JsValueHelper::unwrap(scriptMethodName), fn, v8::PropertyAttribute::DontDelete);
+        prototype->Set(ValueHelper::unwrap(scriptMethodName), fn, v8::PropertyAttribute::DontDelete);
     }
 
-    for (auto& prop : instanceBinding.mProperty) {
-        auto scriptPropertyName = String::newString(prop.mName);
-        auto data               = v8::External::New(mIsolate, const_cast<InstanceBinding::Property*>(&prop));
+    for (auto& prop : instanceBinding.property_) {
+        auto scriptPropertyName = String::newString(prop.name_);
+        auto data = v8::External::New(mIsolate, const_cast<bind::meta::InstanceMemberDefine::Property*>(&prop));
         v8::Local<v8::FunctionTemplate> v8Getter;
         v8::Local<v8::FunctionTemplate> v8Setter;
 
         v8Getter = v8::FunctionTemplate::New(
             mIsolate,
             [](v8::FunctionCallbackInfo<v8::Value> const& info) {
-                auto prop    = static_cast<InstanceBinding::Property*>(info.Data().As<v8::External>()->Value());
+                auto prop =
+                    static_cast<bind::meta::InstanceMemberDefine::Property*>(info.Data().As<v8::External>()->Value());
                 auto wrapped = info.This()->GetAlignedPointerFromInternalField(kInternalField_WrappedResource);
 
-                auto typed   = static_cast<WrappedResource*>(wrapped);
-                auto runtime = const_cast<Engine*>(typed->runtime);
+                auto typed   = static_cast<bind::JsManagedResource*>(wrapped);
+                auto runtime = const_cast<Engine*>(typed->engine_);
                 auto thiz    = (*typed)(); // operator()()
                 if (thiz == nullptr) {
                     info.GetReturnValue().SetNull(); // object has been destroyed
                     return;
                 }
                 try {
-                    auto val = (prop->mGetter)(thiz, Arguments{runtime, info});
-                    info.GetReturnValue().Set(JsValueHelper::unwrap(val));
+                    auto val = (prop->getter_)(thiz, Arguments{runtime, info});
+                    info.GetReturnValue().Set(ValueHelper::unwrap(val));
                 } catch (Exception const& e) {
                     e.rethrowToRuntime();
                 }
@@ -446,22 +463,24 @@ void Engine::implInstanceRegister(v8::Local<v8::FunctionTemplate>& ctor, Instanc
             signature
         );
 
-        if (prop.mSetter) {
+        if (prop.setter_) {
             v8Setter = v8::FunctionTemplate::New(
                 mIsolate,
                 [](v8::FunctionCallbackInfo<v8::Value> const& info) {
-                    auto prop    = static_cast<InstanceBinding::Property*>(info.Data().As<v8::External>()->Value());
+                    auto prop = static_cast<bind::meta::InstanceMemberDefine::Property*>(
+                        info.Data().As<v8::External>()->Value()
+                    );
                     auto wrapped = info.This()->GetAlignedPointerFromInternalField(kInternalField_WrappedResource);
 
-                    auto typed   = static_cast<WrappedResource*>(wrapped);
-                    auto runtime = const_cast<Engine*>(typed->runtime);
+                    auto typed   = static_cast<bind::JsManagedResource*>(wrapped);
+                    auto runtime = const_cast<Engine*>(typed->engine_);
                     auto thiz    = (*typed)(); // operator()()
                     if (thiz == nullptr) {
                         info.GetReturnValue().SetNull(); // object has been destroyed
                         return;
                     }
                     try {
-                        (prop->mSetter)(thiz, Arguments{runtime, info});
+                        (prop->setter_)(thiz, Arguments{runtime, info});
                     } catch (Exception const& e) {
                         e.rethrowToRuntime();
                     }
@@ -472,7 +491,7 @@ void Engine::implInstanceRegister(v8::Local<v8::FunctionTemplate>& ctor, Instanc
         }
 
         prototype->SetAccessorProperty(
-            JsValueHelper::unwrap(scriptPropertyName).As<v8::Name>(),
+            ValueHelper::unwrap(scriptPropertyName).As<v8::Name>(),
             v8Getter,
             v8Setter,
             v8::PropertyAttribute::DontDelete
@@ -480,12 +499,11 @@ void Engine::implInstanceRegister(v8::Local<v8::FunctionTemplate>& ctor, Instanc
     }
 }
 
-Local<Object> Engine::newInstance(ClassBinding const& bind, std::unique_ptr<WrappedResource>&& wrappedResource) {
+Local<Object>
+Engine::newInstance(bind::meta::ClassDefine const& bind, std::unique_ptr<bind::JsManagedResource>&& wrappedResource) {
     auto iter = mJsClassConstructor.find(&bind);
     if (iter == mJsClassConstructor.end()) {
-        throw Exception{
-            "The native class " + bind.mClassName + " is not registered, so an instance cannot be constructed."
-        };
+        throw Exception{"The native class " + bind.name_ + " is not registered, so an instance cannot be constructed."};
     }
 
     v8::TryCatch vtry{mIsolate};
@@ -502,23 +520,23 @@ Local<Object> Engine::newInstance(ClassBinding const& bind, std::unique_ptr<Wrap
     auto val = ctor.ToLocalChecked()->NewInstance(ctx, static_cast<int>(args.size()), args.data());
     Exception::rethrow(vtry);
 
-    return JsValueHelper::wrap<Object>(val.ToLocalChecked());
+    return ValueHelper::wrap<Object>(val.ToLocalChecked());
 }
 
-bool Engine::isInstanceOf(Local<Object> const& obj, ClassBinding const& binding) const {
+bool Engine::isInstanceOf(Local<Object> const& obj, bind::meta::ClassDefine const& binding) const {
     auto iter = mJsClassConstructor.find(&binding);
     if (iter == mJsClassConstructor.end()) {
         return false;
     }
     auto ctor = iter->second.Get(mIsolate);
-    return ctor->HasInstance(JsValueHelper::unwrap(obj));
+    return ctor->HasInstance(ValueHelper::unwrap(obj));
 }
 
 void* Engine::getNativeInstanceOf(Local<Object> const& obj) const {
-    auto v8Obj   = JsValueHelper::unwrap(obj);
+    auto v8Obj   = ValueHelper::unwrap(obj);
     auto wrapped = v8Obj->GetAlignedPointerFromInternalField(kInternalField_WrappedResource);
-    auto typed   = static_cast<WrappedResource*>(wrapped);
-    if (!isInstanceOf(obj, *typed->binding)) {
+    auto typed   = static_cast<bind::JsManagedResource*>(wrapped);
+    if (!isInstanceOf(obj, *typed->define_)) {
         return nullptr;
     }
     return (*typed)();

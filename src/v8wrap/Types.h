@@ -62,11 +62,6 @@ using InstanceMethodCallback = std::function<Local<Value>(void*, Arguments const
 using InstanceGetterCallback = std::function<Local<Value>(void*, Arguments const& args)>;
 using InstanceSetterCallback = std::function<void(void*, Arguments const& args)>;
 
-
-// 绑定相关
-class ClassBinding;
-
-
 namespace internal {
 
 template <typename>

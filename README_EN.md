@@ -27,7 +27,7 @@ A non-intrusive, easy-to-use V8 binding library for embedded scenarios, supporti
   - [x] `Function` -> `v8::Function`
   - [x] `Object` -> `v8::Object`
   - [x] `Array` -> `v8::Array`
-- [x] Reference.h – V8 reference wrapper
+- [x] Local.h – V8 reference wrapper
   - [x] `Local<T>` -> `v8::Local<T>`
   - [x] `Global<T>` -> `v8::Global<T>`
   - [x] `Weak<T>` -> `v8::Global<T>`

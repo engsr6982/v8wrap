@@ -1,17 +1,20 @@
 #include "catch2/catch_test_macros.hpp"
 #include "catch2/matchers/catch_matchers.hpp"
 #include "catch2/matchers/catch_matchers_exception.hpp"
-#include "v8wrap/Bindings.h"
-#include "v8wrap/TypeConverter.h"
+#include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_string.hpp>
+
 #include "v8wrap/Types.h"
-#include "v8wrap/reference/Reference.h"
+#include "v8wrap/bind/TypeConverter.h"
+#include "v8wrap/bind/builder/ClassDefineBuilder.h"
+#include "v8wrap/reference/Local.h"
 #include "v8wrap/runtime/Engine.h"
 #include "v8wrap/runtime/EngineScope.h"
 #include "v8wrap/runtime/Exception.h"
 #include "v8wrap/runtime/Platform.h"
 #include "v8wrap/types/Value.h"
-#include <catch2/catch_test_macros.hpp>
-#include <catch2/matchers/catch_matchers_string.hpp>
+
+
 #include <iostream>
 #include <string>
 #include <utility>
@@ -81,7 +84,7 @@ TEST_CASE_METHOD(BindingTestFixture, "Static Binding") {
         REQUIRE_THROWS_MATCHES(
             rt->eval("stdcout1();"),
             v8wrap::Exception,
-            Catch::Matchers::ExceptionMessageMatcher("Uncaught Error: argument count mismatch")
+            Catch::Matchers::ExceptionMessageMatcher("Uncaught TypeError: argument count mismatch")
         );
     }
 
@@ -120,7 +123,7 @@ TEST_CASE_METHOD(BindingTestFixture, "Static Binding") {
         REQUIRE_THROWS_MATCHES(
             rt->eval("overloadedFn(1, 2);"),
             v8wrap::Exception,
-            Catch::Matchers::ExceptionMessageMatcher("Uncaught Error: no overload found")
+            Catch::Matchers::ExceptionMessageMatcher("Uncaught TypeError: no overload found")
         );
     }
 
@@ -148,7 +151,7 @@ TEST_CASE_METHOD(BindingTestFixture, "Static Binding") {
         REQUIRE_THROWS_MATCHES(
             rt->eval("overloadedFn(1, 2, 3);"),
             v8wrap::Exception,
-            Catch::Matchers::ExceptionMessageMatcher("Uncaught Error: no overload found")
+            Catch::Matchers::ExceptionMessageMatcher("Uncaught TypeError: no overload found")
         );
     }
 }
@@ -182,8 +185,8 @@ std::string Test::name   = "Test";
 bool        Test::custom = true;
 
 
-v8wrap::ClassBinding StaticBind =
-    v8wrap::bindingClass<void>("Test")
+v8wrap::bind::meta::ClassDefine StaticBind =
+    v8wrap::bind::defineClass<void>("Test")
         .function("add", &Test::add)
         .function(
             "append",
@@ -319,25 +322,25 @@ public:
 };
 
 
-v8wrap::ClassBinding UUIDBind = v8wrap::bindingClass<UUID>("UUID")
-                                    .constructor<std::string>()
-                                    .instanceProperty("str_id_", &UUID::str_id_)
-                                    .instanceMethod("getUUID", &UUID::getUUID)
-                                    .instanceMethod("setUUID", &UUID::setUUID)
-                                    .build();
+v8wrap::bind::meta::ClassDefine UUIDBind = v8wrap::bind::defineClass<UUID>("UUID")
+                                               .constructor<std::string>()
+                                               .instanceProperty("str_id_", &UUID::str_id_)
+                                               .instanceMethod("getUUID", &UUID::getUUID)
+                                               .instanceMethod("setUUID", &UUID::setUUID)
+                                               .build();
 
 
-v8wrap::ClassBinding ActorBind = v8wrap::bindingClass<Actor>("Actor")
-                                     .disableConstructor()
-                                     .instanceProperty("id_", &Actor::id_)
-                                     .instanceMethod("getTypeName", &Actor::getTypeName)
-                                     .instanceMethod("getID", &Actor::getID)
-                                     .function("foo", &Actor::foo)
-                                     .property("bar", &Actor::bar)
-                                     .build();
+v8wrap::bind::meta::ClassDefine ActorBind = v8wrap::bind::defineClass<Actor>("Actor")
+                                                .disableConstructor()
+                                                .instanceProperty("id_", &Actor::id_)
+                                                .instanceMethod("getTypeName", &Actor::getTypeName)
+                                                .instanceMethod("getID", &Actor::getID)
+                                                .function("foo", &Actor::foo)
+                                                .property("bar", &Actor::bar)
+                                                .build();
 
-v8wrap::ClassBinding PlayerBind =
-    v8wrap::bindingClass<Player>("Player")
+v8wrap::bind::meta::ClassDefine PlayerBind =
+    v8wrap::bind::defineClass<Player>("Player")
         .customConstructor([](v8wrap::Arguments const& args) -> void* {
             if (args.length() != 1) {
                 return nullptr;

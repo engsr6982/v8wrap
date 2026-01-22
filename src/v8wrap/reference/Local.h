@@ -1,7 +1,7 @@
 #pragma once
-#include "v8wrap/Concepts.h"
 #include "v8wrap/Global.h"
 #include "v8wrap/Types.h"
+#include "v8wrap/concepts/ScriptConcepts.h"
 #include "v8wrap/types/internal/V8TypeAlias.h"
 #include <cstdint>
 #include <string>
@@ -30,7 +30,7 @@ public:                                                                         
     bool          operator==(Local<Value> const& other) const;                                                         \
                                                                                                                        \
 private:                                                                                                               \
-    friend struct JsValueHelper;                                                                                       \
+    friend struct ValueHelper;                                                                                         \
     friend class Exception;                                                                                            \
     friend class VALUE;                                                                                                \
     template <typename>                                                                                                \
@@ -99,7 +99,7 @@ public:
      * @tparam T must be the type of as described above
      */
     template <typename T>
-        requires IsWrappedV8Type<T>
+        requires concepts::JsValueType<T>
     [[nodiscard]] Local<T> as() const;
 
     void clear();
@@ -227,6 +227,8 @@ public:
     void push(Local<Value> const& value);
 
     void clear();
+
+    Local<Value> operator[](size_t index) const;
 };
 
 template <>
@@ -248,79 +250,6 @@ public:
 #undef SPECALIZATION_V8_LOCAL_TYPE
 
 
-template <typename T>
-class Global final {
-    static_assert(std::is_base_of_v<Value, T>, "T must be derived from Value");
-
-public:
-    V8WRAP_DISALLOW_COPY(Global); // v8::Global is not copyable
-
-    Global() noexcept; // empty
-
-    explicit Global(Local<T> const& val);
-    explicit Global(Weak<T> const& val);
-
-    Global(Global<T>&& other) noexcept;
-    Global& operator=(Global<T>&& other) noexcept;
-
-    ~Global();
-
-    [[nodiscard]] Local<T> get() const;
-
-    [[nodiscard]] Local<Value> getValue() const;
-
-    [[nodiscard]] bool isEmpty() const;
-
-    void reset();
-
-private:
-    internal::V8GlobalRef<T> impl;
-
-    friend class Engine;
-
-    template <typename>
-    friend class Local;
-    template <typename>
-    friend class Weak;
-};
-
-template <typename T>
-class Weak final {
-    static_assert(std::is_base_of_v<Value, T>, "T must be derived from Value");
-
-public:
-    V8WRAP_DISALLOW_COPY(Weak); // v8::Global is not copyable
-
-    Weak() noexcept; // empty
-
-    explicit Weak(Local<T> const& val);
-    explicit Weak(Global<T> const& val);
-
-    Weak(Weak<T>&& other) noexcept;
-    Weak& operator=(Weak<T>&& other) noexcept;
-
-    ~Weak();
-
-    [[nodiscard]] Local<T> get() const;
-
-    [[nodiscard]] Local<Value> getValue() const;
-
-    [[nodiscard]] bool isEmpty() const;
-
-    void reset();
-
-private:
-    internal::V8GlobalRef<T> impl;
-
-    friend class Engine;
-
-    template <typename>
-    friend class Local;
-    template <typename>
-    friend class Weak;
-};
-
-
 } // namespace v8wrap
 
-#include "Reference.inl"
+#include "Local.inl"

@@ -1,7 +1,9 @@
 #pragma once
 #include "Engine.h"
-#include "v8-object.h"
 #include "v8wrap/Types.h"
+#include "v8wrap/bind/JsManagedResource.h"
+
+#include "v8-object.h"
 
 
 namespace v8wrap {
@@ -13,14 +15,14 @@ std::shared_ptr<T> Engine::getData() const {
 }
 
 template <typename T>
-    requires StringLike<T>
+    requires concepts::StringLike<T>
 Local<Value> Engine::eval(T const& str) {
     return eval(String::newString(str));
 }
 
 template <typename T>
-Local<Object> Engine::newInstanceOfRaw(ClassBinding const& bind, T* instance) {
-    auto wrap = WrappedResource::make(
+Local<Object> Engine::newInstanceOfRaw(bind::meta::ClassDefine const& bind, T* instance) {
+    auto wrap = bind::JsManagedResource::make(
         instance,
         [](void* res) -> void* { return res; }, // no-op
         [](void* res) -> void { delete static_cast<T*>(res); }
@@ -29,8 +31,8 @@ Local<Object> Engine::newInstanceOfRaw(ClassBinding const& bind, T* instance) {
 }
 
 template <typename T>
-Local<Object> Engine::newInstanceOfView(ClassBinding const& bind, T* instance) {
-    auto wrap = WrappedResource::make(
+Local<Object> Engine::newInstanceOfView(bind::meta::ClassDefine const& bind, T* instance) {
+    auto wrap = bind::JsManagedResource::make(
         instance,
         [](void* res) -> void* { return res; }, // no-op
         [](void*) -> void {}
@@ -39,7 +41,8 @@ Local<Object> Engine::newInstanceOfView(ClassBinding const& bind, T* instance) {
 }
 
 template <typename T>
-Local<Object> Engine::newInstanceOfView(ClassBinding const& bind, T* instance, Local<Object> const& ownerJs) {
+Local<Object>
+Engine::newInstanceOfView(bind::meta::ClassDefine const& bind, T* instance, Local<Object> const& ownerJs) {
     struct Control {
         v8::Global<v8::Object> ownerJsInst;
         void*                  nativeInst{nullptr};
@@ -49,10 +52,10 @@ Local<Object> Engine::newInstanceOfView(ClassBinding const& bind, T* instance, L
         ~Control() { ownerJsInst.Reset(); }
     };
     auto control = new Control{
-        v8::Global<v8::Object>{mIsolate, JsValueHelper::unwrap(ownerJs)},
+        v8::Global<v8::Object>{mIsolate, ValueHelper::unwrap(ownerJs)},
         instance
     };
-    auto wrap = WrappedResource::make(
+    auto wrap = bind::JsManagedResource::make(
         control,
         [](void* res) -> void* { return static_cast<Control*>(res)->nativeInst; },
         [](void* res) -> void { delete static_cast<Control*>(res); }
@@ -61,18 +64,18 @@ Local<Object> Engine::newInstanceOfView(ClassBinding const& bind, T* instance, L
 }
 
 template <typename T>
-Local<Object> Engine::newInstanceOfUnique(ClassBinding const& bind, std::unique_ptr<T>&& instance) {
+Local<Object> Engine::newInstanceOfUnique(bind::meta::ClassDefine const& bind, std::unique_ptr<T>&& instance) {
     return newInstanceOfRaw<T>(bind, instance.release());
 }
 
 template <typename T>
-Local<Object> Engine::newInstanceOfShared(ClassBinding const& bind, std::shared_ptr<T>&& instance) {
+Local<Object> Engine::newInstanceOfShared(bind::meta::ClassDefine const& bind, std::shared_ptr<T>&& instance) {
     struct Control {
         std::shared_ptr<T> instance;
         explicit Control(std::shared_ptr<T>&& instance) : instance(std::move(instance)) {}
     };
     auto control = new Control{std::move(instance)};
-    auto wrap    = WrappedResource::make(
+    auto wrap    = bind::JsManagedResource::make(
         control,
         [](void* res) -> void* { return static_cast<Control*>(res)->instance.get(); },
         [](void* res) -> void { delete static_cast<Control*>(res); }
@@ -81,13 +84,13 @@ Local<Object> Engine::newInstanceOfShared(ClassBinding const& bind, std::shared_
 }
 
 template <typename T>
-Local<Object> Engine::newInstanceOfWeak(ClassBinding const& bind, std::weak_ptr<T>&& instance) {
+Local<Object> Engine::newInstanceOfWeak(bind::meta::ClassDefine const& bind, std::weak_ptr<T>&& instance) {
     struct Control {
         std::weak_ptr<T> instance;
         explicit Control(std::weak_ptr<T>&& instance) : instance(std::move(instance)) {}
     };
     auto control = new Control{std::move(instance)};
-    auto wrap    = WrappedResource::make(
+    auto wrap    = bind::JsManagedResource::make(
         control,
         [](void* res) -> void* { return static_cast<Control*>(res)->instance.lock().get(); },
         [](void* res) -> void { delete static_cast<Control*>(res); }

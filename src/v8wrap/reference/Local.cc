@@ -1,10 +1,9 @@
-#include "v8wrap/reference/Reference.h"
+#include "v8wrap/reference/Local.h"
 #include "v8wrap/runtime/EngineScope.h"
 #include "v8wrap/runtime/Exception.h"
 #include "v8wrap/types/Value.h"
 #include <algorithm>
 #include <cassert>
-
 
 
 V8_WRAP_WARNING_GUARD_BEGIN
@@ -321,6 +320,8 @@ void Local<Array>::clear() {
 
     Exception::rethrow(vtry);
 }
+
+Local<Value> Local<Array>::operator[](size_t index) const { return get(index); }
 
 
 IMPL_SPECIALIZATION_LOCAL(Function);
