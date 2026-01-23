@@ -3,11 +3,11 @@
 
 
 int main(int argc, char* argv[]) {
-    v8wrap::Platform::initJsPlatform();
+    v8wrap::Platform::getInstance().initialize();
 
     int result = Catch::Session().run(argc, argv);
 
-    v8wrap::Platform::getPlatform()->shutdownJsPlatform();
+    v8wrap::Platform::getInstance().shutdown();
 
     return result;
 }

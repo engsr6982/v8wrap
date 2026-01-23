@@ -1,9 +1,10 @@
 #pragma once
 #include "v8wrap/Global.h"
 #include "v8wrap/Types.h"
+
+#include <cstddef>
 #include <memory>
-#include <mutex>
-#include <vector>
+
 
 V8_WRAP_WARNING_GUARD_BEGIN
 #include <v8-platform.h>
@@ -13,31 +14,42 @@ V8_WRAP_WARNING_GUARD_END
 namespace v8wrap {
 
 
-class Platform {
-    std::unique_ptr<v8::Platform> mPlatform{nullptr};
-    std::vector<Engine*>          mRuntimes{};
-    mutable std::mutex            mMutex{};
+class Platform final {
+    struct Impl;
+    std::unique_ptr<Impl> impl_{nullptr};
 
-    static std::unique_ptr<Platform> sInstance;
-    Platform();
+    Platform() noexcept = default;
+
+    void ensureInitialized() const;
 
 public:
     V8WRAP_DISALLOW_COPY(Platform);
     ~Platform();
 
-    static void initJsPlatform();
+    [[nodiscard]] static Platform& getInstance();
 
-    static Platform* getPlatform();
+    void initialize();
 
-    void shutdownJsPlatform();
+    void shutdown();
 
-    [[nodiscard]] Engine* newRuntime();
+    [[nodiscard]] Engine* newEngine();
 
-    void addRuntime(Engine* runtime);
+    /**
+     * @brief 添加一个引擎到平台中
+     * @note 当引擎被添加到平台后，平台会负责管理引擎的生命周期，当平台被销毁时，引擎也会被销毁
+     */
+    [[nodiscard]] Engine* addEngine(std::unique_ptr<Engine>&& engine);
 
-    void removeRuntime(Engine* runtime, bool destroyRuntime = true);
+    bool destroyEngine(Engine* engine);
 
-    std::vector<Engine*> getRuntimes() const;
+    size_t engineCount() const;
+
+    /**
+     * @brief 遍历平台中的所有引擎
+     * @param callback 回调函数，返回false时停止遍历
+     * @note callback 里禁止访问 Platform 任何 API，否则会导致死锁
+     */
+    void forEachEngine(std::function<bool(Engine const&)> const& callback) const;
 };
 
 

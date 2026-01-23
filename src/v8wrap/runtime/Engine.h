@@ -28,21 +28,29 @@ namespace internal {
 class V8EscapeScope;
 }
 
+class Platform;
 
-class Engine {
+
+class Engine final {
+public:
+    V8WRAP_DISALLOW_COPY(Engine);
+
+    Engine(Engine&&) noexcept            = default;
+    Engine& operator=(Engine&&) noexcept = default;
+
     ~Engine();
 
-public:
-    V8WRAP_DISALLOW_COPY_AND_MOVE(Engine);
-
     /**
-     * Create a Js runtime from the Platform.
-     * Make sure that the Js platform is initialized before calling.
+     * 创建一个 Js 引擎
+     * @note 此重载依赖全局的 Platform，请确保 Platform 已初始化
+     * @note 创建后，您需要手动管理 Engine 的生命周期，或者添加到 Platform 的管理列表中
+     * @note Engine 的构造函数不会访问 Platform，所以您需要手动调用 Platform::addEngine
+     * @note 综上，建议直接从 Platform::newEngine 创建实例而非手动 new Engine / make_unique<Engine>
      */
     explicit Engine();
 
     /**
-     * To create a Js runtime, using sources from outside is isolate and context.
+     * To create a Js engine, using sources from outside is isolate and context.
      * This overload is commonly used in NodeJs Addons.
      * When using isolate and contexts from outside (e.g. NodeJs), the Platform is not required.
      */
@@ -56,16 +64,6 @@ public:
 
     template <typename T>
     [[nodiscard]] inline std::shared_ptr<T> getData() const;
-
-    /**
-     * Stop and destroy the current Js runtime.
-     * The call frees up all resources and destroys the isolate and context.
-     * After you destroy this runtime, you can no longer access any methods for this runtime because delete this is done
-     * internally.
-     *
-     * If this runtime is the default construct, it removes itself from Platform internally
-     */
-    void destroy();
 
     [[nodiscard]] bool isDestroying() const;
 
@@ -203,20 +201,19 @@ private:
     static constexpr int kInternalFieldCount            = 1;
     static constexpr int kInternalField_WrappedResource = 0;
 
-    v8::Isolate*            mIsolate{nullptr};
-    v8::Global<v8::Context> mContext{};
-    std::shared_ptr<void>   mUserData{nullptr};
-    Platform*               mPlatform{nullptr}; // nullptr if this runtime is created from outside isolate and context
+    v8::Isolate*            isolate_{nullptr};
+    v8::Global<v8::Context> context_{};
+    std::shared_ptr<void>   userData_{nullptr};
 
-    bool mDestroying{false};
-    bool mIsExternalIsolate{false};
+    bool       isDestroying_{false};
+    bool const isExternalIsolate_{false};
 
     // This symbol is used to mark the construction of objects from C++ (with special logic).
-    v8::Global<v8::Symbol> mConstructorSymbol{};
+    v8::Global<v8::Symbol> constructorSymbol_{};
 
-    std::unordered_map<ManagedResource*, v8::Global<v8::Value>>                          mManagedResources;
-    std::unordered_map<std::string, bind::meta::ClassDefine const*>                      mRegisteredBindings;
-    std::unordered_map<bind::meta::ClassDefine const*, v8::Global<v8::FunctionTemplate>> mJsClassConstructor;
+    std::unordered_map<ManagedResource*, v8::Global<v8::Value>>                          managedResources_;
+    std::unordered_map<std::string, bind::meta::ClassDefine const*>                      registeredClasses_;
+    std::unordered_map<bind::meta::ClassDefine const*, v8::Global<v8::FunctionTemplate>> classConstructors_;
 };
 
 

@@ -11,7 +11,7 @@ namespace v8wrap {
 
 template <typename T>
 std::shared_ptr<T> Engine::getData() const {
-    return std::static_pointer_cast<T>(mUserData);
+    return std::static_pointer_cast<T>(userData_);
 }
 
 template <typename T>
@@ -52,7 +52,7 @@ Engine::newInstanceOfView(bind::meta::ClassDefine const& bind, T* instance, Loca
         ~Control() { ownerJsInst.Reset(); }
     };
     auto control = new Control{
-        v8::Global<v8::Object>{mIsolate, ValueHelper::unwrap(ownerJs)},
+        v8::Global<v8::Object>{isolate_, ValueHelper::unwrap(ownerJs)},
         instance
     };
     auto wrap = bind::JsManagedResource::make(

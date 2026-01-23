@@ -21,8 +21,9 @@
 
 
 struct BindingTestFixture {
-    BindingTestFixture() { rt = new v8wrap::Engine(); }
-    ~BindingTestFixture() { rt->destroy(); }
+    BindingTestFixture() { rt = v8wrap::Platform::getInstance().newEngine(); }
+    ~BindingTestFixture() { v8wrap::Platform::getInstance().destroyEngine(rt); }
+
     v8wrap::Engine* rt;
 };
 

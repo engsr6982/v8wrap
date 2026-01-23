@@ -54,12 +54,12 @@ Weak<T>::~Weak() {
 
 template <typename T>
 Local<T> Weak<T>::get() const {
-    return Local<T>{handle_.Get(engine_->mIsolate)};
+    return Local<T>{handle_.Get(engine_->isolate_)};
 }
 
 template <typename T>
 Local<Value> Weak<T>::getValue() const {
-    return Local<Value>{handle_.Get(engine_->mIsolate).template As<v8::Value>()};
+    return Local<Value>{handle_.Get(engine_->isolate_).template As<v8::Value>()};
 }
 
 template <typename T>

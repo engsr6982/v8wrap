@@ -10,8 +10,8 @@
 
 
 struct JsValueTestFixture {
-    JsValueTestFixture() { rt = new v8wrap::Engine(); }
-    ~JsValueTestFixture() { rt->destroy(); }
+    JsValueTestFixture() { rt = v8wrap::Platform::getInstance().newEngine(); }
+    ~JsValueTestFixture() { v8wrap::Platform::getInstance().destroyEngine(rt); }
     v8wrap::Engine* rt;
 };
 

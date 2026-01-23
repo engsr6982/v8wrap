@@ -3,7 +3,6 @@
 #include <stdexcept>
 
 
-
 namespace v8wrap {
 
 thread_local EngineScope* EngineScope::gCurrentScope = nullptr;
@@ -12,10 +11,10 @@ EngineScope::EngineScope(Engine& runtime) : EngineScope(&runtime) {}
 EngineScope::EngineScope(Engine* runtime)
 : mRuntime(runtime),
   mPrev(gCurrentScope),
-  mLocker(runtime->mIsolate),
-  mIsolateScope(runtime->mIsolate),
-  mHandleScope(runtime->mIsolate),
-  mContextScope(runtime->mContext.Get(runtime->mIsolate)) {
+  mLocker(runtime->isolate_),
+  mIsolateScope(runtime->isolate_),
+  mHandleScope(runtime->isolate_),
+  mContextScope(runtime->context_.Get(runtime->isolate_)) {
     gCurrentScope = this;
 }
 
@@ -38,21 +37,21 @@ Engine& EngineScope::currentRuntimeChecked() {
 
 std::tuple<v8::Isolate*, v8::Local<v8::Context>> EngineScope::currentIsolateAndContextChecked() {
     auto& current = currentRuntimeChecked();
-    return std::make_tuple(current.mIsolate, current.mContext.Get(current.mIsolate));
+    return std::make_tuple(current.isolate_, current.context_.Get(current.isolate_));
 }
 
-v8::Isolate*           EngineScope::currentRuntimeIsolateChecked() { return currentRuntimeChecked().mIsolate; }
+v8::Isolate*           EngineScope::currentRuntimeIsolateChecked() { return currentRuntimeChecked().isolate_; }
 v8::Local<v8::Context> EngineScope::currentRuntimeContextChecked() {
     auto& current = currentRuntimeChecked();
-    return current.mContext.Get(current.mIsolate);
+    return current.context_.Get(current.isolate_);
 }
 
 
-ExitEngineScope::ExitEngineScope() : mUnlocker(EngineScope::currentRuntimeChecked().mIsolate) {}
+ExitEngineScope::ExitEngineScope() : mUnlocker(EngineScope::currentRuntimeChecked().isolate_) {}
 
 namespace internal {
 
-V8EscapeScope::V8EscapeScope() : mHandleScope(EngineScope::currentRuntimeChecked().mIsolate) {}
+V8EscapeScope::V8EscapeScope() : mHandleScope(EngineScope::currentRuntimeChecked().isolate_) {}
 V8EscapeScope::V8EscapeScope(v8::Isolate* isolate) : mHandleScope(isolate) {}
 
 } // namespace internal
