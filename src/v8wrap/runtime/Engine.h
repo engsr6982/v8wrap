@@ -97,7 +97,19 @@ public:
     /**
      * Register a binding class and mount it to globalThis
      */
-    void registerBindingClass(bind::meta::ClassDefine const& binding);
+    void registerClass(bind::meta::ClassDefine const& binding);
+
+    // TODO: add more register functions
+    /**
+     * 注册一个枚举
+     * @param def 枚举定义
+     * @note 行为如下:
+     *       C++ -> Js  对 enum 进行 static_cast 到 int32(number) 传给 Js (TypeConverter)
+     *       Js  -> C++ 因为 Js 没有枚举类型，手动传递 num 值麻烦，所以使用本API，创建一个静态的 Object
+     *        对象，将枚举值映射到对象属性上，方便 Js 获取枚举值
+     * @note 每个 enum object 会设置一个 $name 属性，值为 enum 的名字
+     */
+    // bool registerEnum(bind::meta::EnumDefine const& def);
 
 
     /**
@@ -160,6 +172,9 @@ public:
     void gc() const;
 
 private:
+    // TODO: implement
+    // void setObjectToStringTag(Local<Object>& obj, std::string_view tag) const;
+
     void implStaticRegister(v8::Local<v8::FunctionTemplate>& ctor, bind::meta::StaticMemberDefine const& staticBinding);
 
     v8::Local<v8::FunctionTemplate> createInstanceClassCtor(bind::meta::ClassDefine const& binding);

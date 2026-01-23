@@ -170,7 +170,7 @@ void Engine::addManagedResource(void* resource, v8::Local<v8::Value> value, std:
     mManagedResources.emplace(managed.release(), std::move(weak));
 }
 
-void Engine::registerBindingClass(bind::meta::ClassDefine const& binding) {
+void Engine::registerClass(bind::meta::ClassDefine const& binding) {
     if (mRegisteredBindings.contains(binding.name_)) {
         throw Exception("Class binding already registered: " + binding.name_);
     }
@@ -221,6 +221,8 @@ void Engine::registerBindingClass(bind::meta::ClassDefine const& binding) {
 
     mRegisteredBindings.emplace(binding.name_, &binding);
     mJsClassConstructor.emplace(&binding, v8::Global<v8::FunctionTemplate>{mIsolate, ctor});
+
+    // TODO: update toStringTag
 
     setVauleToGlobalThis(scriptClassName, ValueHelper::wrap<Function>(function.ToLocalChecked()));
 }
@@ -399,6 +401,7 @@ void Engine::implInstanceRegister(
     v8::Local<v8::FunctionTemplate>&        ctor,
     bind::meta::InstanceMemberDefine const& instanceBinding
 ) {
+    // TODO: mount "$equals"
     auto prototype = ctor->PrototypeTemplate();
     auto signature = v8::Signature::New(mIsolate);
 

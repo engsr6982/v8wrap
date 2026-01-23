@@ -206,7 +206,7 @@ v8wrap::bind::meta::ClassDefine StaticBind =
 TEST_CASE_METHOD(BindingTestFixture, "Static binding") {
     v8wrap::EngineScope enter{rt};
 
-    rt->registerBindingClass(StaticBind);
+    rt->registerClass(StaticBind);
 
     auto exist = rt->eval("Test !== undefined");
     REQUIRE(exist.isBoolean());
@@ -418,9 +418,9 @@ v8wrap::bind::meta::ClassDefine PlayerBind =
 TEST_CASE_METHOD(BindingTestFixture, "Instance binding") {
     v8wrap::EngineScope enter{rt};
 
-    REQUIRE_NOTHROW(rt->registerBindingClass(ActorBind));
-    REQUIRE_NOTHROW(rt->registerBindingClass(PlayerBind));
-    REQUIRE_NOTHROW(rt->registerBindingClass(UUIDBind));
+    REQUIRE_NOTHROW(rt->registerClass(ActorBind));
+    REQUIRE_NOTHROW(rt->registerClass(PlayerBind));
+    REQUIRE_NOTHROW(rt->registerClass(UUIDBind));
 
     SECTION("Verify the construction behavior") {
         // Binding construction
